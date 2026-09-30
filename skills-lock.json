@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "laravel-mcp": {
+      "source": "AsyrafHussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-mcp/SKILL.md",
+      "computedHash": "31de735b826f5c8e7b64ca133b10f2fc6b4a1789bb6b144aecccc948fe8ef689"
+    },
+    "laravel-testing": {
+      "source": "AsyrafHussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-testing/SKILL.md",
+      "computedHash": "9627c977341aa7a9a11e5f500838409c1e39e1ca0714c6a6038fba4d3a5203c9"
+    },
+    "project-docs": {
+      "source": "AsyrafHussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/project-docs/SKILL.md",
+      "computedHash": "d2da7474d61edf37883e91b31dec49efbcb5bc6979e8d132dceaa26c3fad1b61"
+    },
+    "testing-best-practices": {
+      "source": "AsyrafHussin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/testing-best-practices/SKILL.md",
+      "computedHash": "590eb4064d9fa41854f7871991a3c1ef566553593338632c6cf88d9984194d61"
+    }
+  }
+}
