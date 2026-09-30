@@ -1,58 +1,272 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<h1 align="center">OTACenter</h1>
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <b>Self-hosted Over-The-Air application distribution &amp; management platform.</b><br>
+  Publish apps, manage versioned installers, and control per-domain access via your LDAP directory.
 </p>
 
-## About Laravel
+<p align="center">
+  <a href="#stack">Stack</a> •
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick start</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#api">API</a> •
+  <a href="#testing">Testing</a> •
+  <a href="#project-layout">Layout</a>
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Layer | Technology |
+|-------|------------|
+| Backend | Laravel 13, PHP 8.3+ |
+| Auth | LDAPRecord (`directorytree/ldaprecord-laravel`) + Laravel Sanctum |
+| Authorization | Spatie Permissions (roles + per-route permission middleware) |
+| Frontend | React 19, TypeScript, Vite 8 |
+| Styling | Tailwind CSS v4 (CSS-first, single stylesheet) |
+| Components | Base UI primitives, TanStack Table, Recharts, Lucide, shadcn/ui conventions |
+| Storage | Local disk (configurable), SQLite / MySQL / PostgreSQL |
+| Tests | PHPUnit 12 (backend), Vitest + Testing Library (frontend) |
 
-## Learning Laravel
+There are two SPAs: an **admin dashboard** (`/dashboard`) and an **auth page** (`/auth`), both served by
+plain Blade entry points that boot React. There is no Inertia — the Blade views are just shells.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Features
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### App & release management
+- **Apps** — name, unique package name, summary, description, logo, and a screenshot gallery.
+- **Versions** — a release of an app, each with a changelog, a status
+  (`draft` / `review` / `published` / `cancelled`), an API key, and a **required** `.apk` installer.
+- **Bundles** — a ZIP artifact attached to a version. Exactly one bundle is *active* per version
+  (`versions.latest_id`); one version is *latest* per app (`apps.latest_id`). "Publish" is simply
+  pointing `latest_id` at the resource.
+- **Files** — every uploaded artifact (logos, images, APKs, ZIPs) is a row in `files` with a
+  **non-incrementing string primary key** and a public URL served by `GET /files/{name}`.
 
-## Agentic Development
+### Access control
+- **LDAP authentication** — users are imported from the directory on first login
+  (`userprincipalname` → `login`, `cn` → `name`). No usable password is stored for LDAP users.
+- **Domains** — organizational groupings. Apps are bound to domains, users are bound to domains, and a
+  user sees an app if any of their domains is bound to it.
+- **RBAC** — five seeded roles (`super-admin`, `admin`, `developer`, `user`, `guest`) and a permission
+  matrix (`app.*`, `version.*`, `bundle.*`, `screenshot.*`, `domain.*`, `user.*`, `role.*`,
+  `permission.*`). Every protected route carries a `permission:{name}` middleware; `super-admin`
+  bypasses all of them. Frontend mirrors this with `can({ permission })` / `can({ roles })`.
+- **Per-role serialization** — models return a base field set to every authenticated role, and add
+  privileged fields (storage `path`, download `url`, `api_key`, `updated_at`) only for
+  `super-admin` / `admin` / `developer`.
+- **Invites** — admins generate a registration link plus a separate activation code; the link is bound
+  to a one-time Sanctum token with the `user.invite` ability.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Device / OTA client API
+A separate, device-facing API is mounted at `/ota-client/v1` for native clients:
+- `GET /ota-client/v1/health` — reachability check.
+- `POST /ota-client/v1/app/info` — body `{ package, version, bundle }`; resolves the app/version/bundle
+  and reports `availableUpdates`. Devices self-register via the `X-Device-Info` header
+  (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) through `DeviceMiddleware`.
+
+### Statistics
+Read-only aggregates (`/api/statistics/*`, gated by `role:super-admin,admin`): global totals with
+status breakdowns, plus per-entity panels embedded as inner tabs on every model page.
+
+### Dashboard
+Desktop sidebar + mobile drawer shell, server-driven data tables with debounced search, server-side
+sort and pagination, and permission-gated actions throughout.
+
+---
+
+## Quick start
+
+### Requirements
+- PHP **8.3+** with `ldap`, `zip`, and `fileinfo` extensions
+- Composer 2
+- Node.js 20+ and npm
+- A reachable LDAP/Active Directory server (or a local user with a password, see below)
+
+### Install
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer run setup
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+This runs `composer install`, creates `.env` from `.env.example`, generates the app key, runs
+migrations, installs npm packages, and builds the frontend.
 
-## Contributing
+### Configure
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Copy the LDAP and super-admin values into `.env` (see [Configuration](#configuration)), then seed:
 
-## Code of Conduct
+```bash
+php artisan db:seed
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+`DatabaseSeeder` runs `SecuritySeeder` (roles + permissions) and `SuperAdminSeeder`, which **requires**
+`APP_SUPER_ADMIN_LOGIN` and `APP_SUPER_ADMIN_PASSWORD` to be set.
 
-## Security Vulnerabilities
+### Run
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer run dev
+```
+
+Starts, concurrently: `php artisan serve`, the queue listener, `pail` logs, and the Vite dev server.
+The dashboard is at `http://localhost:8000/dashboard`.
+
+> Tip: SQLite is the default database and works out of the box. `.env.example` also carries commented
+> MySQL/PostgreSQL blocks.
+
+---
+
+## Configuration
+
+### Application
+
+| Key | Notes |
+|-----|-------|
+| `APP_NAME`, `APP_URL`, `APP_ENV`, `APP_DEBUG` | Standard Laravel app settings. |
+| `VITE_APP_URL` | Base for the frontend axios instance; defaults to same-origin + `/api`. |
+| `DB_CONNECTION` | `sqlite` (default) or your MySQL/PostgreSQL DSN. |
+| `APP_SUPER_ADMIN_LOGIN` / `APP_SUPER_ADMIN_PASSWORD` | Required by `SuperAdminSeeder`. |
+
+### LDAP
+
+Users are resolved from the directory; these values are read by `config/ldap.php`.
+
+| Key | Default |
+|-----|---------|
+| `LDAP_CONNECTION` | `default` |
+| `LDAP_HOST` | `127.0.0.1` |
+| `LDAP_PORT` | `389` |
+| `LDAP_BASE_DN` | `dc=local,dc=com` |
+| `LDAP_USERNAME` | `cn=user,dc=local,dc=com` |
+| `LDAP_PASSWORD` | — |
+| `LDAP_TIMEOUT` | `5` |
+| `LDAP_TLS` / `LDAP_STARTTLS` / `LDAP_SASL` | `false` |
+| `LDAP_LOGIN_SUFFIX` | Appended to the typed login before the LDAP search (e.g. `@corp.local`) |
+| `LDAP_LOGGING` / `LDAP_CACHE` | `true` / `false` |
+
+### Local (non-LDAP) login
+
+`AuthController::login` is **local-first**: if a `users` row with a matching `login` has a bcrypt
+password, that login wins; otherwise it falls through to LDAP. This is how the super-admin account and
+the test suite authenticate without a directory server.
+
+---
+
+## API
+
+Two JSON surfaces:
+
+| Prefix | Auth | Purpose |
+|--------|------|---------|
+| `/api/*` | Sanctum SPA session or bearer token | Admin API (defined in `routes/web.php` under a `prefix('api')` group) |
+| `/ota-client/v1/*` | Sanctum + `DeviceMiddleware` | Device-facing OTA API (`routes/ota_client.php`) |
+| `/files/{name}` | none | Streams a stored artifact from the `public` disk |
+
+Every admin response uses the same envelope:
+
+```jsonc
+{
+  "success": true,
+  "message": "Items retrieved successfully",
+  "items": [ /* ... */ ],
+  "itemsCount": 12,
+  "pagesCount": 2,
+  "page": 1
+}
+```
+
+List endpoints accept `page`, `pageSize`, `search`, `sort[<field>]=asc|desc`, and `filter[<field>]`
+— all validated and applied server-side by the `Tabling` trait.
+
+<details>
+<summary><b>Admin route map</b></summary>
+
+| Prefix | Operations |
+|--------|-----------|
+| `/api/auth` | `POST /login`, `POST /register` (invite token), `GET /me`, `PUT /profile`, `DELETE /logout` |
+| `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*` (bind/unbind), `/{app}/version/*` |
+| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy, `/{bundle}/activate` |
+| `/api/domain` | index, store, show, update, destroy |
+| `/api/user` | index, show, destroy, `POST /invite`, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*` |
+| `/api/role` | index, show, `/{role}/permission/*`, `/{role}/user` (index) |
+| `/api/statistics` | `general`, `byUser`, `byRole`, `byDomain`, `byApp`, `byVersion` — all `role:super-admin,admin` |
+
+</details>
+
+---
+
+## Testing
+
+```bash
+composer test          # or: php artisan test     (PHPUnit feature tests)
+npm test               # vitest run               (React component + util tests)
+npm run test:watch     # watch mode
+```
+
+Backend tests live in `tests/Feature` and cover auth, RBAC matrices (role × endpoint), and CRUD for
+apps, domains, versions, bundles, and users. Frontend tests use Vitest + Testing Library with jsdom and
+live next to the code they cover.
+
+---
+
+## Project layout
+
+```
+app/
+  Src/                    Base Controller / Model / ValidationType
+  Http/Controllers/       Admin API controllers
+  Http/Controllers/OTAClient/   Device-facing endpoints
+  Http/Middleware/        permission, role, rec.parent, device, file access
+  Ldap/User.php           LDAP model mapping
+  Models/                 App, Version, Bundle, Domain, User, File, Device, …
+  Models/Traits/Tabling   Server-side sort / search / filter / paginate pipeline
+resources/js/
+  apps/auth/              Auth SPA
+  apps/dashboard/         Dashboard SPA, shell components, and tabs
+  components/             Shared components + ui/ primitives
+  models/                 Typed frontend models (createModel factory)
+  utils/                  axios bootstrap, Request wrapper, router, RBAC helpers
+resources/css/app.css     The single Tailwind v4 stylesheet
+routes/
+  web.php                 SPA shells, file serving, and the admin JSON API
+  ota_client.php          Device API (mounted at /ota-client)
+database/migrations/      Schema; seeders for roles, permissions, and the super admin
+tests/                    PHPUnit feature tests
+.agents/context/          Architecture docs for backend and frontend
+```
+
+### Conventions worth knowing
+
+- **Validation lives on the model.** Every resource implements
+  `validationRules(ValidationType $type, ?Model $record)`; controllers just run the `Validator`.
+- **Every list endpoint is one call.** `Model::tablingCollect($request, ...)` handles joins, sorting,
+  search, filtering, pagination, and relation loading.
+- **Tailwind is v4, CSS-first.** There is no `tailwind.config.js` and no `postcss.config.js`. Theme
+  tokens live in the `@theme` blocks in `resources/css/app.css`. Do not add v3
+  `@tailwind base/components/utilities` directives — they silently break preflight and all theme colors.
+- **Base UI, not Radix.** UI primitives are built on `@base-ui/react/*` with the `render` prop for
+  polymorphism, and every component sets a `data-slot` attribute.
+
+---
+
+## Security notes
+
+If you deploy this publicly, review these before exposing it:
+
+- `AuthController::login` logs full credentials at INFO level — remove that before production.
+- `.env` is gitignored; never commit credentials.
+- `AuthController::logout` revokes **all** of the user's tokens, not just the current one.
+- The `pageSize` list parameter is unbounded and defaults to the full row count — consider capping it
+  for large datasets.
+- The `Tabling` response includes the raw SQL in a `query` field — a debug leftover worth removing.
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+[MIT](LICENSE) — as declared in `composer.json`.
