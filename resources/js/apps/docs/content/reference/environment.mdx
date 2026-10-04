@@ -6,6 +6,11 @@ order: 1
 
 # Environment variables
 
+<Callout type="info" title="Docker reads a different file">
+The container stack does **not** read `.env`. It uses `.env.docker` (from `.env.docker.example`), and a
+few keys are then forced by `docker-compose.yml`. See **[Docker](/guides/docker)**.
+</Callout>
+
 ## Application
 
 | Key | Notes |

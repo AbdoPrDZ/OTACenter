@@ -1,3 +1,16 @@
+# OTACenter container stack.
+#
+# Configuration lives in `.env.docker` (see .env.docker.example):
+#   cp .env.docker.example .env.docker
+#   docker compose --env-file .env.docker up -d --build
+#
+# `.env.docker` is passed to every container as env_file, and --env-file makes
+# Compose interpolate ${...} from that same file, so APP_PORT and the database
+# credentials always match what the app reads. Run `export COMPOSE_ENV_FILES=.env.docker`
+# once to stop repeating the flag. Without it Compose falls back to `.env` and
+# then to the defaults below — which mirror `.env.docker.example`.
+#
+# Anything set in a service's `environment:` block below overrides `.env.docker`.
 name: otacenter
 
 # Shared service definition (image, env file, storage volume).
@@ -7,7 +20,8 @@ x-app: &app
     context: .
   restart: unless-stopped
   env_file:
-    - .env
+    - path: .env.docker
+      required: false
   volumes:
     - otacenter-storage:/var/www/html/storage
 

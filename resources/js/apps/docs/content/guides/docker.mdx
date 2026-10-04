@@ -1,0 +1,235 @@
+---
+title: Docker
+description: Run OTACenter as containers with Docker Compose.
+order: 2
+---
+
+# Docker
+
+Everything needed to run OTACenter as a container set lives in the repository: a multi-stage
+`Dockerfile`, a `docker-compose.yml` stack, and the runtime configuration under `docker/`.
+
+<Callout type="info" title="Short version">
+Copy `.env.docker.example` to `.env.docker`, fill in the LDAP and super-admin values, then run
+`docker compose --env-file .env.docker up -d --build` and seed with
+`docker compose --env-file .env.docker exec app php artisan db:seed`.
+</Callout>
+
+## How it fits together
+
+<Flow>
+<FlowStep title="node:20-alpine" />
+<FlowStep title="php:8.4-fpm" />
+<FlowStep title="nginx + php-fpm" tone="success" />
+<FlowStep title="Laravel app" tone="success" />
+<FlowStep title="Postgres 16" tone="muted" />
+</Flow>
+
+- **The image is built in two stages.** Stage 1 (`node:20-alpine`) runs `npm ci && npm run build` and
+  produces `public/build`. Stage 2 (`php:8.4-fpm`) installs Composer dependencies with `--no-dev` and
+  copies the application plus those built assets.
+- **PHP 8.4, not 8.3.** Symfony 8.1 in `composer.lock` requires PHP ≥ 8.4.1, even though `composer.json`
+  still allows `^8.3`.
+- **Extensions compiled in:** `pdo_pgsql`, `pdo_mysql`, `pdo_sqlite`, `zip`, `ldap`, `bcmath`,
+  `mbstring`, `curl`, `pcntl`, `opcache`.
+- **One container, two processes.** The default command starts `supervisord`, which supervises nginx
+  (serving `public/`, handing PHP to php-fpm on `127.0.0.1:9000`) and php-fpm. Uploads are capped at
+  512 MB in both `docker/nginx/default.conf` and `docker/php.ini`.
+- **Logs go to stderr** (`LOG_CHANNEL=stderr`, `error_log=/proc/self/fd/2`) so everything appears in
+  `docker compose logs`.
+
+## Requirements
+
+Docker Engine 24+ with the Compose v2 plugin. Confirm with `docker compose version`.
+
+## First run
+
+<Steps>
+<Step title="Create the environment file">
+
+The stack reads **`.env.docker`**, never `.env`:
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+Fill in at least `LDAP_*`, `APP_URL`, and `APP_SUPER_ADMIN_LOGIN` / `APP_SUPER_ADMIN_PASSWORD`.
+
+</Step>
+<Step title="Build and start">
+
+```bash
+docker compose --env-file .env.docker up -d --build
+```
+
+</Step>
+<Step title="Seed roles, permissions and the super admin">
+
+```bash
+docker compose --env-file .env.docker exec app php artisan db:seed
+```
+
+`SuperAdminSeeder` requires `APP_SUPER_ADMIN_LOGIN` and `APP_SUPER_ADMIN_PASSWORD`.
+
+</Step>
+<Step title="Open the app">
+
+`http://localhost:8000` (home), `/docs` (this site), `/dashboard` (sign in). `GET /up` is Laravel's
+built-in health route.
+
+</Step>
+</Steps>
+
+<Callout type="tip" title="Tired of the flag?">
+`export COMPOSE_ENV_FILES=.env.docker` once per shell and Compose reads that file for every command.
+</Callout>
+
+## Services
+
+| Service | Role | Notes |
+|---------|------|-------|
+| `app` | nginx + php-fpm | Publishes `${APP_PORT:-8000}:80`. Migrates on boot, then caches config and views. Healthchecks `http://127.0.0.1/`. |
+| `db` | `postgres:16-alpine` | Waits on `pg_isready`; `app` starts only once it is healthy. Data in the `otacenter-db` volume. |
+| `queue` | `queue:work --tries=3 --timeout=300` | Uses the `database` driver; waits for `app` so the `jobs` table exists. |
+| `scheduler` | `schedule:work` | Keeps `schedule:run` alive. Inert unless you add scheduled tasks. |
+
+Only `app` publishes a port; the workers stay inside the Compose network.
+
+## What happens on boot
+
+`docker/entrypoint.sh` runs before each container's command:
+
+1. Copies `.env.example` to `.env` inside the container when no file was provided.
+2. Runs `php artisan key:generate` when `APP_KEY` is unset, so sessions and encrypted cookies work.
+3. Creates the writable `storage/framework/*`, `storage/logs` and `bootstrap/cache` directories and
+   chowns them to `www-data`.
+4. Runs `php artisan storage:link` so `GET /files/{name}` can serve uploads.
+5. Runs `php artisan migrate --force`, retrying for about a minute while the database settles. The
+   workers skip this with `RUN_MIGRATIONS=false`.
+6. Clears the config cache, then re-caches config and compiled views when `APP_ENV=production`.
+7. Hands off to the service command.
+
+## Configuration
+
+`.env.docker` (gitignored) plays two roles:
+
+1. **Container environment** — passed to every PHP container as `env_file`, so `LDAP_*`,
+   `APP_SUPER_ADMIN_*`, `FILESYSTEM_DISK` and any `MAIL_*` keys reach the app.
+2. **Compose interpolation** — with `--env-file .env.docker` (or `COMPOSE_ENV_FILES`), the `${APP_PORT}`
+   and `${DB_*}` placeholders in the compose file resolve from the same file, so the app and the
+   Postgres service cannot disagree.
+
+Values in a service's `environment:` block override the file. Those are owned by `docker-compose.yml`:
+
+| Key | Value in the stack |
+|-----|--------------------|
+| `APP_ENV` / `APP_DEBUG` | `production` / `false` |
+| `LOG_CHANNEL` | `stderr` |
+| `DB_CONNECTION` / `DB_HOST` / `DB_PORT` | `pgsql` / `db` / `5432` |
+| `SESSION_DRIVER` / `CACHE_STORE` / `QUEUE_CONNECTION` | `file` / `file` / `database` |
+| `RUN_MIGRATIONS` | `true`, and `false` on `queue` and `scheduler` |
+
+Everything else comes from `.env.docker`:
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `APP_PORT` | `8000` | Host port mapped to the container's port 80. |
+| `APP_URL` | `http://localhost:8000` | External base URL — use the `https://` URL behind a proxy. |
+| `APP_KEY` | generated on boot | Set it to keep sessions and encrypted cookies stable across rebuilds. |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | `otacenter` / `otacenter` / `secret` | Used by both the app and the Postgres service. |
+| `LDAP_*` | see [Configuration](/getting-started/configuration) | Reach a directory on the Docker host via `host.docker.internal`. |
+| `APP_SUPER_ADMIN_LOGIN` / `APP_SUPER_ADMIN_PASSWORD` | — | Required once, by `db:seed`. |
+
+<Callout type="info" title="VITE_* has no effect here">
+The frontend is compiled during `docker build`, so `VITE_*` values are baked into the assets at image
+build time rather than read at request time.
+</Callout>
+
+Because production boots with a cached config, recreate the containers after editing the file:
+
+```bash
+docker compose --env-file .env.docker up -d --force-recreate app queue scheduler
+```
+
+## Persistent data
+
+| Volume | Mount | Contents |
+|--------|-------|----------|
+| `otacenter-storage` | `/var/www/html/storage` | Uploaded APKs, bundles, logos and screenshots, plus sessions, cached views and logs. |
+| `otacenter-db` | `/var/lib/postgresql/data` | The PostgreSQL data directory. |
+
+Artifacts live on the `public` disk and are streamed by `GET /files/{name}`. Back up the storage volume
+*and* the database — either one alone is only half a restore. `docker compose down` keeps both volumes;
+`docker compose down -v` deletes them.
+
+## Everyday commands
+
+```bash
+docker compose --env-file .env.docker up -d --build   # build, then start everything
+docker compose ps                                    # status and health
+docker compose logs -f app                           # follow application + nginx/php-fpm logs
+docker compose exec app bash                         # shell inside the container
+docker compose exec app php artisan <cmd>             # run an artisan command
+docker compose restart app                           # restart one service
+docker compose down                                  # stop, keep volumes
+docker compose down -v                               # stop, delete volumes
+```
+
+The flag only matters for commands that **create** containers — `ps`, `logs`, `exec`, `restart` and
+`down` work without it. For one-off commands prefer `run` over `exec`:
+
+```bash
+docker compose --env-file .env.docker run --rm app php artisan config:clear
+```
+
+## Using SQLite instead of Postgres
+
+Comment out the `db` service, set `DB_CONNECTION=sqlite` in the `environment:` blocks, and mount a
+volume at `/var/www/html/database` so the database file survives rebuilds:
+
+```yaml
+app:
+  environment:
+    DB_CONNECTION: sqlite
+  volumes:
+    - otacenter-storage:/var/www/html/storage
+    - otacenter-database:/var/www/html/database
+```
+
+## Using an existing database
+
+Drop the `db` service, remove the `app` service's `depends_on`, and point `DB_HOST`, `DB_PORT`,
+`DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD` in `.env.docker` at your server.
+
+## Behind a reverse proxy or TLS
+
+The container speaks plain HTTP on port 80 and expects TLS to be terminated upstream (Caddy, nginx,
+Traefik, a cloud load balancer). Set `APP_URL` to the external `https://` URL.
+
+<Callout type="warning" title="Proxies are not trusted by default">
+If TLS terminates elsewhere, add `$middleware->trustProxies(...)` in `bootstrap/app.php` so rate
+limiting and Sanctum see real client IPs, and make sure your proxy forwards `X-Forwarded-*`.
+</Callout>
+
+## Updating
+
+```bash
+git pull
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker exec app php artisan migrate --force
+```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Edits to `.env.docker` are ignored | Add `--env-file .env.docker`, or export `COMPOSE_ENV_FILES=.env.docker`. |
+| `port is already allocated` | Change `APP_PORT` in `.env.docker`, or pass `APP_PORT=8080 docker compose up -d`. |
+| The `app` container exits during boot | A failing migration is retried 30 times, then the container exits. Read `docker compose logs app`. |
+| `No application encryption key` | Set `APP_KEY` in `.env.docker`, or let the entrypoint generate one, then clear caches. |
+| LDAP server on the Docker host is unreachable | Use `host.docker.internal` as `LDAP_HOST`; on Linux also add `extra_hosts: ["host.docker.internal:host-gateway"]`. |
+| Workers crash-loop on a new database | They wait for `app` to finish migrating. Check `docker compose logs queue`. |
+| Uploads fail with `413` | Raise `client_max_body_size` in `docker/nginx/default.conf` and the `upload*` values in `docker/php.ini`, then rebuild. |
+
+For a non-containerised deployment — build, storage, queue, scheduler and a reverse proxy — see
+**[Deployment](/guides/deployment)**.

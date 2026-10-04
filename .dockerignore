@@ -16,6 +16,7 @@ bootstrap/cache/*.php
 .env
 .env.*
 !.env.example
+!.env.docker.example
 OTACenter.rar
 .agents
 _ide_helper.php

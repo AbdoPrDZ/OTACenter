@@ -6,6 +6,12 @@ order: 2
 
 # Installation
 
+<Callout type="info" title="Running in containers?">
+Skip this page and use `cp .env.docker.example .env.docker && docker compose --env-file .env.docker up -d --build`.
+The image installs dependencies, builds the frontend, runs migrations and starts the queue worker and
+scheduler for you — see **[Docker](/guides/docker)**.
+</Callout>
+
 ## The one-command path
 
 <Steps>
