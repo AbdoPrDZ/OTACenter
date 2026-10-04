@@ -46,7 +46,7 @@ COPY --from=assets /app/public/build ./public/build
 
 RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
     && rm -f bootstrap/cache/*.php \
-    && chown -R www-data:www-data storage bootstrap/cache \
+    && chown -R www-data:www-data storage/framework storage/logs bootstrap/cache \
     && php artisan package:discover --ansi
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh

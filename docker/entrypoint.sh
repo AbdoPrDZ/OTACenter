@@ -13,9 +13,10 @@ if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
     php artisan key:generate --force --no-interaction || true
 fi
 
-# Writable runtime directories.
+# Writable runtime directories. storage/app/public holds uploaded artifacts and
+# is only a named volume in the containers, so create it when it is missing.
 mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache \
-         storage/logs bootstrap/cache
+         storage/logs storage/app/public bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
 # Public symlink so uploaded artifacts are reachable at /files/{name}.
