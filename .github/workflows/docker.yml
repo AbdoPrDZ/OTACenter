@@ -1,0 +1,71 @@
+name: Docker
+
+# Publishes the container image to GitHub Container Registry.
+#   - push a tag (v1.2.3)  -> builds and publishes 1.2.3, 1.2 and latest
+#   - manual dispatch      -> republishes an existing tag (see the `tag` input)
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish, e.g. v1.0.0 (empty = current ref)"
+        required: false
+        type: string
+
+# `packages: write` lets the automatic GITHUB_TOKEN push to ghcr.io.
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  # Kept lowercase and literal: ghcr.io requires a lowercase path, while
+  # github.repository would be "AbdoPrDZ/OTACenter".
+  IMAGE_NAME: otacenter
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          # metadata-action reads tags from the git history for semver patterns.
+          fetch-depth: 0
+
+      - name: Log in to ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Registry tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.tag || github.ref_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag || github.ref_name }}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ inputs.tag != '' || startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Provenance attestations need id-token:write; keep permissions minimal.
+          provenance: false
