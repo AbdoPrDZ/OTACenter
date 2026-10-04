@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-04
 
 ### Added
 
@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Docker** — a multi-stage `Dockerfile` (Vite build, then `php:8.4-fpm` with nginx + php-fpm under
   supervisor) and a `docker-compose.yml` stack (app, Postgres, queue worker, scheduler). The entrypoint
   runs migrations and caches config on first boot; uploads and the database persist in named volumes.
+  - **`.env.docker.example`** — a dedicated template for the stack (host port, application keys, database
+    credentials, LDAP, files, optional mail), gitignored like `.env`.
+  - **Docker guide** — a full walkthrough in the README (nav-linked `#docker`) and in the docs site at
+    `/docs/guides/docker`: image stages, services, boot sequence, configuration precedence, volumes,
+    everyday commands, SQLite, external databases, reverse proxy / TLS, updates and troubleshooting.
 - **Brand identity** — custom OTACenter logo mark (broadcast "push" arrow framed by signal brackets on
   an indigo→violet tile) as `resources/js/components/Logo.tsx`, plus `public/favicon.svg` and a `<link
   rel="icon">` in the Blade layout.
@@ -41,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The compose stack now reads `.env.docker`, not `.env`**, keeping container configuration separate
+  from a local development env file. Copy `.env.docker.example` and start it with
+  `docker compose --env-file .env.docker up -d --build` (or export `COMPOSE_ENV_FILES=.env.docker`
+  once) so Compose interpolates `${APP_PORT}` and the database credentials from the same file the
+  containers read.
 - **Frontend rebuilt** on plain Tailwind CSS v4 + React. The dashboard, tabs, and auth SPA now use raw
   Tailwind utilities and the primitives above.
 - Tables keep the previous rows visible (dimmed, with a progress bar) while refetching, instead of
@@ -88,5 +98,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
-[Unreleased]: https://github.com/AbdoPrDZ/OTACenter/compare/v0.1.0...HEAD
+[1.0.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/AbdoPrDZ/OTACenter/releases/tag/v0.1.0
