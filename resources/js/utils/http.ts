@@ -1,6 +1,9 @@
 import { RequestProps, Response } from "@/types/http";
 import { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
+/** Request logging only runs in development (or when VITE_APP_DEBUG=true). */
+const DEBUG = import.meta.env.DEV || import.meta.env.VITE_APP_DEBUG === "true";
+
 function logTimestamp(): string {
   const now = new Date();
   const pad = (value: number, size = 2) => String(value).padStart(size, "0");
@@ -102,12 +105,18 @@ export default class Request {
 
     try {
       const response = await window.axios.request(props);
-      const elapsedMs = Math.round(performance.now() - startedAt);
-      console.log(`[${logTimestamp()}] ${response.status} ${label} (${elapsedMs}ms)`);
+
+      if (DEBUG) {
+        const elapsedMs = Math.round(performance.now() - startedAt);
+        console.log(`[${logTimestamp()}] ${response.status} ${label} (${elapsedMs}ms)`);
+      }
+
       return await encodeRequestResponse(response, dataField, dataEncoding);
     } catch (error) {
-      const elapsedMs = Math.round(performance.now() - startedAt);
-      console.error(`[${logTimestamp()}] ERROR    ${label} (${elapsedMs}ms)`, error);
+      if (DEBUG) {
+        const elapsedMs = Math.round(performance.now() - startedAt);
+        console.error(`[${logTimestamp()}] ERROR    ${label} (${elapsedMs}ms)`, error);
+      }
 
       if (error instanceof AxiosError) {
         return {

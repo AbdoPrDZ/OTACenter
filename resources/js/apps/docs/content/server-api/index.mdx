@@ -1,0 +1,30 @@
+---
+title: Server API
+description: The admin JSON API and the device OTA API.
+order: 1
+---
+
+# Server API
+
+OTACenter exposes two JSON surfaces plus one file route.
+
+| Prefix | Auth | Purpose |
+|--------|------|---------|
+| `/api/*` | Sanctum SPA session or bearer token | Admin API |
+| `/ota-client/v1/*` | Sanctum + `DeviceMiddleware` | Device-facing OTA API |
+| `/files/{name}` | none | Streams a stored artifact |
+
+## Pages in this section
+
+- **[Conventions](/server-api/conventions)** — envelope, pagination, errors.
+- **[Authentication](/server-api/authentication)** — login, me, profile, register.
+- **[Apps](/server-api/apps)** — CRUD plus nested resources.
+- **[Versions](/server-api/versions)** — releases of an app.
+- **[Bundles](/server-api/bundles)** — ZIP builds of a version.
+- **[Domains](/server-api/domains)** — organizational groups and bindings.
+- **[Users](/server-api/users)** — directory users, invites, bindings.
+- **[Roles & permissions](/server-api/roles-and-permissions)** — the RBAC matrix.
+- **[Statistics](/server-api/statistics)** — aggregates (admin only).
+- **[OTA client API](/server-api/ota-client-api)** — the device contract.
+
+Next: [Conventions](/server-api/conventions).

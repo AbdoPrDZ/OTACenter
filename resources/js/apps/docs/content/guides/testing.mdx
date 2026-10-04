@@ -1,0 +1,54 @@
+---
+title: Testing
+description: Backend (PHPUnit) and frontend (Vitest) test suites.
+order: 2
+---
+
+# Testing
+
+## Backend — PHPUnit
+
+```bash
+composer test
+# or
+php artisan test
+```
+
+Tests live in `tests/Feature` and cover:
+
+- authentication and the invite flow,
+- RBAC matrices (role × endpoint),
+- CRUD for apps, domains, versions, bundles and users.
+
+## Frontend — Vitest + Testing Library
+
+```bash
+npm test           # vitest run
+npm run test:watch # watch mode
+```
+
+`vitest.config.js` runs in `jsdom` with `@` aliased to `resources/js`. Tests sit next to the code they
+cover. Current coverage:
+
+| Test | Covers |
+|------|--------|
+| `components/ModelDataTable.test.tsx` | the 800 ms search debounce |
+| `apps/dashboard/router.test.ts` | route resolution and params |
+| `apps/dashboard/tabs/addRoutes.test.tsx` | static `…/add` routes render create mode |
+| `utils/permissions.test.ts` | RBAC helpers and super-admin edges |
+
+## Conventions
+
+- Mock the **model static** for components that call the API (as `ModelDataTable.test.tsx` does), not the
+  HTTP layer.
+- `useToast()` returns a safe no-op outside a `ToastProvider`, so toasting components render in isolation.
+- Keep tests deterministic — pass explicit `pageSize`, avoid real timers.
+
+## What runs before a PR
+
+```bash
+npx tsc --noEmit
+npm test
+npm run build
+composer test
+```

@@ -1,0 +1,34 @@
+---
+title: Getting started
+description: The end-to-end path from a fresh clone to a device receiving an update.
+order: 1
+---
+
+# Getting started
+
+This section takes you from nothing to a device receiving an over-the-air update. Read the pages in
+order.
+
+<Flow>
+  <FlowStep title="1 · Requirements" subtitle="/getting-started/requirements" />
+  <FlowStep title="2 · Install" subtitle="/getting-started/installation" />
+  <FlowStep title="3 · Configure" subtitle="/getting-started/configuration" tone="warning" />
+  <FlowStep title="4 · First release" subtitle="/getting-started/first-release" tone="success" />
+</Flow>
+
+## What you will end up with
+
+- OTACenter running locally with a seeded super-admin account.
+- An **app** with a **version** and an uploaded **bundle**.
+- A **domain** bound to the app and to a user.
+- A React Native app wired to the SDK that pulls the bundle over the air.
+
+## Before you start
+
+Make sure your machine meets the [requirements](/getting-started/requirements). You will need a terminal,
+PHP, Composer and Node.js; an LDAP server is optional for a first run because a local super-admin account
+works without one.
+
+<Callout type="tip" title="Skip ahead">
+Only integrating the mobile client? Jump straight to the [Client SDK](/client-sdk).
+</Callout>

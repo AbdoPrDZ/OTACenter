@@ -1,0 +1,52 @@
+---
+title: Structure
+description: The conventions every SPA follows.
+order: 1
+---
+
+# Structure
+
+Each SPA follows the same shape, so any one of them is easy to navigate.
+
+```text
+apps/<name>/
+  index.tsx        # entry: imports the CSS, mounts providers + the router
+  router.tsx       # routes (only when the app has more than one page)
+  components/      # app-local components
+  tabs/            # dashboard only: one file per route
+  content/         # docs only: MDX pages
+```
+
+Anything reused across apps lives in the shared `resources/js/components/`.
+
+## Shared directories
+
+```text
+components/
+  ui/              # hand-built primitives (Button, Card, Modal, Dropdown, SelectMenu, …)
+  site/            # public SiteHeader / SiteFooter (home + docs)
+  ModelDataTable.tsx · PageHeader.tsx · Breadcrumbs.tsx · Logo.tsx · navigation.ts
+models/            # typed frontend models (createModel factory)
+types/             # field · http · model · router · docs
+utils/             # bootstrap · http (Request) · model (createModel) · fields · permissions · router
+lib/utils.ts       # cn()
+```
+
+## Conventions
+
+- **`index.tsx` is the only entry** — it imports `../../../css/app.css` and wraps the app in the providers
+  it needs (`ThemeProvider`, `ToastProvider`, `RouterProvider`).
+- **Components are colocated** under the app's `components/`.
+- **Semantic tokens only** — use `bg-card`, `text-muted-foreground`, `bg-primary`, `border-border`, … so
+  theming is automatic.
+- **No cross-app imports of app-local files.** If two apps need it, move it to `components/`.
+
+## Providers
+
+| Provider | Where | Purpose |
+|----------|-------|---------|
+| `ThemeProvider` | every entry | light/dark/system, persisted, applied before paint |
+| `ToastProvider` | dashboard, auth | toast notifications |
+| `RouterProvider` | docs, dashboard | react-router |
+
+Next: [Design system](/frontend/design-system).

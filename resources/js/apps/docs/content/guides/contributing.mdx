@@ -1,0 +1,38 @@
+---
+title: Contributing
+description: Conventions for the backend, the SPAs and the docs.
+order: 3
+---
+
+# Contributing
+
+## Backend
+
+- Follow PSR-12 and standard Laravel conventions; format with `laravel/pint`.
+- **Validation lives on the model** via `validationRules(ValidationType $type, ?Model $record)`.
+- **Every list endpoint is one call** to `Model::tablingCollect($request, ...)`.
+- Add a structured migration for every schema change.
+- Never return raw SQL or debug payloads from list endpoints.
+
+## Frontend
+
+- **Structure each SPA the same way:** `index.tsx` (entry), an optional `router.tsx`, and a `components/`
+  folder. Shared pieces live in `resources/js/components/`.
+- **Build UI from the hand-written primitives** in `components/ui/`. No shadcn, no Base UI, no Radix.
+- **Use semantic tokens** so light/dark works automatically.
+- **Tailwind v4 is CSS-first** — no config file; tokens live in the `@theme` blocks of `app.css`. Never
+  use the v3 `@tailwind base/components/utilities` directives.
+- **Always send an explicit `pageSize`** (≥ 5) on list/count fetches.
+
+## Documentation
+
+- Docs are MDX under `resources/js/apps/docs/content/`. The sidebar tree is generated from the folder
+  structure, so **adding a folder adds a section**; each section's `index.mdx` is its landing page.
+- Frontmatter supports `title`, `description` and `order` (sorts among siblings).
+- Use the built-in `<Callout>`, `<Steps>`/`<Step>` and `<Flow>`/`<FlowStep>` components.
+
+## Commits & PRs
+
+- Keep subjects imperative and scoped; explain the “why” in the body.
+- Add a `CHANGELOG.md` entry (Keep a Changelog) in the same change.
+- Run the [pre-PR checks](/guides/testing#what-runs-before-a-pr) before opening a PR.

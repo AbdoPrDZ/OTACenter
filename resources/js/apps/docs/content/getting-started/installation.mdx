@@ -1,0 +1,78 @@
+---
+title: Installation
+description: Install PHP + Node dependencies and prepare the database.
+order: 2
+---
+
+# Installation
+
+## The one-command path
+
+<Steps>
+<Step title="Clone and run the setup script">
+
+```bash
+git clone <your-fork-or-repo> otacenter
+cd otacenter
+composer run setup
+```
+
+`composer run setup` installs PHP and npm dependencies, creates `.env` from `.env.example`, generates the
+application key, runs migrations, and builds the frontend.
+
+</Step>
+<Step title="Check the storage link">
+
+Uploaded artifacts are served from the `public` disk. If `storage/app/public` is not linked:
+
+```bash
+php artisan storage:link
+```
+
+</Step>
+<Step title="Run migrations (idempotent)">
+
+`setup` already migrated, but you can re-run any time:
+
+```bash
+php artisan migrate
+```
+
+</Step>
+</Steps>
+
+## The manual path
+
+If you prefer to run each step, these are exactly what `setup` does:
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run build
+```
+
+## Running the app
+
+```bash
+composer run dev
+```
+
+This starts, concurrently:
+
+- `php artisan serve` — the web server
+- the queue listener
+- `pail` — live log tailing
+- the Vite dev server — hot reload for the SPAs
+
+Open `http://localhost:8000/`. You will see the public home; the dashboard is at `/dashboard` and the
+docs at `/docs`.
+
+<Callout type="info" title="What built where">
+`npm run build` compiles the four SPAs (`home`, `docs`, `auth`, `dashboard`) plus the single Tailwind
+stylesheet into `public/build`, which Laravel serves.
+</Callout>
+
+Next: [Configuration](/getting-started/configuration).

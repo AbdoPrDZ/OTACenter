@@ -1,0 +1,80 @@
+---
+title: CLI
+description: Build the embedded bundle, the OTA archive and the release APK.
+order: 5
+---
+
+# CLI
+
+The `ota-client` CLI runs against your **host** React Native project. Invoke it with `npx ota-client`.
+
+```bash
+npx ota-client doctor     # check the host is wired up correctly
+npx ota-client android    # build the bundle embedded in the APK
+npx ota-client release    # build the OTA archive to upload to the server
+npx ota-client apk        # build the release APK
+```
+
+## `doctor`
+
+```bash
+npx ota-client doctor [-r <dir>]
+```
+
+Verifies the host project is ready to receive OTA updates.
+
+## `android`
+
+Bundles the JS into `android/app/src/main/{assets,res}` for the base APK.
+
+```bash
+npx ota-client android \
+  [-r <project-root>] [-e <entry-file>] [-b <bundle-name>] \
+  [--assets-dest <dir>] [--res-dest <dir>] [--dev <bool>]
+```
+
+## `release`
+
+Builds the OTA archive (bundle + `manifest.json`) into `release/`.
+
+```bash
+npx ota-client release \
+  [-r <project-root>] [-e <entry-file>] [-b <bundle-name>] \
+  [-o <out-dir>] [--name <archive-base-name>] [--skip-build] [--force]
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-o, --out` | Output directory (defaults to `RELEASE_DIR`). |
+| `--name` | Archive base name; default `{name}-{runtimeVersion}-{version}`. |
+| `--skip-build` | Reuse the archive already in `--out`. |
+| `--force` | Do not fail when `runtimeVersion` and the APK `versionName` disagree. |
+
+## `apk`
+
+Runs `gradlew assembleRelease` and copies the APK into `release/`.
+
+```bash
+npx ota-client apk [-r <project-root>] [-o <out-dir>] [--gradle-args <...>] [--skip-bundle]
+```
+
+## Typical flow
+
+```bash
+# 1. First release / native changes: build + embed, then the APK
+npx ota-client android
+npx ota-client apk
+
+# 2. JS-only change: build the OTA archive and upload it to OTACenter
+npx ota-client release -o release
+#    → release/<name>-<runtimeVersion>-<version>.zip
+```
+
+Upload the ZIP as a **Bundle** on the version in OTACenter.
+
+<Callout type="warning" title="runtimeVersion must match">
+The archive's `runtimeVersion` has to equal the host APK's `versionName`. Bumping native code means a new
+APK; a JS-only change keeps the same `runtimeVersion` and can go over the air.
+</Callout>
+
+Next: [Configuration](/client-sdk/configuration).

@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */
@@ -20,13 +19,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": "resources/js",
+    /* Path alias @/ -> resources/js/ (resolved relative to this file; no baseUrl) */
     "paths": {
-      "@/*": ["./*"],
-      // "@/components/*": ["./components/*"]
+      "@/*": ["./resources/js/*"]
     }
   },
   "include": ["resources/js"],
-  "references": [{ "path": "./tsconfig.node.json" }],
-  "lib": ["WebWorker"]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

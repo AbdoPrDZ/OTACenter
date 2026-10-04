@@ -1,0 +1,49 @@
+---
+title: Bundles
+description: ZIP builds of a version, nested under /version/{version}/bundle.
+order: 5
+---
+
+# Bundles
+
+A bundle is the ZIP artifact (JS bundle + `manifest.json`) that devices download.
+
+## Endpoints
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/app/{app}/version/{version}/bundle` | `bundle.view` |
+| `POST` | `/api/app/{app}/version/{version}/bundle` | `bundle.create` |
+| `GET` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.view` |
+| `PUT` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.update` |
+| `DELETE` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.delete` |
+
+## Fields
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | bundle version string |
+| `file_id` | string | the ZIP `File` |
+| `url` | string? | download URL (privileged roles) |
+
+```jsonc
+// POST …/bundle  (multipart)
+{ "name": "1.4.0", "file": <zip> }
+```
+
+<Callout type="warning" title="Activation is not wired yet">
+Making a bundle the version's active one means setting `versions.latest_id`. The dashboard shows which
+bundle is active, but the HTTP route to change it does not exist yet — do it as a backend/DB step for now.
+The client SDK's automatic rollback is unaffected.
+</Callout>
+
+## Producing a bundle
+
+```bash
+npx ota-client release -o release
+# → release/<name>-<runtimeVersion>-<version>.zip
+```
+
+See [Client SDK → CLI](/client-sdk/cli).
+
+Next: [Domains](/server-api/domains).

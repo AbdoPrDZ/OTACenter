@@ -1,0 +1,42 @@
+---
+title: Versions
+description: Releases of an app, nested under /app/{app}/version.
+order: 4
+---
+
+# Versions
+
+Versions are nested under an app. The parent is verified by the `rec.parent` middleware.
+
+## Endpoints
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/app/{app}/version` | `version.view` |
+| `POST` | `/api/app/{app}/version` | `version.create` |
+| `GET` | `/api/app/{app}/version/{version}` | `version.view` |
+| `PUT` | `/api/app/{app}/version/{version}` | `version.update` |
+| `DELETE` | `/api/app/{app}/version/{version}` | `version.delete` |
+
+## Fields
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | version string, e.g. `1.4.0` |
+| `changelog` | text | release notes |
+| `api_key` | string | the client sends it as `API-KEY` |
+| `status` | enum | `draft` · `review` · `published` · `cancelled` |
+| `file` | file | the APK installer (create/update) |
+| `latest_id` | int? | the version's active bundle |
+
+```jsonc
+// POST /api/app/1/version  (multipart)
+{ "name": "1.4.0", "api_key": "…", "changelog": "…", "file": <apk> }
+```
+
+<Callout type="warning" title="api_key is sensitive">
+`api_key` is returned only to privileged roles (`super-admin`/`admin`/`developer`). It authenticates the
+device's update check, so treat it as a secret.
+</Callout>
+
+Next: [Bundles](/server-api/bundles).

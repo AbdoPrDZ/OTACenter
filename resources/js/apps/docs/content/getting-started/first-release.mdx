@@ -1,0 +1,100 @@
+---
+title: Your first release
+description: Publish an app, version and bundle, then scope it with a domain.
+order: 4
+---
+
+# Your first release
+
+By the end of this page you will have a live app with an uploaded bundle, scoped to a domain, ready for
+a device to pick up.
+
+## Sign in
+
+1. Open `http://localhost:8000/dashboard`.
+2. Sign in with the `APP_SUPER_ADMIN_LOGIN` / `APP_SUPER_ADMIN_PASSWORD` you configured.
+
+## Create the app
+
+<Steps>
+<Step title="Open Apps → Add app">
+
+Fill in **Name**, **Package name** (e.g. `com.example.myapp`), **Summary** and **Description**, and upload
+a **logo**.
+
+</Step>
+<Step title="Save">
+
+You land on the app's detail page. It has **Details** and **Statistics** tabs.
+
+</Step>
+</Steps>
+
+## Add a version
+
+<Steps>
+<Step title="Open the app → Add version">
+
+Give the version a **Name** (e.g. `1.0.0`) and an **API key** (any strong string — the client sends it as
+`API-KEY`). Write a **changelog** and choose the **APK** file.
+
+</Step>
+<Step title="Save">
+
+The version page lists its **Bundles** and shows a Status badge.
+
+</Step>
+</Steps>
+
+## Upload a bundle
+
+<Steps>
+<Step title="Build the OTA archive">
+
+In your React Native project:
+
+```bash
+npx ota-client release -o release
+```
+
+This produces `release/<name>-<runtimeVersion>-<version>.zip` (bundle + `manifest.json`).
+
+</Step>
+<Step title="Open the version → Add bundle">
+
+Give the bundle a **name** (usually the same version string) and upload the ZIP.
+
+</Step>
+</Steps>
+
+<Callout type="warning" title="Bundle activation">
+The dashboard tracks a version's active bundle via `versions.latest_id`, but the server route that flips
+it is not wired yet — so activation is currently a backend/DB step. Uploading, listing and downloading
+bundles all work from the UI.
+</Callout>
+
+## Scope access with a domain
+
+<Steps>
+<Step title="Create a domain">
+
+Go to **Domains → Add domain**, give it a name and description.
+
+</Step>
+<Step title="Bind the app">
+
+On the domain (or the app's **Details** tab), bind the app to the domain.
+
+</Step>
+<Step title="Bind a user">
+
+Open a **User**, and on the **Domains** tab bind the same domain. A user sees the app when one of their
+domains is bound to it.
+
+</Step>
+</Steps>
+
+## What's next
+
+Wire the mobile app to the server: continue to the [Client SDK](/client-sdk), starting with
+[Install](/client-sdk/install).

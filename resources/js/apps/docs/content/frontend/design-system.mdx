@@ -1,0 +1,52 @@
+---
+title: Design system
+description: Tokens, dark-first theming and the primitive set.
+order: 2
+---
+
+# Design system
+
+## One stylesheet, CSS-first
+
+`resources/css/app.css` is the **only** stylesheet. Tailwind v4 is configured in CSS — there is no
+`tailwind.config.js` and no `postcss.config.js`.
+
+- `@import "tailwindcss"` (never the v3 `@tailwind base/components/utilities` directives).
+- `@custom-variant dark (&:is(.dark *))`.
+- `@theme` for fonts, radii, shadows and animations.
+- `@theme inline` maps semantic colour tokens; `:root` (light) and `.dark` (dark) hold the palettes.
+
+## Semantic tokens
+
+| Token | Utility examples |
+|-------|------------------|
+| background / foreground | `bg-background`, `text-foreground` |
+| card / popover | `bg-card`, `bg-popover` |
+| muted | `bg-muted`, `text-muted-foreground` |
+| primary | `bg-primary`, `text-primary`, `bg-primary/12` |
+| success / warning / info / destructive | `text-success`, `bg-destructive/10` |
+| border / input / ring | `border-border`, `border-input`, `ring-ring` |
+
+<Callout type="tip" title="Never hardcode colours">
+Use the tokens. A hardcoded hex will not adapt to the light/dark toggle and will drift from the theme.
+</Callout>
+
+## Dark-first
+
+The Blade layout adds `.dark` before first paint (from `localStorage["otacenter-theme"]`, default dark), so
+there is no flash. `ThemeProvider` owns the toggle; `ThemeToggle` is the light/dark/system control.
+
+## Primitives
+
+`components/ui/` holds the hand-built set: `Button`, `Card`, form fields (`Input`, `Textarea`, `Select`,
+`Field`), `Checkbox`/`Switch`, `Badge`, `Alert`, `Modal`/`ConfirmDialog`, `Drawer`, `Dropdown`, `Tabs`,
+`Tooltip`, `Separator`, `Skeleton`/`Spinner`/`Avatar`/`EmptyState`, the searchable `SelectMenu`/
+`MultiSelect`, `Toast`, and `theme`. Variants use `cva`; classes merge with `cn()`.
+
+## Motion
+
+Animations are plain CSS keyframes registered in `@theme` (`animate-fade-in`, `animate-scale-in`,
+`animate-slide-up`, `animate-progress`, plus the docs `flow-*` tracks). `prefers-reduced-motion` is
+respected by the flow diagrams.
+
+Next: [Data layer](/frontend/data-layer).

@@ -1,0 +1,56 @@
+---
+title: Core concepts
+description: The entities OTACenter manages and how they relate.
+order: 1
+---
+
+# Core concepts
+
+OTACenter is built around a small set of entities. Understanding them makes the rest of the docs
+obvious.
+
+## The entities
+
+| Entity | What it is | Key fields |
+|--------|-----------|-----------|
+| **App** | A published application. | `name`, `package_name`, `summary`, `description`, `logo_url`, `latest_id` |
+| **Version** | A release of an app. | `name`, `changelog`, `status`, `api_key`, `file_id` (APK), `latest_id` (active bundle) |
+| **Bundle** | A ZIP build attached to a version (bundle + `manifest.json`). | `name`, `file_id`, `url` |
+| **Domain** | An organizational group scoping access. | `name`, `description`, `image_url` |
+| **User** | An LDAP directory user. | `name`, `login`, `image_url`, bound `domains`, `roles`, `permissions` |
+| **File** | A stored artifact (logo, image, APK, ZIP). | `name` (**string PK**), `path` |
+| **Device** | A client that has checked in. | device fingerprint from `X-Device-Info` |
+
+## How they relate
+
+```text
+App 1───* Version 1───* Bundle
+ │            │            │
+ │            └── file_id ─┘        (File: the stored APK / ZIP)
+ │
+ └──* Domain *── User              (domains scope which users see the app)
+                      │
+                      └──* Role *── Permission
+```
+
+- An **app** has many **versions**; each version has many **bundles**.
+- A **version** has one active bundle, tracked as `versions.latest_id`.
+- An **app** has one latest version, tracked as `apps.latest_id`.
+- **Domains** are many-to-many with **apps** and with **users**; a user sees an app when one of their
+  domains is bound to it.
+- **Users** hold **roles**, and roles hold **permissions**.
+
+## Publishing vs. access
+
+Two independent decisions:
+
+1. **Publishing** — is there a newer build? This is about `versions` and `bundles` and the `latest_id`
+   pointers.
+2. **Access** — who may receive it? This is about domains, users and the LDAP directory.
+
+The device API answers both when a client checks in.
+
+<Callout type="info" title="See also">
+The full table/relation detail is in [Architecture → Models](/architecture/server/models); the HTTP
+shapes are in [Server API](/server-api).
+</Callout>

@@ -1,0 +1,82 @@
+---
+title: Adding a tab
+description: Step-by-step guide to adding a dashboard page.
+order: 4
+---
+
+# Adding a tab
+
+This walks through adding a new dashboard page from scratch.
+
+<Steps>
+<Step title="Create the tab component">
+
+Create `resources/js/apps/dashboard/tabs/ReportsTab.tsx`:
+
+```tsx
+import PageHeader from "@/components/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
+
+export default function ReportsTab() {
+  return (
+    <div className="flex flex-col gap-5">
+      <PageHeader title="Reports" description="Generated reports." />
+      <Card>
+        <CardContent className="pt-5">Coming soon.</CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+</Step>
+<Step title="Register the route">
+
+In `resources/js/apps/dashboard/router.tsx`, add a name to `static routes` and a lazy route:
+
+```tsx
+{ name: "reports", path: "/dashboard/reports", title: "Reports" },
+```
+
+```tsx
+const ReportsTab = React.lazy(() => import("@/apps/dashboard/tabs/ReportsTab"));
+// …
+<Route path={this.getPath("reports")} element={page(<ReportsTab />)} />
+```
+
+</Step>
+<Step title="Add it to the sidebar">
+
+In `resources/js/components/navigation.ts`, add a `NAV_ITEMS` entry (icon, label, `activeNames: ["reports"]`,
+`group: "general"`, and an `access` requirement if needed) and a `ROUTE_ACCESS` entry.
+
+</Step>
+<Step title="Gate the route">
+
+`Layout` enforces access centrally via `can(getRouteAccess(route.name))`, so setting `ROUTE_ACCESS` is
+enough — an unauthorized direct visit renders `<Forbidden/>`.
+
+</Step>
+<Step title="Use the data table (optional)">
+
+For a server-driven list, drop in `ModelDataTable`:
+
+```tsx
+<ModelDataTable model={Report} onRowClick={(row) => navigate(`/dashboard/reports/${row.id}`)} />
+```
+
+</Step>
+<Step title="Verify">
+
+```bash
+npx tsc --noEmit && npm test && npm run build
+```
+
+</Step>
+</Steps>
+
+<Callout type="tip" title="Follow the existing tabs">
+`AppsTab` (list), `AppTab` (create/show/edit) and `UserTab` (relations) are good templates for new pages.
+</Callout>
+
+Continue to the [Guides](/guides) for deployment and testing.

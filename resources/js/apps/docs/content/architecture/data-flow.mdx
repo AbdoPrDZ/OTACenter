@@ -1,0 +1,90 @@
+---
+title: Data flow
+description: The exact request sequence for a device update, end to end.
+order: 2
+---
+
+# Data flow
+
+This page traces one over-the-air update from the device's point of view, with the exact endpoints. It
+assumes a bundle has already been uploaded and made active.
+
+## Sequence
+
+<Steps>
+<Step title="Health check (optional)">
+
+```http
+GET /ota-client/v1/health
+```
+
+The SDK uses this as a reachability probe and resolves `false` instead of throwing when the server is
+down.
+
+</Step>
+<Step title="Update check">
+
+```http
+POST /ota-client/v1/app/info
+API-KEY: <version.api_key>
+X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
+
+{ "package": "com.example.app", "version": "1.3.0", "bundle": "1.3.0" }
+```
+
+The server resolves the app/version/bundle triple and replies with what is newer plus a short-lived
+session:
+
+```jsonc
+{
+  "appId": "…", "versionId": "…", "bundleId": "…",
+  "availableUpdates": {
+    "version": { "id": "…", "name": "1.4.0" },
+    "bundle":  { "id": "…", "name": "1.4.0" }
+  },
+  "session": "…"
+}
+```
+
+The result is cached natively so the download can reuse the `session`.
+
+</Step>
+<Step title="Download the bundle">
+
+```http
+GET /ota-client/v1/bundle/…?session=…
+```
+
+The engine streams the ZIP to a staging directory, reporting progress. The `manifest.json` inside records
+`runtimeVersion`, `checksum` and `size`.
+
+</Step>
+<Step title="Verify">
+
+The engine checks `runtimeVersion` against the host APK's `versionName`, then verifies the `checksum`
+(MD5) and `size`. A mismatch aborts the update.
+
+</Step>
+<Step title="Activate and restart">
+
+The staged bundle is marked pending, the app restarts, and `OtaBundleProvider.getJSBundleFile()` serves the
+new bundle.
+
+</Step>
+<Step title="Confirm — or roll back">
+
+If the bundle reports a successful launch (`markLaunchSucceeded`), it becomes the last known good bundle.
+If it never does, the next launch reverts to the previous bundle automatically.
+
+</Step>
+</Steps>
+
+## Who stores what
+
+| State | Stored by |
+|-------|-----------|
+| `apps.latest_id`, `versions.latest_id` | OTACenter server |
+| API base URL, API key | Client (JS config, persisted natively) |
+| Staged bundles, last-known-good pointer | Client (native engine) |
+
+Next: [Architecture → Server](/architecture/server) or [Architecture → Client](/architecture/client).

@@ -1,0 +1,45 @@
+---
+title: Routes
+description: Web, admin API and device API route maps.
+order: 3
+---
+
+# Routes
+
+## Web (SPAs + files)
+
+| Method | Path | Serves |
+|--------|------|--------|
+| `GET` | `/` | `home` SPA |
+| `GET` | `/docs{any}` | `docs` SPA |
+| `GET` | `/register`, `/auth{any}` | `auth` SPA |
+| `GET` | `/dashboard{any}` | `dashboard` SPA |
+| `GET` | `/files/{name}` | a stored artifact |
+
+## Admin API (`/api`)
+
+| Prefix | Operations |
+|--------|-----------|
+| `/api/auth` | login, register, me, profile, logout |
+| `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*`, `/{app}/version/*` |
+| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy |
+| `/api/domain` | index, store, show, update, destroy |
+| `/api/user` | index, show, destroy, invite, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*` |
+| `/api/role` | index, show, `/{role}/permission/*`, `/{role}/user/*` |
+| `/api/permission` | index, show, `/{permission}/role`, `/{permission}/user` |
+| `/api/statistics` | general, byUser, byRole, byDomain, byApp, byVersion |
+
+## Device API (`/ota-client/v1`)
+
+| Method | Path |
+|--------|------|
+| `GET` | `/ota-client/v1/health` |
+| `POST` | `/ota-client/v1/app/info` |
+| `GET` | `/ota-client/v1/bundle/…` (session-gated) |
+
+<Callout type="info" title="Named routes">
+SPA paths come from `DashboardRouter.routes` (`resources/js/apps/dashboard/router.tsx`). The `/docs`
+tree is client-side; Laravel serves the shell for every `/docs/*` path.
+</Callout>
+
+Next: [FAQ](/reference/faq).

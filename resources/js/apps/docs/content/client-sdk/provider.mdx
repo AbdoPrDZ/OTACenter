@@ -1,0 +1,59 @@
+---
+title: Provider
+description: Wrap your root with OTAProvider for a drop-in update flow.
+order: 2
+---
+
+# Provider
+
+`OTAProvider` is the drop-in root component. It reads native state, runs the health + update check, shows
+the update UI when something newer exists, and confirms a successful launch shortly after mount.
+
+## Basic usage
+
+```tsx
+import { OTAProvider } from "ota-client";
+
+export default function App() {
+  return (
+    <OTAProvider
+      config={{
+        apiBaseUrl: "https://updates.example.com",
+        apiVersion: "v1",
+        apiKey: "VERSION_API_KEY",
+      }}
+    >
+      <RootNavigator />
+    </OTAProvider>
+  );
+}
+```
+
+## Props
+
+| Prop | Default | Purpose |
+|------|---------|---------|
+| `config` | — | `{ apiBaseUrl, apiVersion, apiKey }` |
+| `bootFallback` | `<OTASplashScreen/>` | shown while `status === "initializing"` |
+| `unconfiguredFallback` | `<OTAConfigureScreen/>` | shown while `status === "unconfigured"` |
+| `configureScreenProps` | — | forwarded to the built-in configure screen |
+| `showUpdateOverlay` | `true` | render the blocking update UI automatically |
+| `updateOverlayProps` | — | forwarded to `OTAUpdateOverlay` |
+| `renderChildrenWhenUnsupported` | `true` | on iOS/unlinked builds, render children as-is |
+
+## What it renders per state
+
+| Status | Rendered |
+|--------|----------|
+| `initializing` | `bootFallback` (or splash) |
+| `unconfigured` | `unconfiguredFallback` (or configure screen) |
+| `checking` / `ready` | your children |
+| `update-available` / `downloading` | your children + `OTAUpdateOverlay` |
+| `failed` | your children; read `error` |
+
+<Callout type="tip" title="Minimal setup">
+For most apps, dropping in `<OTAProvider>` with a `config` is all you need — you get the splash,
+configure screen and update overlay for free.
+</Callout>
+
+Next: [Hooks](/client-sdk/hooks) to build your own UI.

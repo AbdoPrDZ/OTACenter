@@ -1,0 +1,74 @@
+---
+title: Hooks
+description: Read update state and drive the engine from your own components.
+order: 3
+---
+
+# Hooks
+
+Use the hooks when you want your own UI instead of the built-in screens.
+
+## `useOTA()`
+
+Returns the full context: status, native snapshot, check result, progress, error, and the actions.
+
+```tsx
+import { useOTA } from "ota-client";
+
+function UpdateBar() {
+  const { status, check, progress, downloadAndInstall, error } = useOTA();
+
+  if (status === "update-available") {
+    return <Button title="Update" onPress={() => downloadAndInstall()} />;
+  }
+  if (status === "downloading") {
+    return <Text>{progress?.percent ?? 0}%</Text>;
+  }
+  if (status === "failed") {
+    return <Text>{error?.message}</Text>;
+  }
+  return null;
+}
+```
+
+### Value
+
+| Field | Type |
+|-------|------|
+| `status` | `OtaStatus` |
+| `native` | `OtaState \| null` |
+| `check` | `OtaCheckUpdateResult \| null` |
+| `progress` | `OtaDownloadProgress \| null` |
+| `error` | `Error \| null` |
+| `supported` | boolean |
+| `dismissed` | boolean |
+
+### Actions
+
+`configure`, `checkForUpdates`, `downloadAndInstall`, `install`, `dismissUpdate`, `revertToEmbedded`,
+`restart`, `openAppUpdate`, `confirmLaunch`, `retry`.
+
+## `useOTABundleInfo()`
+
+The active bundle, or `null` before the first state read.
+
+```tsx
+const bundle = useOTABundleInfo();
+// bundle?.source === "downloaded" | "embedded"
+```
+
+## `useOtaNativeState()`
+
+The whole native snapshot (app info, config, device, runtime compatibility).
+
+## Confirm the launch
+
+`OTAProvider` calls `confirmLaunch()` automatically. If you render your own UI, call it yourself once your
+own smoke test passes:
+
+```tsx
+const { confirmLaunch } = useOTA();
+useEffect(() => { confirmLaunch(); }, [confirmLaunch]);
+```
+
+Next: [Imperative API](/client-sdk/imperative).

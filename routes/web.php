@@ -12,7 +12,11 @@ use App\Http\Controllers\VersionController;
 use App\Models\File;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('', 'dashboard', 301);
+Route::view('/', 'home')->name('home');
+
+Route::view('docs{any}', 'docs')
+  ->where('any', '^(?!api|dashboard|auth).*')
+  ->name('docs');
 
 Route::view('register', 'auth')
   ->name('register')

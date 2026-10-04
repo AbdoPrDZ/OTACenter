@@ -50,10 +50,12 @@ See `backend/MODELS.md` for tables/relations/validation and `backend/ROUTES.md` 
 - `routes/` - API (`api.php`), web (`web.php`), channels, console routing definitions
 - `database/` - Migrations, seeders, and factories
 - `resources/js/` - React frontend source code
+  - `apps/home/` - Public landing SPA at `/` (`index.tsx`, `components/HomePage.tsx`)
+  - `apps/docs/` - MDX documentation SPA at `/docs` (`index.tsx`, `router.tsx`, `manifest.ts`, `components/`, `content/*.mdx`)
   - `apps/dashboard/` - Main dashboard SPA & tabs (`HomeTab`, `AppsTab`/`AppTab`, `DomainsTab`/`DomainTab`, `UsersTab`/`UserTab`, `RolesTab`/`RoleTab`, `PermissionsTab`/`PermissionTab`, `VersionTab`, `BundleTab`, `StatisticsTab`, `SettingsTab`)
     - `components/` - Dashboard shell: `Layout`, `Sidebar`, `Topbar`, `UserMenu`, `CommandPalette`
   - `apps/auth/` - Authentication UI (`index.tsx`, `register.tsx`, `AuthShell.tsx`)
-  - `components/` - Shared React components + hand-built `ui/` primitives (Button, Input, Modal, Dropdown, `SearchableSelect`, …), `ModelDataTable`, `PageHeader`, `navigation.ts`
+  - `components/` - Shared React components + hand-built `ui/` primitives (Button, Input, Modal, Dropdown, `SearchableSelect`, …), `ModelDataTable`, `PageHeader`, `Logo`, `site/`, `navigation.ts`
   - `models/` - Frontend data model definitions
   - `utils/` - Frontend HTTP, router, and field utilities
 - `resources/css/app.css` - **The single Tailwind v4 stylesheet** (theme tokens, oklch palettes, `dark`
@@ -72,6 +74,10 @@ palette, toasts, and a hand-built primitive set. Architecture is in `frontend/CO
 system in `frontend/DESIGN.md`, routing in `frontend/NAVIGATION.md`, data layer in `frontend/DATA.md`.
 
 The previous (shadcn/Base UI) frontend has been removed; it remains available in git history.
+
+The app also has a **public site**: a landing page at `/` (`apps/home`) and an **MDX documentation site**
+at `/docs` (`apps/docs`), both Vite/React SPAs sharing the dashboard theme, built with `@mdx-js/rollup` +
+Shiki. Routes are served by `home`/`docs` Blade shells.
 
 Quality status:
 - `npm run build`, `npx tsc --noEmit`, and `npm test` (31 tests) all pass.

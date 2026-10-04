@@ -1,0 +1,59 @@
+---
+title: Imperative API
+description: Drive the update engine directly with OtaClient.
+order: 4
+---
+
+# Imperative API
+
+Everything the hooks do is also a plain async function on `OtaClient`. Use it outside React — a bridge, a
+background task, a CLI.
+
+```tsx
+import OtaClient from "ota-client";
+
+if (OtaClient.isSupported()) {
+  await OtaClient.configure({ apiBaseUrl: "https://updates.example.com", apiVersion: "v1", apiKey: "KEY" });
+  const check = await OtaClient.checkUpdate();
+  if (check.haveBundleUpdate) await OtaClient.downloadAndInstall();
+}
+```
+
+Every method rejects with a real `Error`; only `isSupported()` is synchronous.
+
+| Method | Does |
+|--------|------|
+| `isSupported()` | `true` on Android with the native module linked. |
+| `configure(config)` | Persists server coordinates; unset keys keep their value. |
+| `getConfig()` | Current coordinates. |
+| `getState()` | Full snapshot: app, bundle, runtime compatibility, device. |
+| `getDeviceInfo()` | The `X-Device-Info` fingerprint. |
+| `healthCheck()` | `GET …/health`; resolves `false` instead of throwing. |
+| `checkUpdate()` | `POST …/app/info`; caches the session for the download. |
+| `downloadBundle(options?)` | Downloads, verifies and stages the newest bundle. |
+| `installBundle(options?)` | Activates a staged bundle and restarts (skip with `{ restart: false }`). |
+| `downloadAndInstall(options?)` | Both steps in one call. |
+| `markLaunchSucceeded()` | Confirms the running bundle booted. |
+| `revertToEmbeddedBundle()` | Returns to the APK copy. |
+| `cleanupOldBundles(keep?)` | Deletes stale staging dirs, keeping the newest `keep` (default 2). |
+| `getBundleInfo()` | The bundle active right now. |
+| `getAppUpdateUrl()` | Signed APK URL for a pending app-version update. |
+| `openAppUpdate(options?)` | Opens that URL with `ACTION_VIEW`. |
+| `restartApp()` | Relaunches the launcher activity. |
+| `addDownloadProgressListener(fn)` | Subscribe to progress; returns an unsubscribe. |
+| `addErrorListener(fn)` | Subscribe to engine errors with no owning promise. |
+
+## Progress and errors
+
+```tsx
+const offProgress = OtaClient.addDownloadProgressListener(({ downloaded, total, percent }) => {
+  console.log(`${percent ?? "?"}% (${downloaded}/${total ?? "?"})`);
+});
+const offError = OtaClient.addErrorListener((error) => console.warn(error.message));
+
+// later
+offProgress();
+offError();
+```
+
+Next: [CLI](/client-sdk/cli).

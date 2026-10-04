@@ -1,0 +1,94 @@
+---
+title: Deployment
+description: Run OTACenter in production — build, storage, queue, scheduler.
+order: 1
+---
+
+# Deployment
+
+## Build
+
+<Steps>
+<Step title="Install PHP dependencies">
+
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+</Step>
+<Step title="Migrate the database">
+
+```bash
+php artisan migrate --force
+```
+
+</Step>
+<Step title="Build the frontend">
+
+```bash
+npm ci
+npm run build
+```
+
+Compiles the four SPAs (`home`, `docs`, `auth`, `dashboard`) and the stylesheet into `public/build`.
+
+</Step>
+<Step title="Cache config, routes and views">
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+</Step>
+</Steps>
+
+## Storage
+
+Artifacts live on the `public` disk and are served through `GET /files/{name}`.
+
+```bash
+php artisan storage:link
+```
+
+Ensure `storage/app/public` and `bootstrap/cache` are writable by the web user.
+
+## Queue
+
+`QUEUE_CONNECTION=database` by default. Run a supervised worker:
+
+```bash
+php artisan queue:work --tries=3
+```
+
+## Scheduler
+
+```cron
+* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+## Reverse proxy
+
+Serve from `public/` and fall back to `index.php` for anything not on disk:
+
+```nginx
+server {
+    root /var/www/otacenter/public;
+    index index.php;
+
+    location / { try_files $uri $uri/ /index.php?$query_string; }
+    location ~ \.php$ { fastcgi_pass unix:/run/php/php8.3-fpm.sock; include fastcgi_params; }
+}
+```
+
+## Health
+
+- `GET /ota-client/v1/health` — device API reachability.
+- `GET /up` — Laravel's built-in health route (if registered).
+
+<Callout type="warning" title="Review before exposing publicly">
+- `AuthController::login` logs full credentials at INFO level — remove that.
+- `logout` revokes **all** of a user's tokens, not just the current one.
+- `pageSize` has no upper bound (minimum 5) — cap it for large datasets.
+</Callout>

@@ -1,0 +1,65 @@
+---
+title: Troubleshooting
+description: Common ota-client problems and how to fix them.
+order: 8
+---
+
+# Troubleshooting
+
+## The native module is missing (`OtaLinkingError`)
+
+`OtaClient.isSupported()` is `false` and calls reject.
+
+<Steps>
+<Step title="Confirm autolinking">
+
+```bash
+npx react-native config | grep ota-client
+```
+
+</Step>
+<Step title="Rebuild the native app">
+
+Autolinking is resolved at build time. Rebuild `android/app` (a clean build if needed).
+
+</Step>
+<Step title="Check the platform">
+
+On iOS this is expected: every call rejects with `OtaUnsupportedPlatformError` and components render your
+app untouched.
+
+</Step>
+</Steps>
+
+## No update is offered
+
+- The device's `package` / `version` / `bundle` must match what is published.
+- The app must be bound to a domain the user belongs to.
+- Confirm a newer bundle/version actually exists on the server.
+
+## `401` on the update check
+
+The `API-KEY` header is wrong or missing. It must equal the **version's** `api_key`. Re-copy it from the
+version page (it is only shown to privileged roles).
+
+## “`runtimeVersion` mismatch”
+
+The archive was built for a different native runtime. Either rebuild against the current APK, or, if you
+are certain, pass `--force` to `release` — but an incompatible bundle can misbehave at runtime.
+
+## Checksum / size verification fails
+
+The downloaded archive is corrupt or truncated. Retry; if it persists, re-upload the bundle (build it
+again with `ota-client release`).
+
+## The update installed but reverted
+
+The bundle never confirmed a successful launch, so the engine rolled back. Make sure a successful boot
+calls `markLaunchSucceeded()` — `OTAProvider` does this automatically; a custom UI must call it (see
+[Hooks](/client-sdk/hooks#confirm-the-launch)).
+
+## Where to get help
+
+Open an issue at
+[github.com/AbdoPrDZ/react-ota-client/issues](https://github.com/AbdoPrDZ/react-ota-client/issues) with the
+library version (`OtaClient.getState().libraryVersion`), platform and steps to reproduce.

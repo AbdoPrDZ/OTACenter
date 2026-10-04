@@ -1,0 +1,52 @@
+---
+title: Authentication
+description: Login, session, profile and invite activation endpoints.
+order: 2
+---
+
+# Authentication
+
+## `POST /api/auth/login`
+
+```jsonc
+// request
+{ "login": "jdoe@corp.local", "password": "…", "remember": true }
+
+// response (200)
+{ "success": true, "message": "Logged in", "user": { /* IUser */ } }
+```
+
+Local-first, then LDAP (see [Server auth](/architecture/server/authentication)).
+
+## `GET /api/auth/me`
+
+Returns the signed-in user, including `roles` and `permissions` used by the frontend RBAC helpers.
+
+```jsonc
+{ "success": true, "user": { "id": 1, "name": "…", "login": "…", "roles": [...], "permissions": [...] } }
+```
+
+## `PUT /api/auth/profile`
+
+`multipart/form-data` with `_method=PUT`; fields `name` and optional `image`. Returns the updated user and
+refreshes the cached frontend user.
+
+## `DELETE /api/auth/logout`
+
+Revokes **all** of the user's tokens (not only the current one). The SPA then redirects to `/auth/login`.
+
+## `POST /api/auth/register`
+
+Activate an invited account. Requires the invite token as a bearer token (`user.invite` ability).
+
+```jsonc
+{
+  "code": "AB12CD34",
+  "name": "Jane Doe",
+  "login": "jane@corp.local",
+  "password": "…",
+  "password_confirmation": "…"
+}
+```
+
+Next: [Apps](/server-api/apps).

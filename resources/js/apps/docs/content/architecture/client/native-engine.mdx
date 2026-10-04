@@ -1,0 +1,46 @@
+---
+title: Native engine
+description: The Kotlin module that does the download, verify and activate work.
+order: 1
+---
+
+# Native engine
+
+The engine is a Kotlin Android library (`android/`, package `com.otaclient`) autolinked into your app.
+It uses **Ktor** for HTTP and **commons-compress** for extraction.
+
+## Components
+
+| File | Responsibility |
+|------|----------------|
+| `OtaClientModule.kt` | The React Native module — every JS method maps to a function here. |
+| `OtaClientPackage.kt` | Registers the module with React Native. |
+| `ota/OtaConfig.kt` | Persisted server coordinates. |
+| `ota/OtaConfigureActivity.kt` | The native "configure server" screen. |
+| `ota/OtaSplashActivity.kt` | The native splash shown while state loads. |
+| `ota/OtaBundleProvider.kt` | `getJSBundleFile()` — serves the active bundle to React Native. |
+| `ota/OtaHost.kt` | Host app hook. |
+| `utils/Http.kt` | Ktor client, headers (`API-KEY`, `X-Device-Info`). |
+| `utils/AppStorage.kt` | Staging directories and the last-known-good pointer. |
+| `data/*` | Serialized shapes (`AppInfo`, `BundleState`, `CheckUpdate`, `DeviceInfo`, `Manifest`). |
+
+## What it guarantees
+
+- **Streaming download** with progress events emitted to JS.
+- **Verification** of `runtimeVersion`, `checksum` (MD5) and `size` before activation.
+- **Two-phase activation** that is safe to interrupt.
+- **Automatic rollback** when a bundle never confirms a successful launch.
+- **Dev stand-down**: while Metro serves the JS, the engine reports `usingDevServer` and stays out of the
+  way.
+
+## How the bundle is served
+
+`OtaBundleProvider.getJSBundleFile()` is consulted by React Native at startup. It returns the staged
+bundle's path when one is active and confirmed, otherwise the embedded APK bundle.
+
+<Callout type="info" title="No JS in the hot path">
+All network and filesystem work happens natively. JS only configures the engine and observes progress, so
+a slow or crashed JS runtime cannot break an in-flight download.
+</Callout>
+
+Next: [JS API](/architecture/client/js-api).

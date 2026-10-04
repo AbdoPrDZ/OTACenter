@@ -1,0 +1,60 @@
+---
+title: Authorization
+description: Roles, permissions and how the matrix is enforced.
+order: 4
+---
+
+# Authorization
+
+## Spatie roles & permissions
+
+Roles and permissions are seeded by `SecuritySeeder`. Five roles ship by default:
+
+`super-admin` · `admin` · `developer` · `user` · `guest`
+
+The permission matrix is grouped by resource:
+
+| Prefix | Examples |
+|--------|----------|
+| `app.*` | `app.view`, `app.create`, `app.update`, `app.delete` |
+| `version.*` | `version.view`, `version.create`, `version.update`, `version.delete` |
+| `bundle.*` | `bundle.view`, `bundle.create`, `bundle.update`, `bundle.delete` |
+| `screenshot.*` | `screenshot.view`, `screenshot.create`, `screenshot.delete` |
+| `domain.*` | `domain.view`, `domain.create`, `domain.assign_app`, `domain.assign_user`, … |
+| `user.*` | `user.view`, `user.invite`, `user.delete` |
+| `role.*` | `role.view`, `role.attach`, `role.detach` |
+| `permission.*` | `permission.view`, `permission.attach`, `permission.detach` |
+
+## How it is enforced
+
+<Flow>
+  <FlowStep title="Request" subtitle="routes/web.php" />
+  <FlowStep title="permission:* middleware" subtitle="checks the matrix" tone="warning" />
+  <FlowStep title="role:* middleware" subtitle="statistics routes" />
+  <FlowStep title="Handler" subtitle="authorized" tone="success" />
+</Flow>
+
+- Every protected route carries a `permission:{name}` middleware (e.g. `permission:app.create`).
+- A few routes additionally require a role, e.g. statistics: `role:super-admin,admin`.
+- **`super-admin` bypasses every permission check** — it holds no explicit grants but passes all.
+
+## Nested-resource guard
+
+`rec.parent:{parent},{child}` middleware ensures the child in the URL belongs to the parent (for example a
+bundle under a version). This prevents reaching another tenant's data by guessing ids.
+
+## Frontend mirror
+
+The frontend uses `can({ permission })` / `can({ roles })` (see
+`resources/js/utils/permissions.ts`) to:
+
+- filter the sidebar and command palette (`can(item.access)`),
+- guard routes centrally in `Layout` (renders `<Forbidden/>` when denied),
+- gate mutating buttons and forms.
+
+<Callout type="info" title="Backend is the source of truth">
+Frontend gating is a UX layer only. Never rely on it for security — the middleware on the route is what
+counts.
+</Callout>
+
+Next: [Architecture → Client](/architecture/client).

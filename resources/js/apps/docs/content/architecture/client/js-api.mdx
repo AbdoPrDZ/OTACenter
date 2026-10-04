@@ -1,0 +1,49 @@
+---
+title: JS API
+description: The typed OtaClient facade over the native module.
+order: 2
+---
+
+# JS API
+
+The JavaScript surface is a single object, `OtaClient`, exported as both a named and default export. It
+is a thin typed wrapper over the native module.
+
+```tsx
+import OtaClient from "ota-client";
+```
+
+## Method groups
+
+| Group | Methods |
+|-------|---------|
+| Environment | `isSupported()` |
+| Configuration | `configure`, `getConfig` |
+| State | `getState`, `getBundleInfo`, `getDeviceInfo` |
+| Update flow | `healthCheck`, `checkUpdate`, `downloadBundle`, `installBundle`, `downloadAndInstall` |
+| Safety | `markLaunchSucceeded`, `revertToEmbeddedBundle`, `cleanupOldBundles` |
+| App updates | `getAppUpdateUrl`, `openAppUpdate` |
+| Lifecycle | `restartApp` |
+| Events | `addDownloadProgressListener`, `addErrorListener` |
+
+Full signatures and examples are in [Client SDK → Imperative API](/client-sdk/imperative).
+
+## Types
+
+All shapes mirror the native JSON and are exported from the package:
+
+- `OtaServerConfig`, `OtaConfigInput`
+- `OtaState`, `OtaStatus`, `OtaStatusSnapshot`
+- `OtaCheckUpdateResult`, `OtaRemoteAppInfo`, `OtaAvailableUpdates`
+- `OtaDownloadProgress`, `OtaDownloadResult`
+- `OtaManifest`, `OtaBundleInfo`, `OtaDeviceInfo`
+
+## Errors
+
+Non-React flows reject with real `Error`s. A few typed errors are exported for handling:
+
+```tsx
+import { OtaNotConfiguredError, OtaLinkingError, OtaUnsupportedPlatformError } from "ota-client";
+```
+
+Next: [Manifest & rollback](/architecture/client/manifest).

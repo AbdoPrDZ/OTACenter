@@ -1,0 +1,60 @@
+---
+title: OTA client API
+description: The device-facing contract under /ota-client/v1.
+order: 10
+---
+
+# OTA client API
+
+Mounted at `/ota-client/v1` for native clients. Requests carry Sanctum plus the `DeviceMiddleware`
+fingerprint; the version's `API-KEY` authenticates the update check.
+
+## `GET /ota-client/v1/health`
+
+Reachability probe. The SDK resolves `false` instead of throwing when it is unreachable.
+
+## `POST /ota-client/v1/app/info`
+
+```jsonc
+// request
+{
+  "package": "com.example.app",
+  "version": "1.3.0",
+  "bundle": "1.3.0"
+}
+```
+
+Headers:
+
+```http
+API-KEY: <version.api_key>
+X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
+```
+
+Response:
+
+```jsonc
+{
+  "appId": "…", "versionId": "…", "bundleId": "…",
+  "availableUpdates": {
+    "version": { "id": "…", "name": "1.4.0" },   // a new APK
+    "bundle":  { "id": "…", "name": "1.4.0" }    // a new JS bundle
+  },
+  "session": "…"                                  // short-lived download token
+}
+```
+
+## Bundle download
+
+The engine downloads the bundle ZIP using the returned `session`. It verifies the `manifest.json`
+(`runtimeVersion`, `checksum`, `size`) before staging.
+
+## Device registration
+
+Devices self-register on first contact via `DeviceMiddleware` using the `X-Device-Info` header
+(`did`, `mf`, `br`, `mdl`, `av`, `sdv`).
+
+## Client side
+
+This contract is implemented by [`ota-client`](https://github.com/AbdoPrDZ/react-ota-client) — see
+[Client SDK](/client-sdk) for install and usage.

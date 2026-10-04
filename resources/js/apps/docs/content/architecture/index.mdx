@@ -1,0 +1,62 @@
+---
+title: Architecture overview
+description: The pieces of OTACenter and how they fit together.
+order: 1
+---
+
+import {
+  Boxes,
+  Cloud,
+  Download,
+  Package,
+  PanelsTopLeft,
+  RefreshCw,
+  ShieldCheck,
+  Smartphone,
+} from "lucide-react";
+
+# Architecture overview
+
+OTACenter is a **Laravel monolith with React SPAs** on the server side, plus a **separate React Native
+client package**. It exposes two APIs: an admin API for the dashboard and a device API for the client SDK.
+
+## The system at a glance
+
+| Side | What it does |
+|------|--------------|
+| **Server** — Laravel | Admin API `/api/*` (Sanctum + permission middleware) · Device API `/ota-client/v1/*` (Sanctum ability + `DeviceMiddleware`) · models (`App`, `Version`, `Bundle`, `Domain`, `User`, `File`, `Device`) and the `Tabling` pipeline · files at `/files/{name}` |
+| **SPAs** — Vite/React | `home` · `docs` · `auth` · `dashboard` |
+| **Client** — `ota-client` | Kotlin engine + typed JS + CLI; talks over HTTPS with `X-Device-Info`, `API-KEY` and a session |
+
+## Publishing pipeline
+
+Turning an app into a live, downloadable release:
+
+<Flow>
+  <FlowStep icon={PanelsTopLeft} title="App" />
+  <FlowStep icon={Package} title="Version" />
+  <FlowStep icon={Boxes} title="Bundle" tone="warning" />
+  <FlowStep icon={Cloud} title="Served" tone="success" />
+</Flow>
+
+## Update handshake
+
+<Flow>
+  <FlowStep icon={Smartphone} title="Check in" />
+  <FlowStep icon={ShieldCheck} title="Plan + session" tone="warning" />
+  <FlowStep icon={Download} title="Download bundle" />
+  <FlowStep icon={RefreshCw} title="Install + restart" tone="success" />
+</Flow>
+
+<Callout type="tip" title="Automatic rollback">
+Install is two-phase: a bundle must confirm a successful launch, otherwise the next launch reverts to the
+previous (or embedded) bundle. A bad OTA cannot brick the app.
+</Callout>
+
+## Sections
+
+- **[Server](/architecture/server)** — Laravel models, controllers, the Tabling pipeline, auth and RBAC.
+- **[Client](/architecture/client)** — the `ota-client` package internals.
+- **[Data flow](/architecture/data-flow)** — the exact HTTP sequence for an update.
+
+Then: [Architecture → Server](/architecture/server).

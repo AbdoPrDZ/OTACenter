@@ -1,0 +1,39 @@
+---
+title: Statistics
+description: Read-only aggregates, admin only.
+order: 9
+---
+
+# Statistics
+
+Every statistics route is gated by `role:super-admin,admin`.
+
+| Method | Path | Returns |
+|--------|------|---------|
+| `GET` | `/api/statistics/general` | global totals + status breakdowns |
+| `GET` | `/api/statistics/user/{user}` | a user's roles/domains + counts |
+| `GET` | `/api/statistics/role/{role}` | a role's users + count |
+| `GET` | `/api/statistics/domain/{domain}` | a domain's users/apps + counts |
+| `GET` | `/api/statistics/app/{app}` | an app's versions (with bundle counts), statuses, domains |
+| `GET` | `/api/statistics/version/{version}` | a version's bundles + active bundle |
+
+## Shape
+
+```jsonc
+// GET /api/statistics/general
+{
+  "statistics": {
+    "users":    { "total": 12, "with_domains": 8, "without_domains": 4 },
+    "roles":    { "total": 5 },
+    "domains":  { "total": 3 },
+    "apps":     { "total": 6, "with_versions": 5, "without_versions": 1 },
+    "versions": { "total": 20, "by_status": { "published": 15 }, "with_bundles": 18, "without_bundles": 2 },
+    "bundles":  { "total": 30, "by_status": { "published": 28 } }
+  }
+}
+```
+
+Per-entity panels are embedded as **Statistics** inner tabs on each model page; the general overview lives
+on `/dashboard/statistics`.
+
+Next: [OTA client API](/server-api/ota-client-api).

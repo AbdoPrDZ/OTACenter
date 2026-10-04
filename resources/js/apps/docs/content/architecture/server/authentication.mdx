@@ -1,0 +1,65 @@
+---
+title: Authentication
+description: Sanctum SPA sessions, LDAP lookup and the invite flow.
+order: 3
+---
+
+# Authentication
+
+## Sanctum
+
+OTACenter uses **Laravel Sanctum** for both audiences:
+
+- The SPAs authenticate with the **cookie session** (`withCredentials` + CSRF token).
+- Tokens are used for the **invite/registration** flow via a one-time ability.
+
+The frontend sets up axios once in `utils/bootstrap.ts` (base URL `/api`, credentials, `X-CSRF-TOKEN`);
+a `419` response reloads the page to refresh the CSRF token.
+
+## Login is local-first, then LDAP
+
+`AuthController::login`:
+
+<Steps>
+<Step title="Try local">
+
+If a `users` row with the matching `login` has a bcrypt password, it is validated. This covers the seeded
+super-admin and the test suite.
+
+</Step>
+<Step title="Fall through to LDAP">
+
+Otherwise the directory is queried (`LDAP_LOGIN_SUFFIX` is appended to the typed login). On success the
+user is imported on first login (`userprincipalname` → `login`, `cn` → `name`).
+
+</Step>
+<Step title="Issue the session">
+
+A Sanctum session (or token) is issued and `/auth/me` returns the user with `roles` and `permissions`.
+
+</Step>
+</Steps>
+
+## Endpoints
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/api/auth/login` | `{ login, password, remember }` |
+| `GET` | `/api/auth/me` | current user; returns `roles` + `permissions` |
+| `PUT` | `/api/auth/profile` | update the signed-in user's name/avatar |
+| `DELETE` | `/api/auth/logout` | revokes **all** of the user's tokens |
+| `POST` | `/api/auth/register` | invite activation (bearer `user.invite` ability) |
+
+## Invites
+
+An admin with `user.invite` calls `POST /api/user/invite`. The server creates the user and returns a
+registration **link** bound to a one-time Sanctum token; the activation **code** is mailed to the invitee.
+The invitee opens the link, types the code and sets a password at `/register`.
+
+## Frontend mirror
+
+`utils/permissions.ts` reads the cached `User.current` and exposes `hasRole`, `hasPermission`, `can` and
+`canAny` — used to filter nav, guard routes and gate actions. It mirrors the backend checks, but the
+backend remains the source of truth.
+
+Next: [Authorization](/architecture/server/authorization).

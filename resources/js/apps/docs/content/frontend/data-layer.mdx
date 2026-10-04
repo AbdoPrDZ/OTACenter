@@ -1,0 +1,65 @@
+---
+title: Data layer
+description: Request, createModel, field decoding and permissions.
+order: 3
+---
+
+# Data layer
+
+Every API call flows through the same pipe:
+
+```text
+Component
+  → model static (all · find · create · update · delete + nested helpers)
+      → Request.{get,post,put,delete}      (utils/http.ts)
+          → window.axios.request
+              → Response<T> { success, message, data?, errors, status, all }
+```
+
+## `Request`
+
+`utils/http.ts` wraps axios and **never throws on 4xx/5xx** — it returns a `Response<T>`. It also
+**coalesces identical in-flight GETs**, so duplicate calls (e.g. React StrictMode in development) share a
+single network request. Request logging is debug-only.
+
+```ts
+const res = await Request.get<IUser>({ url: "/auth/me", dataField: "user" });
+if (res.success) console.log(res.data);
+```
+
+## `createModel`
+
+`utils/model.ts` generates a CRUD class per resource:
+
+```ts
+const App = createModel<IApp>("app", [ { name: "name", type: "string", required: true }, … ], true);
+await App.all({ pagination: { page: 1, pageSize: 20 } });
+await App.find(1);
+```
+
+`all(props)` encodes `pagination`, `sort` and `filter` into query params and decodes items into
+`ItemsResponse<T>`.
+
+<Callout type="warning" title="Always pass pageSize">
+The server defaults an absent `pageSize` to the **total row count**. Always send one (≥ 5) for option and
+count fetches.
+</Callout>
+
+## Field decoding
+
+`utils/fields.ts` validates/coerces each field per its `Field` config (`string`, `number`, `boolean`,
+`date`, `enum`, `array`). Missing required fields throw.
+
+## Permissions
+
+`utils/permissions.ts` reads the cached `User.current`:
+
+```ts
+can({ permission: "app.create" });            // gated buttons/forms
+can({ roles: ["super-admin", "admin"] });     // statistics tabs
+can(item.access);                             // nav filtering
+```
+
+Super-admin short-circuits the **permission** half; a `roles` requirement still applies.
+
+Next: [Adding a tab](/frontend/adding-a-tab).

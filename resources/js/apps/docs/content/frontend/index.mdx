@@ -1,0 +1,43 @@
+---
+title: Frontend
+description: The React SPAs, the design system and the data layer.
+order: 1
+---
+
+# Frontend
+
+The frontend is React 19 + TypeScript on Vite, styled with **Tailwind CSS v4** and a set of hand-built
+primitives. There is **no component library** (no shadcn, no Base UI, no Radix).
+
+## Four SPAs
+
+| SPA | Route | Entry |
+|-----|-------|-------|
+| `home` | `/` | `apps/home/index.tsx` |
+| `docs` | `/docs` | `apps/docs/index.tsx` |
+| `auth` | `/auth/*`, `/register` | `apps/auth/index.tsx` |
+| `dashboard` | `/dashboard/*` | `apps/dashboard/index.tsx` |
+
+All four share the single stylesheet (`resources/css/app.css`) and the same `ThemeProvider`, so they are
+visually identical and switch light/dark together.
+
+## Pages in this section
+
+- **[Structure](/frontend/structure)** — how each app is organised.
+- **[Design system](/frontend/design-system)** — tokens, theming and primitives.
+- **[Data layer](/frontend/data-layer)** — `Request`, models and permissions.
+- **[Adding a tab](/frontend/adding-a-tab)** — a step-by-step guide for the dashboard.
+
+## Stack
+
+| Concern | Choice |
+|---------|--------|
+| UI | React 19, TypeScript |
+| Styling | Tailwind CSS v4, CSS-first, no config file |
+| Primitives | hand-built in `components/ui/` |
+| Tables | `@tanstack/react-table` |
+| Forms | `react-hook-form` |
+| HTTP | axios wrapped by `utils/http.ts` |
+| Routing | `react-router-dom` wrapped by `utils/router.tsx` |
+| Icons | `lucide-react` |
+| Docs | MDX + Shiki (`@mdx-js/rollup`) |

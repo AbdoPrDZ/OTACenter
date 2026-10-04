@@ -1,0 +1,57 @@
+---
+title: FAQ
+description: Frequently asked questions.
+order: 4
+---
+
+# FAQ
+
+## Does it support iOS?
+
+The server is platform-agnostic, but the `ota-client` engine is **Android only**. On iOS the components
+are safe no-ops; you can still use the server for APK distribution.
+
+## Do I need Active Directory to run it?
+
+No. Login is local-first, so the seeded super-admin works without a directory. LDAP is used for the wider
+user base.
+
+## What exactly is a “bundle”?
+
+A ZIP containing the JS bundle and a `manifest.json`. It is attached to a version and downloaded by
+devices. See [Manifest & rollback](/architecture/client/manifest).
+
+## How do devices know an update exists?
+
+They `POST /ota-client/v1/app/info` with their current package/version/bundle; the server replies with
+`availableUpdates` and a download session. See [Data flow](/architecture/data-flow).
+
+## How is access scoped?
+
+Through **domains**: a user receives an app when one of their domains is bound to it. Users come from
+LDAP. See [Core concepts](/concepts).
+
+## What happens if a bad update breaks the app?
+
+Automatic rollback: a bundle must confirm a successful launch, otherwise the next launch reverts to the
+previous (or embedded) bundle. A bad OTA cannot brick the app.
+
+## Why is there no ‘activate bundle’ button?
+
+The dashboard tracks a version's active bundle (`versions.latest_id`), but the HTTP route to change it is
+not wired yet. Uploading, listing and downloading bundles all work; activation is a backend/DB step for
+now.
+
+## Why do list requests need a `pageSize`?
+
+Without it the server falls back to the **total row count** and loads the whole table. Always send a
+`pageSize` ≥ 5.
+
+## Can I re-theme the dashboard?
+
+Yes — every SPA shares `resources/css/app.css`. Change the tokens in the `@theme` / palette blocks and all
+apps (including these docs) update together. See [Design system](/frontend/design-system).
+
+## Where is the client source?
+
+[github.com/AbdoPrDZ/react-ota-client](https://github.com/AbdoPrDZ/react-ota-client) (npm `ota-client`).

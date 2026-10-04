@@ -11,6 +11,7 @@
   <a href="#quick-start">Quick start</a> •
   <a href="#configuration">Configuration</a> •
   <a href="#api">API</a> •
+  <a href="#docs">Docs</a> •
   <a href="#testing">Testing</a> •
   <a href="#project-layout">Layout</a> •
   <a href="CHANGELOG.md">Changelog</a>
@@ -28,11 +29,13 @@
 | Frontend | React 19, TypeScript, Vite 8 |
 | Styling | Tailwind CSS v4 (CSS-first, single stylesheet), dark-first with light/system toggle |
 | Components | Hand-built Tailwind primitives, TanStack Table, Lucide icons |
+| Docs | MDX + Shiki (via Vite), served as an SPA at `/docs` |
 | Storage | Local disk (configurable), SQLite / MySQL / PostgreSQL |
 | Tests | PHPUnit 12 (backend), Vitest + Testing Library (frontend) |
 
-There are two SPAs: an **admin dashboard** (`/dashboard`) and an **auth page** (`/auth`), both served by
-plain Blade entry points that boot React. There is no Inertia — the Blade views are just shells.
+There are four SPAs — a public **home** (`/`), an MDX **docs** site (`/docs`), an **auth** page
+(`/auth`) and the **admin dashboard** (`/dashboard`) — each served by a plain Blade shell that boots
+React. There is no Inertia; the Blade views are just shells.
 
 ---
 
@@ -79,6 +82,21 @@ breadcrumbs, a `Ctrl/⌘ K` command palette, light/dark/system theme toggle, and
 from server-driven data tables (debounced search, server-side sort and pagination, column visibility)
 with permission-gated actions throughout.
 
+<a id="docs"></a>
+
+### Public site & docs
+A landing page at `/` and a public **MDX documentation site** at `/docs`, both sharing the dashboard's
+theme and tokens.
+
+- **Content lives in `resources/js/apps/docs/content/`.** The sidebar tree is generated from the folder
+  structure: each folder is a section whose `index.mdx` is its landing page, and nested folders nest
+  further. Frontmatter (`title`, `description`, `order`) controls labels and ordering.
+- **Collapsible, nested sidebar** plus a per-page “On this page” table of contents.
+- **Shiki** code highlighting with a dual light/dark theme, driven by the same `.dark` class as the app.
+- **MDX components**: `<Callout>`, numbered `<Steps>` / `<Step>`, and big animated `<Flow>` / `<FlowStep>`
+  diagrams (CSS-only beams and dots).
+- Internal links and `#anchors` are handled inside the docs SPA, so they stay under `/docs`.
+
 ---
 
 ## Quick start
@@ -116,7 +134,7 @@ composer run dev
 ```
 
 Starts, concurrently: `php artisan serve`, the queue listener, `pail` logs, and the Vite dev server.
-The dashboard is at `http://localhost:8000/dashboard`.
+The public home is at `http://localhost:8000/`, the docs at `/docs`, and the dashboard at `/dashboard`.
 
 > Tip: SQLite is the default database and works out of the box. `.env.example` also carries commented
 > MySQL/PostgreSQL blocks.
@@ -228,14 +246,16 @@ app/
   Models/                 App, Version, Bundle, Domain, User, File, Device, …
   Models/Traits/Tabling   Server-side sort / search / filter / paginate pipeline
 resources/js/
-  apps/auth/              Auth SPA (login, register, split-screen shell)
+  apps/home/              Public landing SPA (/)
+  apps/docs/              MDX documentation SPA (/docs) + content/
+  apps/auth/              Auth SPA (login, register)
   apps/dashboard/         Dashboard SPA: index, router, shell components/, tabs/
-  components/             Shared components (PageHeader, ModelDataTable, Logo, …)
+  components/             Shared components (SiteHeader, Logo, PageHeader, ModelDataTable, …)
   components/ui/          Hand-built primitives (Button, Modal, Dropdown, SelectMenu, …)
   models/                 Typed frontend models (createModel factory)
   utils/                  axios bootstrap, Request wrapper, router, RBAC helpers
 resources/css/app.css     The single Tailwind v4 stylesheet (theme tokens + palettes)
-resources/views/          Blade shells: layout, dashboard, auth, welcome
+resources/views/          Blade shells: layout, home, docs, dashboard, auth
 routes/
   web.php                 SPA shells, file serving, and the admin JSON API
   ota_client.php          Device API (mounted at /ota-client)

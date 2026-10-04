@@ -1,0 +1,64 @@
+---
+title: Advanced
+description: Progress, errors, the dev server, retries and housekeeping.
+order: 7
+---
+
+# Advanced
+
+## Download progress
+
+```tsx
+const off = OtaClient.addDownloadProgressListener(({ downloaded, total, percent }) => {
+  // percent is null when the server omits Content-Length
+});
+```
+
+## Errors
+
+`addErrorListener` surfaces asynchronous engine errors that have no owning promise (e.g. a download that
+fails after the check). Promise-returning calls reject with a real `Error`.
+
+```tsx
+const off = OtaClient.addErrorListener((error) => report(error));
+```
+
+## Dev server stand-down
+
+While Metro serves the JS bundle in development, the engine reports `usingDevServer: true` and stays out
+of the way, so hot reload is never fighting an OTA bundle.
+
+## Retries and resume
+
+`downloadBundle()` writes to a staging directory. If a download is interrupted, a later attempt restarts
+the download; nothing is activated until verification passes. For queued flows, pass an explicit
+`{ updateId, session }` from a cached check result.
+
+## Deferred install
+
+```ts
+// Download now, don't restart:
+const result = await OtaClient.downloadBundle();
+await OtaClient.installBundle({ directory: result.downloadDir, restart: false });
+// …restart when convenient:
+await OtaClient.restartApp();
+```
+
+## Housekeeping
+
+```ts
+await OtaClient.cleanupOldBundles(2);        // keep the 2 newest staging dirs
+await OtaClient.revertToEmbeddedBundle();    // back to the APK copy
+```
+
+## App-version (APK) updates
+
+`checkUpdate()` reports `haveVersionUpdate` when a new APK exists. You can surface it yourself:
+
+```ts
+if (check.haveVersionUpdate) {
+  await OtaClient.openAppUpdate(); // opens the signed APK URL in the browser/installer
+}
+```
+
+Next: [Troubleshooting](/client-sdk/troubleshooting).

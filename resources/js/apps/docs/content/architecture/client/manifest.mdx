@@ -1,0 +1,70 @@
+---
+title: Manifest & rollback
+description: The OTA archive format and how a bad update is recovered.
+order: 3
+---
+
+# Manifest & rollback
+
+## The archive
+
+`ota-client release` produces a ZIP containing the JS bundle and a `manifest.json`:
+
+```jsonc
+{
+  "version": "1.4.0",         // bundle version published to the server
+  "runtimeVersion": "1.4",    // must match the host APK versionName
+  "bundle": "index.android.bundle",
+  "checksum": "…",            // MD5, verified after extraction
+  "size": 1234567,
+  "createdAt": "2026-…"
+}
+```
+
+## runtimeVersion
+
+`runtimeVersion` ties a JS bundle to the native runtime it was built against. It must equal the host APK's
+`versionName`.
+
+| Change | runtimeVersion | Ships via |
+|--------|----------------|-----------|
+| JS only | unchanged | OTA archive (`release`) |
+| Native code / dependencies | bumped | new APK (`apk`) |
+
+If they disagree, `release` fails unless you pass `--force` — a strong guard against shipping a bundle to
+an incompatible APK.
+
+## The safety model
+
+<Steps>
+<Step title="Stage, don't commit">
+
+`downloadBundle()` writes the archive to a staging directory and verifies `checksum`/`size`. Nothing is
+active yet.
+
+</Step>
+<Step title="Activate as pending">
+
+`installBundle()` marks the staged bundle **pending** and restarts. The previous bundle is still the
+fallback.
+
+</Step>
+<Step title="Confirm or roll back">
+
+The app must report a successful launch (`markLaunchSucceeded`, or `OTAProvider` automatically). If it
+never does, the next launch **reverts** to the previous (or embedded) bundle.
+
+</Step>
+</Steps>
+
+## Housekeeping
+
+`cleanupOldBundles(keep)` deletes stale staging directories, keeping the newest `keep` (default 2).
+`revertToEmbeddedBundle()` returns to the APK copy on demand.
+
+<Callout type="tip" title="Why this matters">
+A two-phase install plus an automatic rollback is what makes OTA safe: a broken bundle costs one failed
+launch, not a bricked installation.
+</Callout>
+
+Next: [Server API](/server-api) or jump to the [Client SDK](/client-sdk).

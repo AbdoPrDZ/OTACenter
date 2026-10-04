@@ -129,3 +129,33 @@ Served by the `auth` Blade view for `/login`, `/register`, and the `auth{any}` c
 - **`register.tsx`** — invitee activation. Reads `token` from the query; fields `code`, `name`, `login`,
   `password` + confirmation; posts `/auth/register` with `Authorization: Bearer <token>`.
 - **`AuthShell.tsx`** — split-screen layout (branded aside + centered form).
+
+---
+
+## Public site & docs (`apps/home`, `apps/docs`)
+
+Two public SPAs that reuse the dashboard theme (same `resources/css/app.css`, same `ThemeProvider`), served
+by the `home`/`docs` Blade shells (`/` and `/docs{any}`). They share `components/site/SiteHeader.tsx` and
+`components/site/SiteFooter.tsx`.
+
+- **`apps/home/`** - `index.tsx` (entry) + `components/HomePage.tsx` (hero, features, how-it-works, CTA).
+- **`apps/docs/`** - `index.tsx` (entry) + `router.tsx` (react-router, `basename: "/docs"`).
+  - `manifest.ts` - builds the **nested sidebar tree from the `content/` folder structure** (each folder is
+    a section; its `index.mdx` is the landing page) plus `getDocMeta`/`loadDoc` (resolves
+    `content/<slug>.mdx` or `content/<slug>/index.mdx`).
+  - `components/DocsLayout.tsx` - header + sidebar + content + footer, mobile drawer.
+  - `components/DocsSidebar.tsx` - recursive `NavLink` tree, indented by depth.
+  - `components/DocsPage.tsx` - resolves the slug, lazy-renders MDX inside `MDXProvider`.
+  - `components/DocsToc.tsx` - "On this page" from `h2`/`h3` ids (`rehype-slug`).
+  - `components/mdx-components.tsx` - element map plus globally-available `<Callout>`, `<Steps>`/`<Step>`,
+    `<Flow>`/`<FlowStep>`.
+  - `components/Flow.tsx` - animated (CSS-only) flow diagram; connectors auto-inserted.
+  - `content/**/*.mdx` - the documentation tree (frontmatter: `title`, `description`, `order`).
+
+MDX to JS is handled by `@mdx-js/rollup` in `vite.config.js` with `remark-gfm`,
+`remark-frontmatter` + `remark-mdx-frontmatter` (`name: "frontmatter"`), `rehype-slug`,
+`rehype-autolink-headings`, and `rehype-pretty-code` (Shiki, `theme: { light, dark }`); the dual-theme CSS
+lives in `app.css` and switches on `.dark`.
+
+> **MDX gotcha:** anything that looks like `{param}` or `<Tag>` in prose or table cells is parsed as an
+> expression/JSX. Wrap route paths such as `/api/app/{app}` in backticks, or escape the braces.

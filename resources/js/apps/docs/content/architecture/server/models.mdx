@@ -1,0 +1,83 @@
+---
+title: Models
+description: The Eloquent models, their fields, relations and validation.
+order: 1
+---
+
+# Models
+
+All models extend the base `App\Src\Model` and use the `Tabling` trait. Validation rules are declared on
+the model, not the controller.
+
+## App
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | display name |
+| `package_name` | string | unique; the client's package id |
+| `summary` / `description` | string | short and long text |
+| `logo` | file | stored `File`, exposed as `logo_url` |
+| `latest_id` | int? | the app's latest version |
+
+Relations: `versions` (hasMany), `domains` (belongsToMany), `screenshots` (hasMany).
+
+## Version
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `app_id` | int | parent app |
+| `name` | string | version string |
+| `changelog` | text | release notes |
+| `status` | enum | `draft` · `review` · `published` · `cancelled` |
+| `api_key` | string | sent by the client as `API-KEY` |
+| `file_id` | string | the APK `File` |
+| `latest_id` | int? | the version's active bundle |
+
+## Bundle
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `version_id` | int | parent version |
+| `name` | string | bundle version string |
+| `file_id` | string | the ZIP `File` |
+| `url` | string? | download URL (privileged roles) |
+
+## Domain
+
+`name`, `description`, optional `image_url`. Many-to-many with apps and users.
+
+## User
+
+`name`, `login` (from LDAP `userprincipalname`), `image_url`, plus `roles` and `permissions` arrays
+returned by `/auth/me`. Bound to domains.
+
+## File
+
+The odd one: its primary key is the **string `name`**, not an auto-increment id.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string **(PK)** | non-incrementing |
+| `path` | string | path on the `public` disk |
+
+Served by `GET /files/{name}`.
+
+## Per-role serialization
+
+`toArray()` returns a base field set to every role and adds privileged fields (storage `path`, download
+`url`, `api_key`, `updated_at`) only for `super-admin` / `admin` / `developer`. The frontend uses
+`isPrivilegedRole()` to mirror this.
+
+## Validation
+
+```php
+public function validationRules(ValidationType $type, ?Model $record): array
+{
+  return match ($type) {
+    ValidationType::CREATE => [ /* … */ ],
+    ValidationType::UPDATE => [ /* … */ ],
+  };
+}
+```
+
+Next: [Controllers & Tabling](/architecture/server/controllers-and-tabling).

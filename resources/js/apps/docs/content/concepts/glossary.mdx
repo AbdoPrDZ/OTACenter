@@ -1,0 +1,39 @@
+---
+title: Glossary
+description: Terms used throughout these docs.
+order: 2
+---
+
+# Glossary
+
+**OTA (Over-The-Air)** — delivering an update to a device over a network instead of through an app store.
+
+**Bundle** — a ZIP archive containing the JS bundle and a `manifest.json`. Uploaded to a version in
+OTACenter and downloaded by devices.
+
+**Embedded bundle** — the JS bundle shipped inside the APK. The engine falls back to it when no
+downloaded bundle has been activated.
+
+**Active bundle** — the downloaded bundle a version currently points at, stored on
+`versions.latest_id`.
+
+**runtimeVersion** — a compatibility key in the bundle manifest that must match the host APK's
+`versionName`. A JS-only update keeps the same `runtimeVersion`; native changes require a new APK.
+
+**Session** — a short-lived token returned by `/ota-client/v1/app/info`, required to download a bundle.
+
+**Device fingerprint** — the `X-Device-Info` header (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) sent by the
+client so the server can register and target devices.
+
+**Domain** — an organizational grouping. Apps and users are bound to domains; a device receives an app
+when one of its user's domains is bound to that app.
+
+**Permission** — a named capability (`app.view`, `bundle.create`, …) held by a role or directly by a user.
+
+**Role** — a named set of permissions; `super-admin` bypasses every permission check.
+
+**Tab** — a dashboard page (`HomeTab`, `AppsTab`, …) mounted by the dashboard router.
+
+**SPA** — one of the four single-page apps: `home`, `docs`, `auth`, `dashboard`.
+
+**Tabling** — the server-side trait that powers every list endpoint (sort, search, filter, paginate).

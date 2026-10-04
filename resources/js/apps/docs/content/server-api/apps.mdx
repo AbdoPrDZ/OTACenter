@@ -1,0 +1,48 @@
+---
+title: Apps
+description: Endpoints to manage applications and their nested resources.
+order: 3
+---
+
+# Apps
+
+## Endpoints
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/app` | `app.view` |
+| `POST` | `/api/app` | `app.create` |
+| `GET` | `/api/app/{app}` | `app.view` |
+| `PUT` | `/api/app/{app}` | `app.update` |
+| `DELETE` | `/api/app/{app}` | `app.delete` |
+
+Create/update are `multipart/form-data` (logo upload) with `_method` spoofing.
+
+```jsonc
+// POST /api/app
+{ "name": "EMoveX", "package_name": "com.example.emovex", "summary": "…", "description": "…", "logo": <file> }
+```
+
+## Nested resources
+
+| Path | Purpose |
+|------|---------|
+| `/api/app/{app}/screenshot` | index, store, destroy (`screenshot.*`) |
+| `/api/app/{app}/domain` | index + `POST /{domain}` bind + `DELETE /{domain}` unbind |
+| `/api/app/{app}/version` | versions of the app (see [Versions](/server-api/versions)) |
+
+## App fields
+
+| Field | Notes |
+|-------|-------|
+| `name`, `package_name`, `summary`, `description` | text |
+| `logo_url` | URL of the stored logo |
+| `domains` | bound domains (eager-loaded on index) |
+| `latest_id` | the app's latest version |
+
+<Callout type="info" title="Binding domains">
+App↔domain binding uses `domain.assign_app` / `domain.unassign_app`; domain↔user binding uses
+`domain.assign_user` / `domain.unassign_user`.
+</Callout>
+
+Next: [Versions](/server-api/versions).

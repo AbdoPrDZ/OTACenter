@@ -1,0 +1,46 @@
+---
+title: Users
+description: Directory users, invites and role/permission/domain bindings.
+order: 7
+---
+
+# Users
+
+Users are read from the LDAP directory and bound to domains, roles and permissions.
+
+## Endpoints
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/user` | `user.view` |
+| `GET` | `/api/user/{user}` | `user.view` |
+| `DELETE` | `/api/user/{user}` | `user.delete` |
+| `POST` | `/api/user/invite` | `user.invite` |
+
+## Nesting
+
+| Path | Purpose |
+|------|---------|
+| `/api/user/{user}/role` | index + bind/unbind `/{role}` (`role.attach` / `role.detach`) |
+| `/api/user/{user}/permission` | index + bind/unbind `/{permission}` (`permission.attach` / `permission.detach`) |
+| `/api/user/{user}/domain` | index + bind/unbind `/{domain}` |
+
+## Invite
+
+```jsonc
+// POST /api/user/invite
+{ "name": "Jane Doe", "email": "jane@corp.local", "role": "user", "domain_id": 3 }
+
+// response
+{ "success": true, "link": "https://…/register?token=…" }
+```
+
+The **link** is returned so you can share it; the activation **code** is emailed to the invitee.
+
+## Effective permissions
+
+`GET /api/user/{user}/permission` returns the user's **effective** permissions — direct grants plus those
+inherited from roles — each annotated with a `direct` boolean. Role-inherited entries are read-only in the
+UI.
+
+Next: [Roles & permissions](/server-api/roles-and-permissions).

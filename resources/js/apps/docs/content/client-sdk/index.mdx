@@ -1,0 +1,52 @@
+---
+title: Client SDK
+description: Add over-the-air updates to a React Native app with ota-client.
+order: 1
+---
+
+# Client SDK (`ota-client`)
+
+[`ota-client`](https://github.com/AbdoPrDZ/react-ota-client) adds over-the-air JavaScript bundle updates
+to a **React Native app on Android**. A device ships one JS bundle inside the APK; this package replaces it
+at runtime — no app store release, no new APK.
+
+<Callout type="info" title="Repository vs npm name">
+The GitHub repository is [`AbdoPrDZ/react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client) while
+the npm package is `ota-client`. They are not the same identifier — pin a tag or commit when installing
+from GitHub.
+</Callout>
+
+## What you get
+
+- **Native engine** (Kotlin, Ktor + commons-compress), autolinked into your app.
+- **Typed JS API** (`OtaClient`) and ready-made React components.
+- **CLI** to build the bundle that ships in the APK and the OTA archive you upload.
+- **Automatic rollback** so a bad bundle reverts itself.
+
+## Three ways in
+
+```tsx
+// 1. Declarative: wrap your root.
+<OTAProvider config={{ apiBaseUrl, apiVersion, apiKey }}>
+  <App />
+</OTAProvider>
+
+// 2. Hooks: keep your own UI.
+const { status, check, progress, downloadAndInstall } = useOTA();
+
+// 3. Imperative: no React at all.
+await OtaClient.checkUpdate();
+await OtaClient.downloadAndInstall();
+```
+
+## Follow in order
+
+<Flow>
+  <FlowStep title="1 · Install" subtitle="/client-sdk/install" />
+  <FlowStep title="2 · Provider" subtitle="/client-sdk/provider" tone="success" />
+  <FlowStep title="3 · Hooks" subtitle="/client-sdk/hooks" tone="warning" />
+  <FlowStep title="4 · CLI" subtitle="/client-sdk/cli" />
+</Flow>
+
+Prefer no React? Go straight to the [Imperative API](/client-sdk/imperative). Need to tune behaviour?
+See [Configuration](/client-sdk/configuration) and [Advanced](/client-sdk/advanced).

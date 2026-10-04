@@ -1,0 +1,57 @@
+---
+title: Requirements
+description: Software and services needed to run OTACenter and its client SDK.
+order: 1
+---
+
+# Requirements
+
+## Server
+
+| Requirement | Why |
+|-------------|-----|
+| **PHP 8.3+** | The application language. |
+| `ldap` extension | Authenticating against the directory. |
+| `zip` extension | Reading/verifying uploaded bundles. |
+| `fileinfo` extension | Detecting uploaded file types. |
+| **Composer 2** | PHP dependencies. |
+| **Node.js 20+ / npm** | Building the SPAs and docs. |
+| **SQLite, MySQL or PostgreSQL** | Storage. SQLite works out of the box. |
+
+Check your PHP extensions:
+
+```bash
+php -m | grep -E 'ldap|zip|fileinfo'
+```
+
+## Directory (optional for a first run)
+
+A reachable **LDAP / Active Directory** server. Without one you can still sign in with the seeded local
+super-admin account (local-first login). For directory auth you need:
+
+| Value | Example |
+|-------|---------|
+| Host / port | `ldap://dc.corp.local:389` |
+| Base DN | `dc=corp,dc=local` |
+| Bind account | `cn=svc-otacenter,ou=services,dc=corp,dc=local` |
+| Login suffix | `@corp.local` |
+
+## Client (React Native)
+
+To build the mobile side you also need:
+
+| Requirement | Version |
+|-------------|---------|
+| React Native | 0.71+ (New Architecture supported) |
+| Android SDK | minSdk 24, compileSdk 35+ |
+| AGP / Kotlin | 8.12 / 2.1.20 (inherited from the host project) |
+| Node | 18+ for the CLI |
+
+See [Client SDK → Install](/client-sdk/install) for the full client setup.
+
+<Callout type="warning" title="Android only">
+The `ota-client` engine is Kotlin/Android. On iOS the components are safe no-ops, but no updates are
+applied.
+</Callout>
+
+Next: [Installation](/getting-started/installation).

@@ -1,0 +1,68 @@
+---
+title: Configuration
+description: Environment keys, LDAP, the super admin, and seeding.
+order: 3
+---
+
+# Configuration
+
+All configuration lives in `.env` (see `.env.example`). Never commit `.env`.
+
+## Application
+
+| Key | Notes |
+|-----|-------|
+| `APP_NAME` | Shown in titles and the docs. |
+| `APP_URL` | Used to build absolute URLs (e.g. invite links). |
+| `APP_ENV` / `APP_DEBUG` | Standard Laravel settings. Use `production` / `false` in production. |
+| `VITE_APP_URL` | Base for the frontend HTTP client; defaults to same-origin + `/api`. |
+| `DB_CONNECTION` | `sqlite` (default) or a MySQL/PostgreSQL DSN. |
+
+## LDAP
+
+Read by `config/ldap.php`:
+
+| Key | Default |
+|-----|---------|
+| `LDAP_CONNECTION` | `default` |
+| `LDAP_HOST` | `127.0.0.1` |
+| `LDAP_PORT` | `389` |
+| `LDAP_BASE_DN` | `dc=local,dc=com` |
+| `LDAP_USERNAME` | `cn=user,dc=local,dc=com` |
+| `LDAP_PASSWORD` | — |
+| `LDAP_LOGIN_SUFFIX` | Appended to the typed login before the search (e.g. `@corp.local`) |
+| `LDAP_TLS` / `LDAP_STARTTLS` / `LDAP_SASL` | `false` |
+| `LDAP_LOGGING` / `LDAP_CACHE` | `true` / `false` |
+
+<Callout type="info" title="Local-first login">
+`AuthController::login` checks for a local user with a bcrypt password first, and only falls through to
+LDAP when none matches. This is how the super-admin and the test suite sign in without a directory.
+</Callout>
+
+## Super admin
+
+`SuperAdminSeeder` **requires** these to be set:
+
+```dotenv
+APP_SUPER_ADMIN_LOGIN=superadmin
+APP_SUPER_ADMIN_PASSWORD=change-me
+```
+
+## Seeding
+
+```bash
+php artisan db:seed
+```
+
+Runs `SecuritySeeder` (roles + permissions) and `SuperAdminSeeder`. Safe to re-run; seeders are
+idempotent.
+
+## Runtime services
+
+| Key | Recommendation for local dev |
+|-----|------------------------------|
+| `SESSION_DRIVER` | `file` |
+| `CACHE_STORE` | `file` (avoids hitting the DB on every cache read) |
+| `QUEUE_CONNECTION` | `database` (run a worker) |
+
+Next: [Your first release](/getting-started/first-release).

@@ -1,0 +1,40 @@
+---
+title: Domains
+description: Organizational groups and their app/user bindings.
+order: 6
+---
+
+# Domains
+
+A domain groups apps and users to scope access: a user receives an app when one of their domains is bound
+to it.
+
+## Endpoints
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/domain` | `domain.view` |
+| `POST` | `/api/domain` | `domain.create` |
+| `GET` | `/api/domain/{domain}` | `domain.view` |
+| `PUT` | `/api/domain/{domain}` | `domain.update` |
+| `DELETE` | `/api/domain/{domain}` | `domain.delete` |
+
+## Fields
+
+`name`, `description`, optional `image`.
+
+## Bindings
+
+| Binding | Attach | Detach | Permission |
+|---------|--------|--------|-----------|
+| App ↔ Domain | `POST /api/app/{app}/domain/{domain}` | `DELETE …/{domain}` | `domain.assign_app` / `domain.unassign_app` |
+| User ↔ Domain | `POST /api/user/{user}/domain/{domain}` | `DELETE …/{domain}` | `domain.assign_user` / `domain.unassign_user` |
+
+Lists: `GET /api/app/{app}/domain` and `GET /api/user/{user}/domain`.
+
+<Callout type="info" title="Scoping">
+Binding is the whole access model. If no domain links a user to an app, the device's update check will not
+offer that app.
+</Callout>
+
+Next: [Users](/server-api/users).

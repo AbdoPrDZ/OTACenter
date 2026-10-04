@@ -1,0 +1,52 @@
+---
+title: Server
+description: How the Laravel side is structured and what each layer does.
+order: 1
+---
+
+# Server (Laravel)
+
+## Responsibilities
+
+- Store apps, versions, bundles, domains, users and files.
+- Serve the admin JSON API (`/api`) and the device OTA API (`/ota-client/v1`).
+- Authenticate against LDAP and enforce the permission matrix.
+- Serve the four SPAs and this documentation.
+
+## Folder map
+
+```text
+app/
+  Src/                          Base Controller / Model / ValidationType
+  Http/Controllers/             Admin API controllers
+  Http/Controllers/OTAClient/   Device-facing endpoints
+  Http/Middleware/              permission · role · rec.parent · device · file access
+  Ldap/User.php                 LDAP model mapping
+  Models/                       App, Version, Bundle, Domain, User, File, Device, …
+  Models/Traits/Tabling.php     sort · search · filter · paginate
+resources/js/apps/              home · docs · auth · dashboard
+routes/web.php                  SPA shells, file serving, admin JSON API
+routes/ota_client.php           Device API (/ota-client/v1)
+```
+
+## The layers
+
+<Flow>
+  <FlowStep title="Route" subtitle="routes/web.php" />
+  <FlowStep title="Middleware" subtitle="auth · permission · device" />
+  <FlowStep title="Controller" subtitle="thin · validates + delegates" tone="warning" />
+  <FlowStep title="Model" subtitle="validation + Tabling" tone="success" />
+</Flow>
+
+## Pages in this section
+
+- **[Models](/architecture/server/models)** — entities, fields and relations.
+- **[Controllers & Tabling](/architecture/server/controllers-and-tabling)** — the request pipeline.
+- **[Authentication](/architecture/server/authentication)** — Sanctum, LDAP and invites.
+- **[Authorization](/architecture/server/authorization)** — roles, permissions and middleware.
+
+## Conventions
+
+- **Validation lives on the model** via `validationRules(ValidationType $type, ?Model $record)`.
+- **Every list endpoint is one call** to `Model::tablingCollect($request, ...)`.
+- **Responses are uniform** — controllers return `apiSuccessResponse` / `apiErrorResponse`.

@@ -1,0 +1,41 @@
+---
+title: Client
+description: The ota-client package — its layers and platform support.
+order: 1
+---
+
+# Client (`ota-client`)
+
+The client is a separate package: [`github.com/AbdoPrDZ/react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client),
+published to npm as **`ota-client`**. A device ships one JS bundle inside the APK; this package replaces it
+at runtime.
+
+## Layers
+
+<Flow>
+  <FlowStep title="Your app" subtitle="React Native" />
+  <FlowStep title="React layer" subtitle="OTAProvider · hooks" tone="success" />
+  <FlowStep title="JS facade" subtitle="OtaClient" tone="warning" />
+  <FlowStep title="Kotlin engine" subtitle="download · verify · activate" />
+</Flow>
+
+| Layer | Responsibility |
+|-------|----------------|
+| **Native engine** | HTTP, streaming download, extraction, verification, staging, activation and restart. |
+| **JS facade** | `OtaClient` — a typed, promise-based wrapper over the native module. |
+| **React layer** | `<OTAProvider>` plus overlay/splash/configure screens and hooks. |
+| **CLI** | `ota-client doctor \| android \| release \| apk`. |
+
+## Platform support
+
+- **Android** — full support. The engine targets **minSdk 24**; React Native **0.71+**.
+- **iOS** — every API rejects with `OtaUnsupportedPlatformError` and the components render your app
+  untouched, so the same code is safe to ship on both.
+
+## Pages in this section
+
+- **[Native engine](/architecture/client/native-engine)** — the Kotlin module.
+- **[JS API](/architecture/client/js-api)** — the `OtaClient` surface.
+- **[Manifest & rollback](/architecture/client/manifest)** — the archive format and safety model.
+
+For hands-on setup, see the [Client SDK](/client-sdk).

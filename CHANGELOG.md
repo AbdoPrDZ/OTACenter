@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Public site & documentation** — a landing page at `/` and a public **MDX documentation site** at
+  `/docs`, served by two new Vite/React apps (`resources/js/apps/home`, `resources/js/apps/docs`) that
+  reuse the dashboard theme. The app now has four SPAs (home, docs, auth, dashboard); `welcome.blade.php`
+  was removed.
+  - **Folder-driven tree** — the sidebar is generated from `content/` (each folder is a section; its
+    `index.mdx` is the landing page) with frontmatter `title` / `description` / `order`, collapsible
+    nested sections, and a per-page “On this page” TOC.
+  - **Shiki** code highlighting with a dual light/dark theme, plus `<Callout>`, `<Steps>` / `<Step>` and
+    big **animated** `<Flow>` / `<FlowStep>` diagrams (CSS-only beams and dots).
+- **Client SDK docs** — install and usage guides for the [`ota-client`](https://github.com/AbdoPrDZ/react-ota-client)
+  React Native package, cross-linked with the server's `/ota-client/v1` API.
 - **Brand identity** — custom OTACenter logo mark (broadcast "push" arrow framed by signal brackets on
   an indigo→violet tile) as `resources/js/components/Logo.tsx`, plus `public/favicon.svg` and a `<link
   rel="icon">` in the Blade layout.
@@ -35,7 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Data-table column definitions are memoised, and identical in-flight `GET`s are coalesced into a single
   request (collapses duplicate calls from React StrictMode in development).
 - Breadcrumbs on the version and bundle pages show the real app and version names.
-- Per-request console logging no longer dumps full request/response payloads.
+- Per-request console logging is now debug-only (`import.meta.env.DEV`, or `VITE_APP_DEBUG=true`).
+- Removed the deprecated `baseUrl` from `tsconfig.json` (relative `paths` instead) and fixed a duplicate
+  `lib` key, so TypeScript 6/7 editors no longer warn.
 - Responsive tables scroll horizontally; the sidebar collapses to an icon rail.
 
 ### Fixed
@@ -49,6 +62,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   treat a **missing** parameter as create mode instead of comparing against the literal `"add"`.
 - `useToast()` returns a safe no-op outside a `ToastProvider` instead of throwing.
 - App logo editing is laid out as its own branding row and is clearly disabled for non-privileged roles.
+- **Docs internal links** (`/client-sdk/hooks`, …) are routed through the docs SPA, so they stay under
+  `/docs` instead of leaving it; external links are marked `target="_blank"` and `#` links stay on page.
+- **Docs `#anchors`** now scroll correctly: TOC clicks scroll programmatically, and a fresh load with a
+  `#hash` scrolls once the (lazily loaded) MDX has rendered.
+- **Docs flow diagrams animate even when `prefers-reduced-motion` is set**, and their motion is more
+  prominent (a sweeping beam plus a traveling dot).
 
 ### Removed
 

@@ -1,0 +1,74 @@
+---
+title: Controllers & Tabling
+description: How requests are handled and how every list endpoint works.
+order: 2
+---
+
+# Controllers & Tabling
+
+## Controller shape
+
+Controllers are thin: they validate (through the model), delegate to the model or the `Tabling` trait, and
+return a uniform response.
+
+```php
+class AppController extends Controller
+{
+  public function index(Request $request)
+  {
+    return App::tablingCollect(
+      $request,
+      selects: ['apps.*'],
+      map: fn (App $item) => $item->toArray(),
+    );
+  }
+}
+```
+
+Responses use the base helpers:
+
+```php
+return $this->apiSuccessResponse('App retrieved successfully', ['item' => $app->toArray()]);
+return $this->apiErrorResponse('Not found', [], 404);
+return $this->apiInvalidValuesResponse($validator->errors()->toArray());
+```
+
+## The Tabling trait
+
+`Model::tablingCollect($request, ...)` is the single entry point for list endpoints. It applies joins,
+relation loading, sorting, search, filtering and pagination, then maps each row.
+
+### Query parameters
+
+| Parameter | Meaning |
+|-----------|---------|
+| `page` | 1-based page number. |
+| `pageSize` | Rows per page. **Required to avoid a full load**, and must be ≥ 5. |
+| `search` | Free-text across the model's filterable columns. |
+| `sort[field]` | `asc` or `desc`. |
+| `filter[field]` | Per-column `like` filter. |
+
+### Response envelope
+
+```jsonc
+{
+  "success": true,
+  "message": "Items retrieved successfully",
+  "items": [ /* … */ ],
+  "itemsCount": 12,
+  "pagesCount": 2,
+  "page": 1
+}
+```
+
+<Callout type="warning" title="Always send pageSize">
+When `pageSize` is omitted the trait falls back to the **total row count**, so a count or option fetch
+without it loads the whole table. The frontend always sends an explicit `pageSize`.
+</Callout>
+
+## Nested resources
+
+Relations are addressed by URL, e.g. `/app/{app}/version/{version}/bundle`. The `rec.parent` middleware
+verifies the child actually belongs to the parent in the path, preventing cross-tenant access.
+
+Next: [Authentication](/architecture/server/authentication).

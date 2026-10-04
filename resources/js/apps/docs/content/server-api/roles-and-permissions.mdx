@@ -1,0 +1,43 @@
+---
+title: Roles & permissions
+description: Read and manage the RBAC matrix.
+order: 8
+---
+
+# Roles & permissions
+
+## Roles
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/role` | `role.view` |
+| `GET` | `/api/role/{role}` | `role.view` |
+| `GET` | `/api/role/{role}/permission` | `permission.view` |
+| `POST` | `/api/role/{role}/permission/{permission}` | `permission.attach` |
+| `DELETE` | `/api/role/{role}/permission/{permission}` | `permission.detach` |
+| `GET` | `/api/role/{role}/user` | `role.view` |
+| `POST` | `/api/role/{role}/user/{user}` | `role.attach` |
+| `DELETE` | `/api/role/{role}/user/{user}` | `role.detach` |
+
+## Permissions
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `GET` | `/api/permission` | `permission.view` |
+| `GET` | `/api/permission/{permission}` | `permission.view` |
+| `GET` | `/api/permission/{permission}/role` | `permission.view` |
+| `GET` | `/api/permission/{permission}/user` | `permission.view` |
+
+Roles and permissions are **seeded**; the API here is read-mostly. The only mutations are attaching or
+detaching a permission on a role, and a user on a role.
+
+## Model
+
+```text
+User ──* Role ──* Permission
+  └──────────────*   (direct grants)
+```
+
+`super-admin` holds no explicit permissions but bypasses every check server-side.
+
+Next: [Statistics](/server-api/statistics).

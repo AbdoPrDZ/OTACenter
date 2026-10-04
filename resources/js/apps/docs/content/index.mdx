@@ -1,0 +1,52 @@
+---
+title: Overview
+description: What OTACenter is, who it is for, and how to read this documentation.
+order: 1
+---
+
+import { Boxes, Package, PanelsTopLeft, Smartphone } from "lucide-react";
+
+# OTACenter documentation
+
+OTACenter is a **self-hosted Over-The-Air (OTA) distribution and management platform** for mobile and
+desktop applications. Administrators publish apps, attach versioned builds, and decide — through
+organizational **domains** and an internal **LDAP** directory — which users and devices receive which
+updates.
+
+It has two halves:
+
+- **The server** (this Laravel application) stores apps, versions, bundles and files; exposes an admin
+  JSON API and a device-facing OTA API; and serves the dashboard plus this documentation.
+- **The client SDK** ([`ota-client`](https://github.com/AbdoPrDZ/react-ota-client)) is a React Native
+  package that lets an installed app download and install a new JS bundle without a store release, with
+  automatic rollback if the bundle fails to boot.
+
+## How a release flows
+
+<Flow>
+  <FlowStep icon={PanelsTopLeft} title="Publish an app" />
+  <FlowStep icon={Package} title="Add a version" />
+  <FlowStep icon={Boxes} title="Upload a bundle" tone="warning" />
+  <FlowStep icon={Smartphone} title="Devices update" tone="success" />
+</Flow>
+
+## Who should read what
+
+| You are… | Start here |
+|----------|-----------|
+| Evaluating OTACenter | [Core concepts](/concepts) then [Getting started](/getting-started) |
+| An administrator deploying it | [Getting started](/getting-started) → [Deployment](/guides/deployment) |
+| Integrating the mobile client | [Client SDK](/client-sdk) |
+| An API consumer | [Server API](/server-api) |
+| A frontend/backend contributor | [Architecture](/architecture) → [Frontend](/frontend) |
+
+## How this documentation is organised
+
+The sidebar is a tree. Each top-level section (Concepts, Getting started, Architecture, Server API, Client
+SDK, Frontend, Guides, Reference) contains pages and, where useful, further sub-sections. Pages are meant
+to be read in order within a section, but every page stands on its own.
+
+<Callout type="tip" title="Follow the numbered steps">
+Guides use numbered `<Steps>` blocks. If you are setting up OTACenter for the first time, read
+[Getting started](/getting-started) top to bottom and run each step before moving on.
+</Callout>

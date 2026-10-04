@@ -1,0 +1,55 @@
+---
+title: Configuration
+description: Server coordinates and how they are stored.
+order: 6
+---
+
+# Configuration
+
+## Server coordinates
+
+```ts
+interface OtaServerConfig {
+  apiBaseUrl: string;  // scheme + host, e.g. https://updates.example.com
+  apiVersion: string;  // API prefix, e.g. "v1"
+  apiKey: string;      // sent as the API-KEY header (a version's api_key)
+}
+```
+
+Provide them once, through the provider or imperatively:
+
+```tsx
+<OTAProvider config={{ apiBaseUrl: "https://updates.example.com", apiVersion: "v1", apiKey: "…" }}>
+  <App />
+</OTAProvider>
+```
+
+```ts
+await OtaClient.configure({ apiKey: "new-key" }); // unset keys keep their value
+```
+
+<Callout type="info" title="Where the values come from">
+- **apiBaseUrl** — your OTACenter origin.
+- **apiVersion** — the device API prefix (`v1`).
+- **apiKey** — the `api_key` of the **version** you are updating from. It authenticates `app/info`.
+</Callout>
+
+## The unconfigured state
+
+If no base URL is known, the provider shows `OTAConfigureScreen` (a form) so a device can be pointed at a
+server at runtime. Supply your own UI with `unconfiguredFallback` or use the imperative `configure`.
+
+## Persistence
+
+Configuration is persisted **natively**, so it survives restarts and is available before JS runs. It also
+falls back to manifest meta-data baked into the APK.
+
+## Reading it back
+
+```ts
+const config = await OtaClient.getConfig();
+const state = await OtaClient.getState();
+console.log(state.configured, state.app, state.bundle);
+```
+
+Next: [Advanced](/client-sdk/advanced).

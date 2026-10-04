@@ -1,0 +1,47 @@
+---
+title: Permissions
+description: The RBAC matrix and the seeded roles.
+order: 2
+---
+
+# Permissions
+
+## Roles
+
+`super-admin` · `admin` · `developer` · `user` · `guest`
+
+`super-admin` bypasses every permission check server-side (it holds no explicit grants). A `roles`
+requirement in the frontend still applies to it, but the backend treats it as omnipotent.
+
+## Matrix
+
+| Resource | Permissions |
+|----------|-------------|
+| `app` | `app.view`, `app.create`, `app.update`, `app.delete` |
+| `version` | `version.view`, `version.create`, `version.update`, `version.delete` |
+| `bundle` | `bundle.view`, `bundle.create`, `bundle.update`, `bundle.delete` |
+| `screenshot` | `screenshot.view`, `screenshot.create`, `screenshot.delete` |
+| `domain` | `domain.view`, `domain.create`, `domain.update`, `domain.delete`, `domain.assign_app`, `domain.unassign_app`, `domain.assign_user`, `domain.unassign_user` |
+| `user` | `user.view`, `user.invite`, `user.delete` |
+| `role` | `role.view`, `role.attach`, `role.detach` |
+| `permission` | `permission.view`, `permission.attach`, `permission.detach` |
+
+## Examples
+
+| Action | Requires |
+|--------|----------|
+| See the app list | `app.view` |
+| Add an app | `app.create` |
+| Upload a bundle | `bundle.create` |
+| Bind an app to a domain | `domain.assign_app` |
+| Bind a user to a domain | `domain.assign_user` |
+| Invite a user | `user.invite` |
+| Open Statistics | role `super-admin` or `admin` |
+
+## How it is enforced
+
+- Routes carry `permission:{name}` (and sometimes `role:…`) middleware.
+- `rec.parent` middleware guards nested resources.
+- The frontend mirrors it with `can(...)` for nav, routes and actions — a UX layer only.
+
+Next: [Routes](/reference/routes).
