@@ -112,16 +112,19 @@ export default class User extends UserModel {
     return response;
   }
 
-  static async editProfile(data: FieldValues) {
+  static async editProfile(data: FormData) {
+    // A FormData has no own enumerable properties, so `{ _method: "PUT", ...data }`
+    // silently dropped every entry and the server only ever received `_method`.
+    // Append the override to the FormData itself instead.
+    data.append("_method", "PUT");
+
     const response = await Request.post({
       url: "/auth/profile",
-      data: { _method: "PUT", ...data },
+      data,
       dataField: "user",
-      dataEncoding: async (data) => await this.decode(data),
-      headers: {
-        ...window.axios.defaults.headers.common,
-        "Content-Type": "multipart/form-data",
-      },
+      dataEncoding: async (value) => await this.decode(value),
+      // Content-Type is deliberately left unset: the browser must add
+      // multipart/form-data together with the boundary it generates.
     });
 
     if (response.success && response.data)

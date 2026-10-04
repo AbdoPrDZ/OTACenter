@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-10-04
+
+### Fixed
+
+- **Profile update silently did nothing.** `User.editProfile` built its payload as
+  `{ _method: "PUT", ...data }` where `data` is a `FormData`. A `FormData` has no own enumerable
+  properties, so the spread discarded every field and the server only ever received `_method`; `name` is
+  validated with `sometimes`, so the request answered `200 "User updated successfully"` while changing
+  nothing. The method override is now appended to the `FormData` itself, matching the other models
+  (`Version`, `Bundle`, `AppScreenshot`). Covered by `resources/js/models/User.test.ts`.
+
 ## [1.1.0] - 2026-10-04
 
 ### Added
@@ -123,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.1.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/AbdoPrDZ/OTACenter/releases/tag/v0.1.0
