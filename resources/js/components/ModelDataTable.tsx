@@ -27,7 +27,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  EyeOff,
+  Inbox,
   Search,
   Settings2,
 } from "lucide-react";
@@ -35,27 +35,15 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/form";
+import { EmptyState, Skeleton } from "@/components/ui/feedback";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dropdown,
+  DropdownCheckboxItem,
+  DropdownItem,
+  DropdownLabel,
+  DropdownSeparator,
+} from "@/components/ui/dropdown";
 
 import { DataTableColumn, FetchAllProps, IModel, ItemsResponse } from "@/types/model";
 import { Response } from "@/types/http";
@@ -90,7 +78,6 @@ export interface ModelDataTableProps<MT extends IModel> {
   enableRowSelection?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
-  empty?: React.ReactNode;
   actions?: (row: MT) => React.ReactNode;
   onRowClick?: (row: MT) => void;
   requestKey?: string | number;
@@ -120,13 +107,18 @@ export default function ModelDataTable<MT extends IModel>({
   enableRowSelection = false,
   searchPlaceholder = "Search...",
   emptyMessage = "No results found.",
-  empty,
   actions,
   onRowClick,
   requestKey,
   className,
 }: ModelDataTableProps<MT>) {
-  const columnDefs = columns && columns.length > 0 ? columns : model.getDataTableColumns?.();
+  const columnDefs = React.useMemo(
+    () =>
+      columns && columns.length > 0
+        ? columns
+        : model.getDataTableColumns?.() ?? [],
+    [columns, model],
+  );
 
   const [loading, setLoading] = React.useState(true);
   const [items, setItems] = React.useState<MT[]>([]);
@@ -207,9 +199,10 @@ export default function ModelDataTable<MT extends IModel>({
           header: ({ table }) => (
             <Checkbox
               checked={table.getIsAllPageRowsSelected()}
-              onCheckedChange={(value) => {
-                table.toggleAllPageRowsSelected(!!value);
-              }}
+              indeterminate={
+                table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
+              }
+              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
               aria-label="Select all"
             />
           ),
@@ -220,11 +213,11 @@ export default function ModelDataTable<MT extends IModel>({
               aria-label="Select row"
             />
           ),
-        })
+        }),
       );
     }
 
-    columnDefs?.forEach((column) => {
+    columnDefs.forEach((column) => {
       const field = String(column.field);
 
       defs.push(
@@ -241,9 +234,9 @@ export default function ModelDataTable<MT extends IModel>({
             column.renderCell ? (
               column.renderCell({ row: info.row.original })
             ) : (
-              <span>{String(info.getValue() ?? "")}</span>
+              <span className="text-foreground/90">{String(info.getValue() ?? "")}</span>
             ),
-        })
+        }),
       );
     });
 
@@ -254,7 +247,7 @@ export default function ModelDataTable<MT extends IModel>({
           enableHiding: false,
           enableSorting: false,
           cell: ({ row }) => actions(row.original),
-        })
+        }),
       );
     }
 
@@ -291,22 +284,25 @@ export default function ModelDataTable<MT extends IModel>({
   });
 
   const rows = table.getRowModel().rows;
+  const visibleColumns = table.getVisibleLeafColumns();
+  const showSkeleton = loading && items.length === 0;
+  const refreshing = loading && items.length > 0;
 
   return (
     <div className={cn("flex w-full flex-col gap-3", className)}>
       {(enableSearch || enableColumnVisibility) && (
         <div className="flex w-full items-center justify-between gap-2">
           {enableSearch && (
-            <div className="relative max-w-sm flex-1">
+            <div className="relative w-full max-w-sm">
               <Search
-                className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
               />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={searchPlaceholder}
-                className="pl-7"
+                className="pl-8"
               />
             </div>
           )}
@@ -314,63 +310,79 @@ export default function ModelDataTable<MT extends IModel>({
         </div>
       )}
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: Math.min(pageSize, 5) }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  {table.getVisibleLeafColumns().map((column) => (
-                    <TableCell key={column.id}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        {refreshing ? (
+          <div className="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-primary/15">
+            <div className="h-full w-1/4 animate-progress rounded-full bg-primary" />
+          </div>
+        ) : null}
+
+        <div className="overflow-x-auto">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="bg-muted/40">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id} className="border-b border-border">
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="h-10 px-3 text-left align-middle text-[0.6875rem] font-semibold tracking-wide text-muted-foreground uppercase whitespace-nowrap"
+                    >
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    </th>
                   ))}
-                </TableRow>
-              ))
-            ) : rows.length ? (
-              rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => onRowClick?.(row.original)}
-                  className={cn(onRowClick && "cursor-pointer")}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={table.getVisibleLeafColumns().length} className="h-24">
-                  {empty ?? (
-                    <Empty>
-                      <EmptyContent>
-                        <EmptyTitle>{emptyMessage}</EmptyTitle>
-                        <EmptyDescription>
-                          Try adjusting your search or add some data to get started.
-                        </EmptyDescription>
-                      </EmptyContent>
-                    </Empty>
-                  )}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                </tr>
+              ))}
+            </thead>
+            <tbody
+              className={cn(
+                "transition-opacity duration-150",
+                refreshing && "opacity-60",
+              )}
+            >
+              {showSkeleton ? (
+                Array.from({ length: Math.min(pageSize, 6) }).map((_, index) => (
+                  <tr key={`skeleton-${index}`} className="border-b border-border/60 last:border-0">
+                    {visibleColumns.map((column) => (
+                      <td key={column.id} className="px-3 py-2.5">
+                        <Skeleton className="h-4 w-full max-w-40" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : rows.length ? (
+                rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    onClick={() => onRowClick?.(row.original)}
+                    className={cn(
+                      "border-b border-border/60 transition-colors last:border-0",
+                      "hover:bg-accent/40 data-[state=selected]:bg-primary/5",
+                      onRowClick && "cursor-pointer",
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-3 py-2.5 align-middle">
+                        <table.FlexRender cell={cell} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={visibleColumns.length} className="p-2">
+                    <EmptyState
+                      className="border-0"
+                      icon={Inbox}
+                      title={emptyMessage}
+                      description="Try adjusting your search, or add some data to get started."
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <DataTablePagination
@@ -401,36 +413,34 @@ function DataTableColumnHeader<MT extends IModel, TV>({
     return <span>{title}</span>;
   }
 
+  const sorted = column.getIsSorted();
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="sm" className="-ml-3 h-8 data-[state=open]:bg-accent" />}
-      >
-        <span>{title}</span>
-        {column.getIsSorted() === "desc" ? (
-          <ArrowDown />
-        ) : column.getIsSorted() === "asc" ? (
-          <ArrowUp />
-        ) : (
-          <ArrowUpDown />
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-          <ArrowUp />
-          Asc
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-          <ArrowDown />
-          Desc
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-          <EyeOff />
-          Hide
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dropdown
+      align="start"
+      trigger={
+        <button
+          type="button"
+          className="-ml-2 inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-[0.6875rem] font-semibold tracking-wide text-muted-foreground uppercase transition-colors hover:bg-accent hover:text-foreground"
+        >
+          {title}
+          {sorted === "desc" ? (
+            <ArrowDown className="size-3" />
+          ) : sorted === "asc" ? (
+            <ArrowUp className="size-3" />
+          ) : (
+            <ArrowUpDown className="size-3 opacity-50" />
+          )}
+        </button>
+      }
+    >
+      <DropdownItem onClick={() => column.toggleSorting(false)}>
+        <ArrowUp /> Ascending
+      </DropdownItem>
+      <DropdownItem onClick={() => column.toggleSorting(true)}>
+        <ArrowDown /> Descending
+      </DropdownItem>
+    </Dropdown>
   );
 }
 
@@ -440,35 +450,29 @@ interface DataTableViewOptionsProps<MT extends RowData> {
 
 function DataTableViewOptions<MT extends RowData>({ table }: DataTableViewOptionsProps<MT>) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
-            <Settings2 />
-            View
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="w-[150px]">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        {table
-          .getAllColumns()
-          .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
-          .map((column) => (
-            <DropdownMenuCheckboxItem
-              key={column.id}
-              className="capitalize"
-              checked={column.getIsVisible()}
-              onCheckedChange={(value) => column.toggleVisibility(!!value)}
-            >
-              {column.id}
-            </DropdownMenuCheckboxItem>
-          ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Dropdown
+      align="end"
+      trigger={
+        <Button variant="outline" size="sm">
+          <Settings2 /> View
+        </Button>
+      }
+    >
+      <DropdownLabel>Toggle columns</DropdownLabel>
+      <DropdownSeparator />
+      {table
+        .getAllColumns()
+        .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+        .map((column) => (
+          <DropdownCheckboxItem
+            key={column.id}
+            checked={column.getIsVisible()}
+            onClick={() => column.toggleVisibility(!column.getIsVisible())}
+          >
+            {column.id}
+          </DropdownCheckboxItem>
+        ))}
+    </Dropdown>
   );
 }
 
@@ -492,18 +496,18 @@ function DataTablePagination({
   onPageSizeChange,
 }: DataTablePaginationProps) {
   return (
-    <div className="flex items-center justify-between px-2">
-      <div className="flex-1 text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+      <p className="text-xs text-muted-foreground">
         {itemsCount.toLocaleString()} row{itemsCount === 1 ? "" : "s"}
-      </div>
+      </p>
 
-      <div className="flex items-center space-x-4 lg:space-x-6">
-        <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">Rows per page</p>
+      <div className="flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          Rows
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-7 rounded-md border border-input bg-input/20 px-1 text-xs outline-none"
+            className="h-8 rounded-md border border-input bg-input/30 px-2 text-xs outline-none focus-visible:border-ring"
           >
             {pageSizeOptions.map((option) => (
               <option key={option} value={option}>
@@ -511,46 +515,46 @@ function DataTablePagination({
               </option>
             ))}
           </select>
-        </div>
+        </label>
 
-        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-          Page {Math.min(pageIndex + 1, pagesCount)} of {Math.max(pagesCount, 1)}
-        </div>
+        <span className="text-xs font-medium tabular-nums">
+          Page {Math.min(pageIndex + 1, Math.max(pagesCount, 1))} of {Math.max(pagesCount, 1)}
+        </span>
 
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
-            size="icon"
-            className="hidden size-7 lg:flex"
+            size="icon-sm"
             onClick={() => onPageIndexChange(0)}
             disabled={pageIndex === 0}
+            aria-label="First page"
           >
             <ChevronsLeft />
           </Button>
           <Button
             variant="outline"
-            size="icon"
-            className="size-7"
+            size="icon-sm"
             onClick={() => onPageIndexChange(pageIndex - 1)}
             disabled={pageIndex === 0}
+            aria-label="Previous page"
           >
             <ChevronLeft />
           </Button>
           <Button
             variant="outline"
-            size="icon"
-            className="size-7"
+            size="icon-sm"
             onClick={() => onPageIndexChange(pageIndex + 1)}
             disabled={pageIndex + 1 >= pagesCount}
+            aria-label="Next page"
           >
             <ChevronRight />
           </Button>
           <Button
             variant="outline"
-            size="icon"
-            className="hidden size-7 lg:flex"
+            size="icon-sm"
             onClick={() => onPageIndexChange(pagesCount - 1)}
             disabled={pageIndex + 1 >= pagesCount}
+            aria-label="Last page"
           >
             <ChevronsRight />
           </Button>

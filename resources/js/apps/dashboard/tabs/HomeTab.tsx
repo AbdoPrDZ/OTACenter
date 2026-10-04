@@ -1,212 +1,198 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import App from "@/models/App";
+import Domain from "@/models/Domain";
+import User from "@/models/User";
 import DashboardRouter from "@/apps/dashboard/router";
 import InviteDialog from "@/components/InviteDialog";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import LogoMark from "@/components/Logo";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { can, type RouteAccess } from "@/utils/permissions";
-
+import { Skeleton } from "@/components/ui/feedback";
+import { NAV_ITEMS } from "@/components/navigation";
+import { can } from "@/utils/permissions";
+import type { LucideIcon } from "lucide-react";
 import {
-  BarChart3,
   ChevronRight,
   Globe,
-  KeyRound,
   PanelsTopLeft,
   Plus,
-  RadioTower,
-  ShieldCheck,
-  UserPlus,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 
-interface QuickAccessItem {
-  name: string;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-  access?: RouteAccess;
+interface Counts {
+  apps?: number;
+  domains?: number;
+  users?: number;
 }
-
-const QUICK_ACCESS: QuickAccessItem[] = [
-  {
-    name: "apps",
-    label: "Apps",
-    description: "Publish applications and manage their versions.",
-    icon: PanelsTopLeft,
-    access: { permission: "app.view" },
-  },
-  {
-    name: "domains",
-    label: "Domains",
-    description: "Organizational groups that scope who can access what.",
-    icon: Globe,
-    access: { permission: "domain.view" },
-  },
-  {
-    name: "users",
-    label: "Users",
-    description: "LDAP directory users and their domain bindings.",
-    icon: Users,
-    access: { permission: "user.view" },
-  },
-  {
-    name: "roles",
-    label: "Roles",
-    description: "Roles and the users attached to them.",
-    icon: ShieldCheck,
-    access: { permission: "role.view" },
-  },
-  {
-    name: "permissions",
-    label: "Permissions",
-    description: "Fine-grained actions granted to roles and users.",
-    icon: KeyRound,
-    access: { permission: "permission.view" },
-  },
-  {
-    name: "statistics",
-    label: "Statistics",
-    description: "Aggregated overview of the center's resources.",
-    icon: BarChart3,
-    access: { roles: ["super-admin", "admin"] },
-  },
-];
-
-const OVERVIEW_POINTS = [
-  {
-    title: "Apps",
-    text: "Publish mobile & desktop apps and attach versioned builds.",
-  },
-  {
-    title: "Versions & bundles",
-    text: "Each version hosts a distributable bundle that devices update over-the-air.",
-  },
-  {
-    title: "Domains",
-    text: "Group users and apps into organizational domains to scope access.",
-  },
-  {
-    title: "Users",
-    text: "Users come from your LDAP directory and are bound to domains.",
-  },
-  {
-    title: "Roles & permissions",
-    text: "Control what each user can view and do across the center.",
-  },
-];
 
 export default function HomeTab() {
   const navigate = useNavigate();
-  const accessible = QUICK_ACCESS.filter((item) => can(item.access));
+  const user = User.current;
+  const [counts, setCounts] = useState<Counts>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      App.all({ pagination: { page: 1, pageSize: 5 } }),
+      Domain.all({ pagination: { page: 1, pageSize: 5 } }),
+      User.all({ pagination: { page: 1, pageSize: 5 } }),
+    ]).then(
+      ([apps, domains, users]) => {
+        if (cancelled) return;
+        setCounts({
+          apps: apps.data?.itemsCount ?? 0,
+          domains: domains.data?.itemsCount ?? 0,
+          users: users.data?.itemsCount ?? 0,
+        });
+        setLoading(false);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const stats: { label: string; value?: number; icon: LucideIcon; to: string; access?: { permission?: string; roles?: string[] } }[] = [
+    { label: "Apps", value: counts.apps, icon: PanelsTopLeft, to: "apps", access: { permission: "app.view" } },
+    { label: "Domains", value: counts.domains, icon: Globe, to: "domains", access: { permission: "domain.view" } },
+    { label: "Users", value: counts.users, icon: Users, to: "users", access: { permission: "user.view" } },
+  ];
+
+  const quickAccess = NAV_ITEMS.filter(
+    (item) => item.group === "general" && item.name !== "home" && can(item.access),
+  );
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div>
-        <h1 className="text-sm font-semibold tracking-tight">Home</h1>
-        <p className="text-xs text-muted-foreground">
-          Overview of the app center.
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <RadioTower className="size-4" />
+    <div className="flex w-full flex-col gap-5">
+      <Card className="relative overflow-hidden border-primary/20">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-transparent" />
+        <CardContent className="relative flex flex-wrap items-center justify-between gap-4 pt-5">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 items-center justify-center rounded-xl">
+              <LogoMark className="size-11" />
             </span>
-            Welcome to OTACenter
-          </CardTitle>
-          <CardDescription>
-            OTACenter is the Over-The-Air distribution &amp; management
-            platform for your applications. Use the shortcuts below or the
-            sidebar to get around.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2.5">
-          {OVERVIEW_POINTS.map((point) => (
-            <div key={point.title} className="flex items-start gap-3">
-              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary/60" />
-              <p className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{point.title}</span>
-                <span> — {point.text}</span>
+            <div>
+              <h1 className="text-base font-semibold tracking-tight">
+                {user ? `Welcome back, ${user.name.split(" ")[0]}` : "Welcome to OTACenter"}
+              </h1>
+              <p className="text-xs/relaxed text-muted-foreground">
+                Over-The-Air distribution &amp; management for your applications.
               </p>
             </div>
-          ))}
+          </div>
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          const allowed = can(stat.access);
+          return (
+            <Card
+              key={stat.label}
+              className={allowed ? "transition-colors hover:border-primary/40" : "opacity-70"}
+            >
+              <CardContent className="flex items-center gap-3 pt-5">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                  <Icon className="size-5" />
+                </span>
+                <div className="flex-1">
+                  <p className="text-[0.6875rem] font-medium tracking-wide text-muted-foreground uppercase">
+                    {stat.label}
+                  </p>
+                  {loading ? (
+                    <Skeleton className="mt-1 h-6 w-10" />
+                  ) : (
+                    <p className="text-xl font-semibold tracking-tight tabular-nums">
+                      {stat.value?.toLocaleString() ?? 0}
+                    </p>
+                  )}
+                </div>
+                {allowed ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Open ${stat.label}`}
+                    onClick={() => navigate(DashboardRouter.getPath(stat.to)!)}
+                  >
+                    <ChevronRight />
+                  </Button>
+                ) : null}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
       <div className="flex flex-col gap-2">
-        <h2 className="text-xs font-semibold tracking-tight text-muted-foreground uppercase">
+        <h2 className="text-[0.6875rem] font-semibold tracking-widest text-muted-foreground uppercase">
           Quick access
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {accessible.map((item) => (
-            <Card
-              key={item.name}
-              className="cursor-pointer transition-colors hover:border-primary/40 hover:bg-muted/40"
-              onClick={() => navigate(DashboardRouter.getPath(item.name)!)}
-            >
-              <CardContent className="flex items-center justify-between gap-3 pt-4">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <item.icon className="size-4" />
+          {quickAccess.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => navigate(DashboardRouter.getPath(item.name)!)}
+                className="group flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                  <Icon className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-xs font-semibold">
+                    {item.label}
                   </span>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-semibold">{item.label}</span>
-                    <span className="text-[0.625rem] text-muted-foreground">
-                      {item.description}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          ))}
+                  <span className="block truncate text-[0.625rem] text-muted-foreground">
+                    {item.description}
+                  </span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-xs font-semibold tracking-tight text-muted-foreground uppercase">
+        <h2 className="text-[0.6875rem] font-semibold tracking-widest text-muted-foreground uppercase">
           Quick actions
         </h2>
         <Card>
-          <CardContent className="flex flex-wrap items-center gap-2 pt-4">
-            {can({ permission: "app.create" }) && (
+          <CardContent className="flex flex-wrap items-center gap-2 pt-5">
+            {can({ permission: "app.create" }) ? (
               <Button
                 variant="outline"
                 onClick={() => navigate(DashboardRouter.getPath("app.add")!)}
               >
-                <Plus />
-                Create App
+                <Plus /> Create app
               </Button>
-            )}
-            {can({ permission: "user.invite" }) && (
-              <InviteDialog
-                onInvited={() => {}}
-                triggerRender={
-                  <Button variant="outline">
-                    <UserPlus />
-                    Invite User
-                  </Button>
-                }
-              />
-            )}
-            {can({ permission: "domain.create" }) && (
+            ) : null}
+            {can({ permission: "domain.create" }) ? (
               <Button
                 variant="outline"
                 onClick={() => navigate(DashboardRouter.getPath("domain.add")!)}
               >
-                <Plus />
-                Add Domain
+                <Plus /> Add domain
               </Button>
-            )}
+            ) : null}
+            {can({ permission: "user.invite" }) ? (
+              <InviteDialog
+                onInvited={() => undefined}
+                trigger={
+                  <Button variant="outline">
+                    <Plus /> Invite user
+                  </Button>
+                }
+              />
+            ) : null}
           </CardContent>
         </Card>
       </div>

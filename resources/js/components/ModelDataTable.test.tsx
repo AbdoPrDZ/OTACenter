@@ -106,7 +106,7 @@ describe("ModelDataTable search debounce", () => {
     expect(model.all).toHaveBeenLastCalledWith(
       expect.objectContaining({
         filter: { quickFilterValues: ["needle"] },
-      })
+      }),
     );
   });
 });

@@ -74,13 +74,13 @@ class Bundle extends Model
       ValidationType::Create => [
         'name'      => 'required|string|max:255',
         'changelog' => 'nullable|string',
-        'file'      => 'required|file|extensions:zip|max:102400',
+        'file'      => 'required|file|extensions:zip,tar,gz|max:102400',
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
       ],
       ValidationType::Update => [
         'name'      => 'sometimes|required|string|max:255',
         'changelog' => 'sometimes|nullable|string',
-        'file'      => 'sometimes|required|file|extensions:zip|max:102400',
+        'file'      => 'sometimes|required|file|extensions:zip,tar,gz|max:102400',
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
       ],
     };

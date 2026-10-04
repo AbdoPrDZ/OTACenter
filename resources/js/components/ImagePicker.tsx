@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
+import { ImagePlus, RefreshCw } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner } from "@/components/ui/feedback";
 import { pickImage } from "@/utils/bootstrap";
 import { cn } from "@/lib/utils";
-
-import { ImagePlus } from "lucide-react";
 
 interface ImagePickerProps {
   value?: string;
@@ -37,7 +35,6 @@ export default function ImagePicker({
     if (image) {
       const url = URL.createObjectURL(image);
       setPreviewUrl(url);
-
       return () => URL.revokeObjectURL(url);
     }
 
@@ -46,27 +43,28 @@ export default function ImagePicker({
 
   const pick = async () => {
     setLoading(true);
-
     const file = await pickImage();
-
     if (file) onChange(file);
-
     setLoading(false);
   };
 
   return (
     <div className={cn("flex w-fit flex-col gap-1.5", className)}>
-      <Button
+      <button
         type="button"
-        variant="outline"
         onClick={pick}
         disabled={disabled}
-        className="group relative overflow-hidden p-0"
-        style={{ width, height, borderRadius }}
         aria-label="Choose image"
+        className={cn(
+          "group relative overflow-hidden border border-dashed border-border bg-muted/30 transition-colors",
+          "hover:border-primary/50 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50",
+        )}
+        style={{ width, height, borderRadius }}
       >
         {loading ? (
-          <Spinner className="size-5" />
+          <span className="flex size-full items-center justify-center">
+            <Spinner className="size-5 text-muted-foreground" />
+          </span>
         ) : previewUrl ? (
           <>
             <img
@@ -74,19 +72,19 @@ export default function ImagePicker({
               alt="Preview"
               className="size-full object-cover"
             />
-            <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[0.625rem] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Change
+            <span className="absolute inset-0 flex items-center justify-center bg-black/55 opacity-0 transition-opacity group-hover:opacity-100">
+              <RefreshCw className="size-5 text-white" />
             </span>
           </>
         ) : (
-          <span className="flex flex-col items-center gap-1.5 text-muted-foreground">
+          <span className="flex size-full flex-col items-center justify-center gap-1.5 text-muted-foreground">
             <ImagePlus className="size-6" />
-            <span className="text-xs">Choose image</span>
+            <span className="text-xs font-medium">Choose image</span>
           </span>
         )}
-      </Button>
+      </button>
 
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-[0.6875rem] text-destructive">{error}</p> : null}
     </div>
   );
 }

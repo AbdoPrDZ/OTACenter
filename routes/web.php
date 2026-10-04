@@ -58,7 +58,11 @@ Route::prefix('api')->group(function () {
           Route::delete('/{permission}', [PermissionController::class, 'detachFromRole'])->middleware('permission:permission.detach')->name('role.permission.detach');
         });
 
-        Route::get('/user', [RoleController::class, 'indexUsers'])->middleware('permission:role.view')->name('role.user.index');
+        Route::prefix('/user')->whereNumber('user')->group(function () {
+          Route::get('/', [RoleController::class, 'indexUsers'])->middleware('permission:role.view')->name('role.user.index');
+          Route::post('/{user}', [RoleController::class, 'attachToUser'])->middleware('permission:role.attach')->name('role.user.attach');
+          Route::delete('/{user}', [RoleController::class, 'detachFromUser'])->middleware('permission:role.detach')->name('role.user.detach');
+        });
       });
     });
 

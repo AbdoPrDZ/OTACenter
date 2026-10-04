@@ -1,42 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import type { ReactElement } from "react";
+import { Check, Copy, UserPlus } from "lucide-react";
 
 import User from "@/models/User";
 import Role, { IRole } from "@/models/Role";
 import Domain, { IDomain } from "@/models/Domain";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/form";
 import { Alert } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Field,
   FieldContent,
   FieldDescription,
   FieldError,
   FieldLabel,
-} from "@/components/ui/field";
+} from "@/components/ui/form";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
-import { Check, Copy, Loader2, UserPlus } from "lucide-react";
+  Modal,
+  ModalContent,
+  ModalDescription,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { useToast } from "@/components/ui/toast";
 
 interface InviteDialogProps {
   onInvited: () => void;
-  /** Optional custom trigger element (Base UI `render`). Defaults to a plain button. */
-  triggerRender?: ReactElement;
+  /** Optional custom trigger node; defaults to an "Invite user" button. */
+  trigger?: ReactNode;
 }
 
 interface InviteFormValues {
@@ -44,11 +36,12 @@ interface InviteFormValues {
   email: string;
 }
 
-export default function InviteDialog({ onInvited, triggerRender }: InviteDialogProps) {
+export default function InviteDialog({ onInvited, trigger }: InviteDialogProps) {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [roles, setRoles] = useState<IRole[]>([]);
   const [domains, setDomains] = useState<IDomain[]>([]);
-  const [role, setRole] = useState<string>("");
+  const [role, setRole] = useState<string | null>(null);
   const [roleError, setRoleError] = useState<string>();
   const [domainId, setDomainId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -61,17 +54,17 @@ export default function InviteDialog({ onInvited, triggerRender }: InviteDialogP
   useEffect(() => {
     if (!open) return;
 
-    Role.all().then((response) => {
+    Role.all({ pagination: { page: 1, pageSize: 100 } }).then((response) => {
       if (response.success && response.data) setRoles(response.data.items);
     });
 
-    Domain.all().then((response) => {
+    Domain.all({ pagination: { page: 1, pageSize: 100 } }).then((response) => {
       if (response.success && response.data) setDomains(response.data.items);
     });
   }, [open]);
 
   const resetState = () => {
-    setRole("");
+    setRole(null);
     setRoleError(undefined);
     setDomainId(null);
     setSubmitting(false);
@@ -89,6 +82,7 @@ export default function InviteDialog({ onInvited, triggerRender }: InviteDialogP
     if (!inviteLink) return;
     await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
+    toast.success("Link copied");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -109,6 +103,7 @@ export default function InviteDialog({ onInvited, triggerRender }: InviteDialogP
 
     if (response.success) {
       setInviteLink((response.data as { link?: string } | undefined)?.link);
+      toast.success("User invited", "Share the registration link with them.");
       onInvited();
       setSubmitting(false);
       return;
@@ -125,178 +120,148 @@ export default function InviteDialog({ onInvited, triggerRender }: InviteDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={triggerRender}>
-        <Button>
-          <UserPlus />
-          Invite User
+    <>
+      {trigger ? (
+        <span className="contents" onClick={() => setOpen(true)}>
+          {trigger}
+        </span>
+      ) : (
+        <Button onClick={() => setOpen(true)}>
+          <UserPlus /> Invite user
         </Button>
-      </DialogTrigger>
+      )}
 
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Invite a new user</DialogTitle>
-          <DialogDescription>
-            Create an account for a user and share the registration link with
-            them to set their own password.
-          </DialogDescription>
-        </DialogHeader>
+      <Modal open={open} onOpenChange={handleOpenChange}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Invite a new user</ModalTitle>
+            <ModalDescription>
+              Create an account and share the registration link so they can set
+              their own password.
+            </ModalDescription>
+          </ModalHeader>
 
-        {inviteLink ? (
-          <div className="flex flex-col gap-4">
-            <Alert>User invited successfully.</Alert>
+          {inviteLink ? (
+            <div className="mt-4 flex flex-col gap-4">
+              <Alert variant="success">User invited successfully.</Alert>
 
-            <Field>
-              <FieldLabel htmlFor="invite-link">Registration link</FieldLabel>
-              <FieldContent>
-                <div className="flex items-center gap-2">
+              <Field>
+                <FieldLabel htmlFor="invite-link">Registration link</FieldLabel>
+                <FieldContent>
+                  <div className="flex items-center gap-2">
+                    <Input id="invite-link" readOnly value={inviteLink} className="flex-1" />
+                    <Button variant="outline" size="sm" onClick={copyLink}>
+                      {copied ? <Check /> : <Copy />}
+                      {copied ? "Copied" : "Copy"}
+                    </Button>
+                  </div>
+                  <FieldDescription>
+                    The user receives the registration code by email. Share this
+                    link so they can open the registration page.
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={resetState}>
+                  Invite another
+                </Button>
+                <Button onClick={() => handleOpenChange(false)}>Done</Button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="mt-4 flex flex-col gap-4"
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+            >
+              {formState.errors.root ? (
+                <Alert variant="destructive">{formState.errors.root.message}</Alert>
+              ) : null}
+
+              <Field>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <FieldContent>
                   <Input
-                    id="invite-link"
-                    readOnly
-                    value={inviteLink}
-                    className="flex-1"
+                    id="name"
+                    placeholder="Jane Doe"
+                    autoFocus
+                    aria-invalid={!!formState.errors.name}
+                    {...register("name", { required: "Name is required." })}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={copyLink}
-                  >
-                    {copied ? <Check /> : <Copy />}
-                    {copied ? "Copied" : "Copy"}
-                  </Button>
-                </div>
-                <FieldDescription>
-                  The user will receive the registration code by email. Share
-                  this link so they can open the registration page.
-                </FieldDescription>
-              </FieldContent>
-            </Field>
+                  <FieldError>{formState.errors.name?.message}</FieldError>
+                </FieldContent>
+              </Field>
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={resetState}>
-                Invite another
-              </Button>
-              <Button type="button" onClick={() => handleOpenChange(false)}>
-                Done
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-          >
-            {formState.errors.root && (
-              <Alert variant="destructive">
-                {formState.errors.root.message}
-              </Alert>
-            )}
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldContent>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="jane@company.com"
+                    autoComplete="email"
+                    aria-invalid={!!formState.errors.email}
+                    {...register("email", { required: "Email is required." })}
+                  />
+                  <FieldError>{formState.errors.email?.message}</FieldError>
+                </FieldContent>
+              </Field>
 
-            <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="name"
-                  placeholder="Jane Doe"
-                  autoFocus
-                  aria-invalid={!!formState.errors.name}
-                  {...register("name", { required: "Name is required." })}
-                />
-                <FieldError>{formState.errors.name?.message}</FieldError>
-              </FieldContent>
-            </Field>
+              <Field>
+                <FieldLabel>Role</FieldLabel>
+                <FieldContent>
+                  <SelectMenu
+                    options={roles.map((item) => ({
+                      value: item.name,
+                      label: item.name,
+                    }))}
+                    value={role}
+                    onValueChange={(value) => {
+                      setRole(typeof value === "string" ? value : null);
+                      setRoleError(undefined);
+                    }}
+                    placeholder="Select a role..."
+                    searchPlaceholder="Search roles..."
+                    emptyText="No roles found."
+                  />
+                  <FieldError>{roleError}</FieldError>
+                </FieldContent>
+              </Field>
 
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <FieldContent>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="jane@company.com"
-                  autoComplete="email"
-                  aria-invalid={!!formState.errors.email}
-                  {...register("email", { required: "Email is required." })}
-                />
-                <FieldError>{formState.errors.email?.message}</FieldError>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>Role</FieldLabel>
-              <FieldContent>
-                <Combobox
-                  value={role}
-                  onValueChange={(value) => {
-                    setRole(typeof value === "string" ? value : "");
-                    setRoleError(undefined);
-                  }}
-                >
-                  <ComboboxInput placeholder="Select a role..." />
-                  <ComboboxContent>
-                    <ComboboxList>
-                      <ComboboxEmpty>No roles found</ComboboxEmpty>
-                      {roles.map((item) => (
-                        <ComboboxItem key={item.id} value={item.name}>
-                          {item.name}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-                <FieldError>{roleError}</FieldError>
-              </FieldContent>
-            </Field>
-
-            <Field>
-              <FieldLabel>Domain (optional)</FieldLabel>
-              <FieldContent>
-                <Combobox
-                  value={domainId}
-                  onValueChange={(value) =>
-                    setDomainId(typeof value === "number" ? value : null)
-                  }
-                >
-                  <ComboboxInput
+              <Field>
+                <FieldLabel>Domain (optional)</FieldLabel>
+                <FieldContent>
+                  <SelectMenu
+                    options={domains.map((item) => ({
+                      value: item.id,
+                      label: item.name,
+                      description: item.description,
+                    }))}
+                    value={domainId}
+                    onValueChange={(value) =>
+                      setDomainId(typeof value === "number" ? value : null)
+                    }
                     placeholder="Select a domain..."
-                    showClear
+                    searchPlaceholder="Search domains..."
+                    emptyText="No domains found."
+                    clearable
                   />
-                  <ComboboxContent>
-                    <ComboboxList>
-                      <ComboboxEmpty>No domains found</ComboboxEmpty>
-                      {domains.map((item) => (
-                        <ComboboxItem key={item.id} value={item.id}>
-                          {item.name}
-                          {item.description ? (
-                            <span className="truncate text-[0.625rem] text-muted-foreground">
-                              {item.description}
-                            </span>
-                          ) : null}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              </FieldContent>
-            </Field>
+                </FieldContent>
+              </Field>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                Send invite
-              </Button>
-            </div>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" loading={submitting}>
+                  <UserPlus /> Send invite
+                </Button>
+              </div>
+            </form>
+          )}
+        </ModalContent>
+      </Modal>
+    </>
   );
 }

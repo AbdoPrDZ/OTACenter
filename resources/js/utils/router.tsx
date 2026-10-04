@@ -69,7 +69,7 @@ export default class Router {
   private static onNavigate(from: Route, to: Route): void {
     this._current = to;
 
-    document.title = to.title ? `Stock Manager - ${to.title}` : "Stock Manager";
+    document.title = to.title ? `OTACenter — ${to.title}` : "OTACenter";
 
     this._listeners.forEach((listener) => listener(from, to));
   }
@@ -84,29 +84,30 @@ export default class Router {
     (this.constructor as typeof Router).listen(listener);
   }
 
-  private static getCurrent() {
+  private static getCurrent(): Route {
     const currentRoute = this.getByPath(window.location.pathname, false);
 
-    if (currentRoute) {
-      const routeParts = currentRoute.path.split("/");
-      const pathParts = window.location.pathname.split("/");
+    if (!currentRoute) return { name: "", path: window.location.pathname };
 
-      currentRoute.params = routeParts.reduce((params, part, index) => {
-        if (part.startsWith(":")) params[part.substring(1)] = pathParts[index];
+    const routeParts = currentRoute.path.split("/");
+    const pathParts = window.location.pathname.split("/");
 
-        return params;
-      }, {} as Record<string, string>);
-    }
+    const params = routeParts.reduce((params, part, index) => {
+      if (part.startsWith(":")) params[part.substring(1)] = pathParts[index];
 
-    return (
-      currentRoute || {
-        name: "",
-        path: window.location.pathname,
-      }
-    );
+      return params;
+    }, {} as Record<string, string>);
+
+    // Copy: `routes` is the shared route table, mutating it would bake the
+    // current params into every later `getPath()` / `getRoutes()` result.
+    return { ...currentRoute, params };
   }
 
+  private static _router?: DataRouter;
+
   static load(): DataRouter {
+    if (this._router) return this._router;
+
     const browserRouter = createBrowserRouter(
       createRoutesFromElements(this.getRoutes())
     );
@@ -116,6 +117,8 @@ export default class Router {
 
       this.onNavigate(this._current, to);
     });
+
+    this._router = browserRouter;
 
     const current = this.getCurrent();
 

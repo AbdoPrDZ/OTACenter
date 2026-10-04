@@ -20,7 +20,7 @@ return new class extends Migration
       $table->string('file_id');
       $table->foreign('file_id')->references('name')->on('files')->cascadeOnDelete();
       $table->string('api_key');
-      $table->string('default_bundle_version');
+      $table->string('default_bundle_version')->nullable();
       $table->timestamps();
       $table->softDeletes();
 

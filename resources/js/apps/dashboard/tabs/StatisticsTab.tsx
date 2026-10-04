@@ -1,28 +1,31 @@
 import { useEffect, useState } from "react";
+import {
+  Boxes,
+  Globe,
+  Layers,
+  PanelsTopLeft,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 
 import Statistics, { GeneralStatistics } from "@/models/Statistics";
-import { StatCard, StatusBreakdown } from "@/components/StatisticsViews";
-
+import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <CardHeader className="gap-0.5">
-      <CardTitle>{title}</CardTitle>
-      {subtitle && <p className="text-xs/relaxed text-muted-foreground">{subtitle}</p>}
-    </CardHeader>
-  );
-}
+import { Skeleton } from "@/components/ui/feedback";
+import { Badge } from "@/components/ui/badge";
+import { StatusBreakdown } from "@/components/StatisticsViews";
 
 export default function StatisticsTab() {
   const [stats, setStats] = useState<GeneralStatistics>();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
     Statistics.general().then((response) => {
-      if (cancelled || !response.success) return;
-      setStats(response.data?.statistics);
+      if (cancelled) return;
+      if (response.success && response.data) setStats(response.data.statistics);
+      setLoading(false);
     });
 
     return () => {
@@ -31,66 +34,104 @@ export default function StatisticsTab() {
   }, []);
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div>
-        <h1 className="text-sm font-semibold tracking-tight">Statistics</h1>
-        <p className="text-xs text-muted-foreground">
-          Overview of the apps, versions, bundles, domains, users and roles in the center.
-        </p>
-      </div>
+    <div className="flex w-full flex-col gap-5">
+      <PageHeader
+        title="Statistics"
+        description="Aggregated overview of the center's resources."
+      />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Users" value={stats?.users.total} />
-        <StatCard label="Roles" value={stats?.roles.total} />
-        <StatCard label="Domains" value={stats?.domains.total} />
-        <StatCard label="Apps" value={stats?.apps.total} />
-        <StatCard
-          label="Versions"
-          value={stats?.versions.total}
-          hint={
-            stats?.versions.with_bundles !== undefined
-              ? `${stats.versions.with_bundles} with bundles · ${stats.versions.without_bundles} without`
-              : undefined
-          }
-        />
-        <StatCard label="Bundles" value={stats?.bundles.total} />
-      </div>
+      {loading || !stats ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="flex flex-col gap-2 pt-5">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-7 w-10" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <TotalCard label="Users" value={stats.users.total} icon={Users} />
+            <TotalCard label="Roles" value={stats.roles.total} icon={ShieldCheck} />
+            <TotalCard label="Domains" value={stats.domains.total} icon={Globe} />
+            <TotalCard label="Apps" value={stats.apps.total} icon={PanelsTopLeft} />
+            <TotalCard label="Versions" value={stats.versions.total} icon={Layers} />
+            <TotalCard label="Bundles" value={stats.bundles.total} icon={Boxes} />
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card>
-          <SectionHeader
-            title="Users"
-            subtitle="Users with and without a domain assigned."
-          />
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <StatCard label="Total" value={stats?.users.total} />
-              <StatCard label="With domain" value={stats?.users.with_domains} />
-              <StatCard label="Without" value={stats?.users.without_domains} />
-            </div>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Users</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <Row label="With a domain" value={stats.users.with_domains} />
+                <Row label="Without a domain" value={stats.users.without_domains} />
+              </CardContent>
+            </Card>
 
-        <Card>
-          <SectionHeader
-            title="Versions"
-            subtitle="Versions grouped by their status."
-          />
-          <CardContent>
-            <StatusBreakdown byStatus={stats?.versions.by_status} />
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Versions</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <Row label="With bundles" value={stats.versions.with_bundles} />
+                <Row label="Without bundles" value={stats.versions.without_bundles} />
+                <StatusBreakdown byStatus={stats.versions.by_status} />
+              </CardContent>
+            </Card>
 
-        <Card>
-          <SectionHeader
-            title="Bundles"
-            subtitle="Bundles grouped by their status."
-          />
-          <CardContent>
-            <StatusBreakdown byStatus={stats?.bundles.by_status} />
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Bundles</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <StatusBreakdown byStatus={stats.bundles.by_status} />
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TotalCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon: typeof Users;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-1 pt-5">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Icon className="size-3.5" />
+          <span className="text-[0.6875rem] font-medium tracking-wide uppercase">
+            {label}
+          </span>
+        </div>
+        <span className="text-2xl font-semibold tracking-tight tabular-nums">
+          {value.toLocaleString()}
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Row({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <Badge variant="outline" className="tabular-nums">
+        {value.toLocaleString()}
+      </Badge>
     </div>
   );
 }

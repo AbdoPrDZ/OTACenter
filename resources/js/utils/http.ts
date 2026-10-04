@@ -1,5 +1,5 @@
 import { RequestProps, Response } from "@/types/http";
-import { AxiosError, AxiosResponse } from "axios";
+import { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 function logTimestamp(): string {
   const now = new Date();
@@ -9,6 +9,27 @@ function logTimestamp(): string {
     `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
     `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${pad(now.getMilliseconds(), 3)}`
   );
+}
+
+/** Deterministic key for coalescing identical requests (sorts object keys). */
+function stableKey(value: unknown): string {
+  if (value == null) return "";
+
+  try {
+    return JSON.stringify(value, (_key, item) => {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        return Object.keys(item)
+          .sort()
+          .reduce<Record<string, unknown>>((acc, key) => {
+            acc[key] = (item as Record<string, unknown>)[key];
+            return acc;
+          }, {});
+      }
+      return item;
+    });
+  } catch {
+    return String(value);
+  }
 }
 
 async function encodeRequestResponse<T>(
@@ -26,39 +47,68 @@ async function encodeRequestResponse<T>(
   const data = dataField ? response.data[dataField] : rest;
 
   return {
-    success: success,
-    message: message,
+    success,
+    message,
     data: success ? (dataEncoding ? await dataEncoding(data) : data) : undefined,
-    errors: errors,
+    errors,
     status: response.status,
     all: response.data,
   };
 }
 
 export default class Request {
+  /**
+   * In-flight identical GET/HEAD requests, keyed by method + url + params.
+   * Collapses duplicate calls (e.g. React StrictMode double-invoked effects
+   * in development) into a single network request. Cleared once settled, so it
+   * never serves stale data.
+   */
+  private static inflight = new Map<string, Promise<Response<unknown>>>();
+
   static async send<T = any>({
     dataField,
     dataEncoding,
     ...props
   }: RequestProps<T>): Promise<Response<T>> {
+    const method = (props.method ?? "GET").toUpperCase();
+    const coalescable = method === "GET" || method === "HEAD";
+
+    if (coalescable) {
+      const key = `${method} ${props.url ?? ""} ${stableKey(props.params)}`;
+      const existing = Request.inflight.get(key);
+      if (existing) return existing as Promise<Response<T>>;
+
+      const promise = Request.run<T>(props, dataField, dataEncoding);
+      Request.inflight.set(key, promise);
+      promise
+        .finally(() => {
+          if (Request.inflight.get(key) === promise) Request.inflight.delete(key);
+        })
+        .catch(() => undefined);
+
+      return promise;
+    }
+
+    return Request.run<T>(props, dataField, dataEncoding);
+  }
+
+  private static async run<T>(
+    props: AxiosRequestConfig,
+    dataField?: string,
+    dataEncoding?: (data: any) => Promise<T>
+  ): Promise<Response<T>> {
     const startedAt = performance.now();
     const label = `${props.method ?? "?"} ${props.url ?? "?"}`;
 
     try {
-      console.log(`[${logTimestamp()}] REQUEST  ${label}`, props);
       const response = await window.axios.request(props);
       const elapsedMs = Math.round(performance.now() - startedAt);
-      console.log(
-        `[${logTimestamp()}] RESPONSE ${label} (${elapsedMs}ms, status ${response.status})`,
-        response.data
-      );
+      console.log(`[${logTimestamp()}] ${response.status} ${label} (${elapsedMs}ms)`);
       return await encodeRequestResponse(response, dataField, dataEncoding);
     } catch (error) {
       const elapsedMs = Math.round(performance.now() - startedAt);
-      console.error(
-        `[${logTimestamp()}] ERROR    ${label} (${elapsedMs}ms)`,
-        error
-      );
+      console.error(`[${logTimestamp()}] ERROR    ${label} (${elapsedMs}ms)`, error);
+
       if (error instanceof AxiosError) {
         return {
           success: false,
@@ -73,56 +123,32 @@ export default class Request {
     }
   }
 
-  static async get<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async get<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "GET" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }
 
-  static async post<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async post<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "POST" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }
 
-  static async put<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async put<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "PUT" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }
 
-  static async patch<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async patch<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "PATCH" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }
 
-  static async delete<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async delete<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "DELETE" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }
 
-  static async head<T = any>({
-    dataField,
-    dataEncoding,
-    ...rest
-  }: RequestProps<T>): Promise<Response<T>> {
+  static async head<T = any>({ dataField, dataEncoding, ...rest }: RequestProps<T>) {
     const props = { ...rest, method: "HEAD" };
     return await Request.send({ dataField, dataEncoding, ...props });
   }

@@ -1,44 +1,37 @@
-# Frontend Tests (Vitest + Testing Library)
+# Frontend Tests
 
-Reference for the React test setup. Tests live next to the code they cover as
-`*.test.tsx` / `*.spec.ts` under `resources/js`.
+Vitest + Testing Library, jsdom environment, CSS disabled.
 
-## Setup
+## Commands
 
-- **Runner**: Vitest 4 (`vitest.config.js` at the project root — separate from
-  `vite.config.js` to avoid the Laravel/tailwind plugins and font downloads).
-- **Environment**: `jsdom`.
-- **Library**: `@testing-library/react` + `@testing-library/jest-dom` (+ `user-event`,
-  `@testing-library/dom`).
-- **Alias**: `@` → `resources/js` (mirrors `tsconfig.json`).
-- **Setup file**: `resources/js/test/setup.ts` imports `@testing-library/jest-dom/vitest`
-  and registers `afterEach(cleanup)`. **`globals: false`** in vitest, so RTL's auto-cleanup
-  does NOT run — the manual cleanup in setup.ts is required or DOM leaks between tests.
-- **Config/`package.json`**: `npm test` (`vitest run`), `npm run test:watch` (`vitest`).
+```bash
+npm test           # vitest run
+npm run test:watch # watch mode
+```
+
+## Config
+
+- `vitest.config.js` — `environment: "jsdom"`, `setupFiles: ["./resources/js/test/setup.ts"]`,
+  `css: false`, `include: ["resources/js/**/*.{test,spec}.{ts,tsx}"]`, alias `@` → `resources/js`.
+- `resources/js/test/setup.ts` — imports `@testing-library/jest-dom/vitest` and registers
+  `cleanup()` after each test.
+
+## Existing tests
+
+- `components/ModelDataTable.test.tsx` — asserts the **800 ms search debounce**: no fetch while typing,
+  exactly one fetch 800 ms after the last keystroke, and the debounced value is sent as
+  `filter.quickFilterValues`. Uses `vi.useFakeTimers()` and a fake model exposing `all` +
+  `getDataTableColumns`.
+- `apps/dashboard/router.test.ts` — route resolution/params, that params don't leak into the shared route
+  table, explicit param substitution, and that the static `.../add` routes win over `:id`.
+- `apps/dashboard/tabs/addRoutes.test.tsx` — renders the create forms for the static `app.add`,
+  `app.version.add`, `app.version.bundle.add` routes (via `MemoryRouter`) and asserts no "Invalid … ID."
+  error shows.
+- `utils/permissions.test.ts` — all RBAC helpers, AND semantics, and the super-admin edge cases.
 
 ## Conventions
 
-- Import `describe/it/expect/vi` from `vitest` explicitly (no globals).
-- **Debounce tests use fake timers**: `vi.useFakeTimers()` in `beforeEach`,
-  `vi.useRealTimers()` in `afterEach`, and advance with
-  `await act(async () => { await vi.advanceTimersByTimeAsync(ms); })` so React state
-  updates flush inside `act`.
-- Fake `model` objects for `ModelDataTable` tests: `{ all: vi.fn().mockResolvedValue({...}),
-  getDataTableColumns: () => [...] }` matching the `ModelStatic<MT>` contract; assert on
-  `model.all` call counts and `toHaveBeenLastCalledWith`.
-
-## Current coverage
-
-- `resources/js/components/ModelDataTable.test.tsx` — search debounce:
-  - no fetch while typing fast, exactly one request 800ms after the last keystroke;
-  - the timer resets on every keystroke (pauses < 800ms never fetch);
-  - the debounced value is sent as `filter: { quickFilterValues: [value] }`.
-- `resources/js/utils/permissions.test.ts` — the RBAC helpers (`utils/permissions.ts`):
-  - `hasRole`/`isSuperAdmin` role lookups against a mocked `User.current`;
-  - `hasPermission` incl. the `super-admin` bypass (has every permission);
-  - `can` semantics — no requirement allowed, permission required, roles required (any-of),
-    AND when both set, and super-admin bypassing *permission* but not *role* requirements;
-  - `canAny` at-least-one semantics and empty-list behavior.
-  - The current user is injected by assigning the private `User._currentUser` field via a cast:
-    `(User as unknown as { _currentUser?: unknown })._currentUser = user` (reset to `undefined` in
-    `beforeEach` via `vi.restoreAllMocks()`).
+- The `useToast()` hook returns a **safe no-op** when no `ToastProvider` is present, so components that
+  toast can be rendered in isolation without wrapping.
+- For components that call the API, mock the model static (as `ModelDataTable.test.tsx` does) rather than
+  the axios layer.

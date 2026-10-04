@@ -1,54 +1,95 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { FileUp, Plus, Rocket } from "lucide-react";
 
 import Version, { IVersion } from "@/models/Version";
 import Bundle, { IBundle } from "@/models/Bundle";
+import App from "@/models/App";
 import ModelDataTable from "@/components/ModelDataTable";
+import PageHeader from "@/components/PageHeader";
+import ErrorAndRedirect from "@/components/ErrorAndRedirect";
+import ConfirmDelete from "@/components/ConfirmDelete";
+import { VersionStats } from "@/components/StatisticsViews";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { selectFile } from "@/utils/bootstrap";
-import { VersionStats } from "@/components/StatisticsViews";
+import { Badge, statusVariant } from "@/components/ui/badge";
+import { Input, Textarea } from "@/components/ui/form";
+import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Spinner } from "@/components/ui/feedback";
+import { useToast } from "@/components/ui/toast";
+
+import { selectFile } from "@/utils/bootstrap";
+import { can } from "@/utils/permissions";
 import { DataTableColumn } from "@/types/model";
 
-import { Plus, Trash2 } from "lucide-react";
-import ErrorAndRedirect from "@/components/ErrorAndRedirect";
-import { can, isPrivilegedRole } from "@/utils/permissions";
-import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxItem, ComboboxList, ComboboxTrigger, ComboboxValue } from "@/components/ui/combobox";
+function useAppName(appId: number) {
+  const [name, setName] = useState<string>();
+
+  useEffect(() => {
+    if (!Number.isInteger(appId)) return;
+    App.find(appId).then((response) => {
+      if (response.success && response.data) setName(response.data.name);
+    });
+  }, [appId]);
+
+  return name;
+}
 
 export default function VersionTab() {
   const { id, versionId } = useParams();
   const appId = Number(id);
 
-  console.log("Location", window.location.href, "VersionTab params:", { id, versionId });
+  if (!Number.isInteger(appId))
+    return <ErrorAndRedirect message="Invalid app ID." route="/dashboard/apps" />;
 
-  if (!appId)return <ErrorAndRedirect message="Invalid app ID." route="/dashboard/apps" />;
-  else if (Number(versionId)) return <VersionShow appId={appId} versionId={Number(versionId)} />;
-  else if (versionId === "add") return <VersionCreate appId={appId} />;
-  else return <ErrorAndRedirect message="Invalid version ID." route={`/dashboard/apps/${appId}`} />;
+  // The static `.../versions/add` route carries no `:versionId` param at all.
+  if (!versionId || versionId === "add") return <VersionCreate appId={appId} />;
+
+  const parsed = Number(versionId);
+  if (!Number.isInteger(parsed))
+    return <ErrorAndRedirect message="Invalid version ID." route={`/dashboard/apps/${appId}`} />;
+
+  return <VersionShow appId={appId} versionId={parsed} />;
+}
+
+function FileField({
+  label,
+  file,
+  onPick,
+  current,
+  hint,
+}: {
+  label: string;
+  file?: File;
+  onPick: (file?: File) => void;
+  current?: string;
+  hint?: string;
+}) {
+  return (
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      <FieldContent>
+        <div className="flex items-center gap-2">
+          <Input readOnly value={file?.name ?? current ?? "No file chosen"} className="flex-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const files = await selectFile(".apk, application/vnd.android.package-archive");
+              if (files?.[0]) onPick(files[0]);
+            }}
+          >
+            <FileUp /> Choose APK
+          </Button>
+        </div>
+        {hint ? <p className="text-[0.6875rem] text-muted-foreground">{hint}</p> : null}
+      </FieldContent>
+    </Field>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -57,119 +98,95 @@ export default function VersionTab() {
 
 interface VersionFormValues {
   name: string;
-  changelog: string;
   api_key: string;
-  latest_id: number | null;
+  changelog: string;
 }
 
 function VersionCreate({ appId }: { appId: number }) {
   const navigate = useNavigate();
+  const toast = useToast();
+  const appName = useAppName(appId);
   const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>();
   const [file, setFile] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
-  const privileged = isPrivilegedRole();
 
   const onSubmit = async (data: VersionFormValues) => {
-    if (!file) {
-      setError("root", { type: "error", message: "Please choose an APK file." });
-      return;
-    }
-
     setSubmitting(true);
 
     const formData = new FormData();
     formData.append("name", data.name);
-    formData.append("changelog", data.changelog);
     formData.append("api_key", data.api_key);
-    formData.append("file", file);
+    formData.append("changelog", data.changelog);
+    if (file) formData.append("file", file);
 
     const response = await Version.store(appId, formData);
 
     if (response.success) {
+      toast.success("Version created");
       navigate(`/dashboard/apps/${appId}/versions/${(response.data as IVersion)?.id}`);
       return;
     }
 
+    Object.keys(response.errors || {}).forEach((key) => {
+      setError(key as keyof VersionFormValues, { type: "manual", message: response.errors![key] });
+    });
     setError("root", { type: "error", message: response.message });
     setSubmitting(false);
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-sm font-semibold tracking-tight">Add Version</h1>
-          <p className="text-xs text-muted-foreground">
-            Attach a new build of the application.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
-          Back
-        </Button>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+      <PageHeader
+        title="Add version"
+        description="Create a new version and attach its build."
+        breadcrumbs={[
+          { label: "Apps", to: "/dashboard/apps" },
+          { label: appName ?? "App", to: `/dashboard/apps/${appId}` },
+          { label: "Add version" },
+        ]}
+      />
 
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          {formState.errors.root && (
-            <Alert variant="destructive">{formState.errors.root.message}</Alert>
-          )}
+        <CardContent className="pt-5">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {formState.errors.root ? (
+              <Alert variant="destructive">{formState.errors.root.message}</Alert>
+            ) : null}
 
-          <Field>
-            <FieldLabel htmlFor="version-name">Version name</FieldLabel>
-            <FieldContent>
-              <Input id="version-name" placeholder="v1.0.0" {...register("name", { required: "Version name is required." })} />
-              {formState.errors.name && (
-                <FieldError>{formState.errors.name.message}</FieldError>
-              )}
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldContent>
+                <Input id="name" placeholder="1.0.0" {...register("name", { required: "Name is required." })} />
+                <FieldError>{formState.errors.name?.message}</FieldError>
+              </FieldContent>
+            </Field>
 
-          <Field>
-            <FieldLabel htmlFor="version-api-key">API key</FieldLabel>
-            <FieldContent>
-              <Input id="version-api-key" placeholder="API key" disabled={!privileged} {...register("api_key", { required: "API key is required." })} />
-              {formState.errors.api_key && (
-                <FieldError>{formState.errors.api_key.message}</FieldError>
-              )}
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="api_key">API key</FieldLabel>
+              <FieldContent>
+                <Input id="api_key" placeholder="Version API key" {...register("api_key", { required: "API key is required." })} />
+                <FieldError>{formState.errors.api_key?.message}</FieldError>
+              </FieldContent>
+            </Field>
 
-          <Field>
-            <FieldLabel htmlFor="version-file">File</FieldLabel>
-            <FieldContent>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={file?.name ?? ""}
-                  placeholder="No file chosen"
-                  readOnly
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!privileged}
-                  onClick={async () => {
-                    const files = await selectFile(".apk, application/vnd.android.package-archive");
-                    setFile(files?.[0]);
-                  }}
-                >
-                  {file ? "Change" : "Choose APK"}
-                </Button>
-              </div>
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="changelog">Changelog</FieldLabel>
+              <FieldContent>
+                <Textarea id="changelog" placeholder="What changed in this version?" {...register("changelog")} />
+              </FieldContent>
+            </Field>
 
-          <Field>
-            <FieldLabel htmlFor="version-changelog">Changelog</FieldLabel>
-            <FieldContent>
-              <Textarea id="version-changelog" {...register("changelog")} />
-            </FieldContent>
-          </Field>
+            <FileField label="APK file" file={file} onPick={setFile} />
 
-          <Button type="button" onClick={handleSubmit(onSubmit)} disabled={submitting}>
-            {submitting ? <Spinner className="size-3.5" /> : <Plus />}
-            Add Version
-          </Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={submitting}>
+                <Plus /> Create version
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>
@@ -177,345 +194,252 @@ function VersionCreate({ appId }: { appId: number }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Show / Edit                                                         */
+/* Show                                                               */
 /* ------------------------------------------------------------------ */
 
 function VersionShow({ appId, versionId }: { appId: number; versionId: number }) {
   const navigate = useNavigate();
+  const appName = useAppName(appId);
   const [version, setVersion] = useState<IVersion>();
-
   const [reload, setReload] = useState(0);
+
   const refresh = useCallback(() => setReload((value) => value + 1), []);
 
   useEffect(() => {
     Version.show(appId, versionId).then((response) => {
       if (response.success && response.data) setVersion(response.data);
-      else if (!response.success && response.status === 404) navigate(`/dashboard/apps/${appId}`);
+      else if (!response.success && response.status === 404)
+        navigate(`/dashboard/apps/${appId}`);
     });
   }, [appId, versionId, reload, navigate]);
 
-  if (!version) return <Spinner className="mx-auto mt-16 size-6" />;
+  if (!version) return <Spinner className="mx-auto mt-16 size-6 text-muted-foreground" />;
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex w-full items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-sm font-semibold tracking-tight">{version.name}</h1>
-            <div className="flex items-center gap-2">
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[0.625rem] uppercase">
-                {version.status}
-              </span>
-              {version.latest_id ? (
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[0.625rem] text-primary uppercase">
-                  Published
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {can({ permission: "version.delete" }) && (
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={<Button variant="ghost" size="icon-sm" className="text-destructive" />}
-              >
-                <Trash2 />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {version.name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the version and all of its bundles.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      const response = await Version.destroy(appId, version.id);
-                      if (response.success) navigate(`/dashboard/apps/${appId}`);
-                    }}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-
-          <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
-            Back
-          </Button>
-        </div>
-      </div>
+    <div className="flex w-full flex-col gap-5">
+      <PageHeader
+        title={version.name}
+        description={`Version ${version.id}${version.latest_id ? " · published" : ""}`}
+        breadcrumbs={[
+          { label: "Apps", to: "/dashboard/apps" },
+          { label: appName ?? "App", to: `/dashboard/apps/${appId}` },
+          { label: version.name },
+        ]}
+        icon={<Rocket className="size-5" />}
+        actions={
+          can({ permission: "version.delete" }) ? (
+            <ConfirmDelete
+              title={`Delete version ${version.name}?`}
+              description="This permanently deletes the version and its bundles."
+              onConfirm={() => Version.destroy(appId, version.id)}
+              onDeleted={() => navigate(`/dashboard/apps/${appId}`)}
+            />
+          ) : null
+        }
+      />
 
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
-          {can({ roles: ["super-admin", "admin"] }) && (
+          {can({ roles: ["super-admin", "admin"] }) ? (
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          )}
+          ) : null}
         </TabsList>
 
-        <TabsContent value="details" className="mt-3">
-          <div className="flex w-full flex-col gap-4">
-            {can({ permission: "version.update" }) && (
-              <VersionEditForm appId={appId} version={version} onSaved={refresh} />
-            )}
+        <TabsContent value="details" className="mt-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[0.6875rem] font-medium tracking-wide text-muted-foreground uppercase">
+                Status
+              </span>
+              <Badge variant={statusVariant(version.status)}>{version.status}</Badge>
+              {version.latest_id ? <Badge variant="primary">Published</Badge> : null}
+            </div>
 
-            <BundlesSection
-              appId={appId}
-              versionId={version.id}
-              latestId={version.latest_id ?? null}
-              requestKey={reload}
-            />
+            {can({ permission: "version.update" }) ? (
+              <VersionEditForm appId={appId} version={version} onSaved={refresh} />
+            ) : null}
+
+            <BundlesSection appId={appId} versionId={versionId} version={version} reload={reload} />
           </div>
         </TabsContent>
 
-        <TabsContent value="statistics" className="mt-3">
-          <VersionStats versionId={version.id} />
+        <TabsContent value="statistics" className="mt-4">
+          <VersionStats versionId={versionId} />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function VersionEditForm({ appId, version, onSaved }: { appId: number; version: IVersion; onSaved: () => void }) {
-  const { register, handleSubmit, reset, setError, formState } =
-    useForm<VersionFormValues>({
-      defaultValues: {
-        name: version.name,
-        changelog: version.changelog,
-        api_key: version.api_key,
-        latest_id: version.latest_id ?? null,
-      },
-    });
-  const [file, setFile] = useState<File>();
-  const [bundles, setBundles] = useState<IBundle[]>([]);
-  const [latestId, setLatestId] = useState<number | null>(version.latest_id ?? null);
-  const [submitting, setSubmitting] = useState(false);
-  const privileged = isPrivilegedRole();
-
-  useEffect(() => {
-    Bundle.allForVersion(appId, version.id).then((response) => {
-      if (response.success && response.data) setBundles(response.data.items);
-    });
-  }, [appId, version.id]);
-
-  useEffect(() => {
-    reset({
+function VersionEditForm({
+  appId,
+  version,
+  onSaved,
+}: {
+  appId: number;
+  version: IVersion;
+  onSaved: () => void;
+}) {
+  const toast = useToast();
+  const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>({
+    defaultValues: {
       name: version.name,
-      changelog: version.changelog,
       api_key: version.api_key,
-      latest_id: version.latest_id ?? null,
-    });
-    setLatestId(version.latest_id ?? null);
-  }, [version, reset]);
+      changelog: version.changelog,
+    },
+  });
+  const [file, setFile] = useState<File>();
+  const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (data: VersionFormValues) => {
     setSubmitting(true);
 
     const formData = new FormData();
     formData.append("name", data.name);
-    formData.append("changelog", data.changelog);
     formData.append("api_key", data.api_key);
-    formData.append("latest_id", latestId != null ? String(latestId) : "");
+    formData.append("changelog", data.changelog);
     if (file) formData.append("file", file);
 
     const response = await Version.updateForApp(appId, version.id, formData);
 
-    setSubmitting(false);
-
     if (response.success) {
-      setFile(undefined);
+      toast.success("Changes saved");
       onSaved();
+      setSubmitting(false);
       return;
     }
 
     setError("root", { type: "error", message: response.message });
+    setSubmitting(false);
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit Version</CardTitle>
+        <CardTitle>Details</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {formState.errors.root && (
-          <Alert variant="destructive">{formState.errors.root.message}</Alert>
-        )}
+      <CardContent>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          {formState.errors.root ? (
+            <Alert variant="destructive">{formState.errors.root.message}</Alert>
+          ) : null}
 
-        <Field>
-          <FieldLabel htmlFor="version-name">Version name</FieldLabel>
-          <FieldContent>
-            <Input id="version-name" {...register("name", { required: "Version name is required." })} />
-            {formState.errors.name && (
-              <FieldError>{formState.errors.name.message}</FieldError>
-            )}
-          </FieldContent>
-        </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldContent>
+                <Input id="name" {...register("name", { required: "Name is required." })} />
+                <FieldError>{formState.errors.name?.message}</FieldError>
+              </FieldContent>
+            </Field>
 
-        <Field>
-          <FieldLabel htmlFor="version-api-key">API key</FieldLabel>
-          <FieldContent>
-            <Input id="version-api-key" disabled={!privileged} {...register("api_key", { required: "API key is required." })} />
-            {formState.errors.api_key && (
-              <FieldError>{formState.errors.api_key.message}</FieldError>
-            )}
-          </FieldContent>
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="api_key">API key</FieldLabel>
+              <FieldContent>
+                <Input id="api_key" {...register("api_key", { required: "API key is required." })} />
+                <FieldError>{formState.errors.api_key?.message}</FieldError>
+              </FieldContent>
+            </Field>
+          </div>
 
-        <Field>
-          <FieldLabel>Latest Bundle</FieldLabel>
-          <FieldContent>
-            <Combobox
-              value={latestId}
-              onValueChange={(value) => setLatestId(value as number | null)}
-            >
-              <ComboboxTrigger className="flex h-7 w-full items-center justify-between gap-2 rounded-md border border-input bg-input/20 px-2 text-xs/relaxed text-left">
-                <ComboboxValue placeholder="No latest bundle" />
-              </ComboboxTrigger>
-              <ComboboxContent>
-                <ComboboxList>
-                  <ComboboxEmpty>No matching bundles</ComboboxEmpty>
-                  {bundles.map((bundle) => (
-                    <ComboboxItem key={bundle.id} value={bundle.id}>
-                      {bundle.name}
-                      <span className="truncate text-[0.625rem] text-muted-foreground">
-                        {bundle.status}
-                      </span>
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </FieldContent>
-        </Field>
+          <Field>
+            <FieldLabel htmlFor="changelog">Changelog</FieldLabel>
+            <FieldContent>
+              <Textarea id="changelog" {...register("changelog")} />
+            </FieldContent>
+          </Field>
 
-        <Field>
-          <FieldLabel htmlFor="version-file">File</FieldLabel>
-          <FieldContent>
-            <div className="flex items-center gap-2">
-              <Input
-                value={file?.name ?? ""}
-                placeholder="Leave empty to keep the current file"
-                readOnly
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!privileged}
-                onClick={async () => {
-                  const files = await selectFile(".apk, application/vnd.android.package-archive");
-                  setFile(files?.[0]);
-                }}
-              >
-                {file ? "Change" : "Choose APK"}
-              </Button>
-            </div>
-          </FieldContent>
-        </Field>
+          <FileField
+            label="Replace APK"
+            file={file}
+            onPick={setFile}
+            hint="Leave empty to keep the current file."
+          />
 
-        <Field>
-          <FieldLabel htmlFor="version-changelog">Changelog</FieldLabel>
-          <FieldContent>
-            <Textarea id="version-changelog" {...register("changelog")} />
-          </FieldContent>
-        </Field>
-
-        <Button type="button" onClick={handleSubmit(onSubmit)} disabled={submitting}>
-          {submitting ? <Spinner className="size-3.5" /> : null}
-          Save changes
-        </Button>
+          <div className="flex justify-end">
+            <Button type="submit" loading={submitting}>
+              Save changes
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Bundles                                                             */
+/* Bundles                                                            */
 /* ------------------------------------------------------------------ */
 
 function BundlesSection({
   appId,
   versionId,
-  latestId,
-  requestKey,
+  version,
+  reload,
 }: {
   appId: number;
   versionId: number;
-  latestId: number | null;
-  requestKey: number;
+  version: IVersion;
+  reload: number;
 }) {
   const navigate = useNavigate();
 
-  const columns = useMemo<DataTableColumn<IBundle>[]>(() => [
-    {
-      field: "id",
-      headerName: "ID",
-      flex: 0.3,
-      minWidth: 40,
-    },
-    {
-      field: "name",
-      headerName: "Name",
-      flex: 1,
-      minWidth: 180,
-    },
-    {
-      field: "url",
-      headerName: "URL",
-      flex: 1.5,
-      minWidth: 220,
-      renderCell: ({ row }) =>
-        row.url ? (
-          <a
-            href={row.url}
-            target="_blank"
-            rel="noreferrer"
-            className="truncate text-xs text-muted-foreground underline underline-offset-4"
-          >
-            {row.url}
-          </a>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        ),
-    },
-    {
-      field: "active",
-      headerName: "Status",
-      flex: 0.4,
-      minWidth: 80,
-      renderCell: ({ row }) =>
-        latestId === row.id ? (
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[0.625rem] text-primary uppercase">
-            Latest
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">—</span>
-        ),
-    },
-  ], [latestId]);
+  const columns = useMemo<DataTableColumn<IBundle>[]>(
+    () => [
+      { field: "id", headerName: "ID", flex: 0.3, minWidth: 40 },
+      { field: "name", headerName: "Name", flex: 1, minWidth: 160 },
+      {
+        field: "url",
+        headerName: "URL",
+        flex: 1.5,
+        minWidth: 220,
+        renderCell: ({ row }) =>
+          row.url ? (
+            <a
+              href={row.url}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              className="truncate text-primary hover:underline"
+            >
+              {row.url}
+            </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        field: "version_id",
+        headerName: "State",
+        flex: 0.6,
+        minWidth: 110,
+        renderCell: ({ row }) =>
+          version.latest_id === row.id ? (
+            <Badge variant="primary">Active</Badge>
+          ) : (
+            <Badge variant="outline">Inactive</Badge>
+          ),
+      },
+    ],
+    [version.latest_id],
+  );
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Bundles</CardTitle>
-          {can({ permission: "bundle.create" }) && (
+          {can({ permission: "bundle.create" }) ? (
             <Button
               size="sm"
               onClick={() =>
                 navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/add`)
               }
             >
-              <Plus />
-              Add Bundle
+              <Plus /> Add bundle
             </Button>
-          )}
+          ) : null}
         </div>
       </CardHeader>
       <CardContent>
@@ -523,8 +447,8 @@ function BundlesSection({
           model={Bundle}
           url={Bundle.endpointFor(appId, versionId)}
           columns={columns}
+          requestKey={reload}
           enableSearch={false}
-          requestKey={requestKey}
           onRowClick={(row) =>
             navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/${row.id}`)
           }

@@ -1,81 +1,50 @@
 import { useNavigate } from "react-router-dom";
+import { ChevronDown, LogOut, Settings } from "lucide-react";
 
 import DashboardRouter from "@/apps/dashboard/router";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import User from "@/models/User";
-import { LogOut, Settings } from "lucide-react";
+import { Avatar } from "@/components/ui/feedback";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownLabel,
+  DropdownSeparator,
+} from "@/components/ui/dropdown";
 
-export default function UserMenu(props: { className?: string }) {
+export default function UserMenu({ className }: { className?: string }) {
   const navigate = useNavigate();
-
   const user = User.current;
 
   if (!user) return null;
 
-  const initials = (user.name || "U")
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("rounded-full", props.className)}
-          />
-        }
-      >
-        {user.image_url ? (
-          <img
-            src={user.image_url}
-            alt={user.name}
-            className="size-8 rounded-full object-cover"
-          />
-        ) : (
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-[0.625rem] font-semibold text-primary-foreground">
-            {initials}
-          </span>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>
-            <div className="flex flex-col">
-              <span className="truncate text-sm font-medium">{user.name}</span>
-              <span className="truncate text-xs text-muted-foreground">
-                {user.login}
-              </span>
-            </div>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => navigate(DashboardRouter.getPath("settings")!)}
+    <Dropdown
+      align="end"
+      className={className}
+      trigger={
+        <button
+          type="button"
+          aria-label="Account menu"
+          className="flex items-center gap-1.5 rounded-full p-0.5 transition-colors hover:bg-accent"
         >
-          <Settings />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => User.logout()}>
-          <LogOut />
-          Logout
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <Avatar src={user.image_url} name={user.name} size={30} />
+          <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" />
+        </button>
+      }
+    >
+      <DropdownLabel>
+        <span className="block truncate normal-case">{user.name}</span>
+        <span className="block truncate text-[0.625rem] font-normal text-muted-foreground normal-case">
+          {user.login}
+        </span>
+      </DropdownLabel>
+      <DropdownSeparator />
+      <DropdownItem onClick={() => navigate(DashboardRouter.getPath("settings")!)}>
+        <Settings /> Settings
+      </DropdownItem>
+      <DropdownItem variant="destructive" onClick={() => User.logout()}>
+        <LogOut /> Sign out
+      </DropdownItem>
+    </Dropdown>
   );
 }

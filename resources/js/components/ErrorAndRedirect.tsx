@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
 
 export interface ErrorAndRedirectProps {
   message: string;
@@ -29,11 +25,8 @@ export default function ErrorAndRedirect({
     }
 
     const timer = window.setTimeout(() => setSeconds((value) => value - 1), 1000);
-
     return () => window.clearTimeout(timer);
   }, [seconds, route, navigate]);
-
-  const redirectNow = () => navigate(route, { replace: true });
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4 py-16">
@@ -46,7 +39,7 @@ export default function ErrorAndRedirect({
         <p className="text-xs text-muted-foreground">
           {seconds > 0 ? `Redirecting in ${seconds}s...` : "Redirecting..."}
         </p>
-        <Button type="button" size="sm" onClick={redirectNow}>
+        <Button size="sm" onClick={() => navigate(route, { replace: true })}>
           Redirect now
         </Button>
       </div>

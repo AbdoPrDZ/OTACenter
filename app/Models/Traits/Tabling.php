@@ -200,7 +200,6 @@ trait Tabling
       }
 
     if ($request->filter || $request->search) {
-      \Log::info("Filtering query with search: " . $request->search . " and filters: " . json_encode($request->filter));
       $query = $query->where(function ($query) use ($_this, $request) {
         $search = $request->search;
 
@@ -219,7 +218,6 @@ trait Tabling
           $filter = collect($request->get("filter") ?? []);
 
           if ($search) {
-            \Log::info("Searching for $search in $column");
             $query->orWhere($column, 'like', "%$search%");
           } else if ($fieldFilter = $filter->get($field))
             $query->orWhere($column, 'like', "%$fieldFilter%");
@@ -331,7 +329,6 @@ trait Tabling
       'itemsCount' => $paginate->total(),
       'pagesCount' => $paginate->lastPage(),
       'page'       => min($paginate->currentPage(), $paginate->lastPage()),
-      'query'      => $query->toRawSql(),
     ]);
   }
 }

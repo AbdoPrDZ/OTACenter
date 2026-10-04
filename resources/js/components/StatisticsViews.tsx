@@ -10,11 +10,12 @@ import Statistics, {
 } from "@/models/Statistics";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
+import { EmptyState, Skeleton, Spinner } from "@/components/ui/feedback";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
-/* Shared building blocks                                             */
+/* Shared building blocks                                              */
 /* ------------------------------------------------------------------ */
 
 export function StatCard({
@@ -28,17 +29,21 @@ export function StatCard({
 }) {
   return (
     <Card>
-      <CardContent className="flex flex-col gap-1 pt-4">
+      <CardContent className="flex flex-col gap-1 pt-5">
         {value === undefined ? (
           <>
             <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-6 w-10" />
+            <Skeleton className="h-7 w-12" />
           </>
         ) : (
           <>
-            <span className="text-xs text-muted-foreground">{label}</span>
-            <span className="text-2xl font-semibold tracking-tight">{value}</span>
-            {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+            <span className="text-[0.6875rem] font-medium tracking-wide text-muted-foreground uppercase">
+              {label}
+            </span>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums">
+              {value.toLocaleString()}
+            </span>
+            {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
           </>
         )}
       </CardContent>
@@ -51,7 +56,7 @@ export function StatusBreakdown({ byStatus }: { byStatus?: Record<string, number
     return (
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-5 w-16 rounded-md" />
+          <Skeleton key={index} className="h-5 w-16 rounded-full" />
         ))}
       </div>
     );
@@ -60,21 +65,16 @@ export function StatusBreakdown({ byStatus }: { byStatus?: Record<string, number
   const entries = Object.entries(byStatus);
 
   if (entries.length === 0) {
-    return (
-      <p className="py-2 text-center text-xs text-muted-foreground">No statuses.</p>
-    );
+    return <p className="py-2 text-center text-xs text-muted-foreground">No statuses.</p>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
       {entries.map(([status, count]) => (
-        <span
-          key={status}
-          className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs"
-        >
-          <span className="font-medium">{status}</span>
-          <span className="text-muted-foreground tabular-nums">{count}</span>
-        </span>
+        <Badge key={status} variant="outline" className="gap-1.5 py-1">
+          <span className="font-medium capitalize">{status}</span>
+          <span className="tabular-nums text-muted-foreground">{count}</span>
+        </Badge>
       ))}
     </div>
   );
@@ -91,16 +91,14 @@ function EntityList({
     return (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-9 w-full" />
+          <Skeleton key={index} className="h-10 w-full" />
         ))}
       </div>
     );
   }
 
   if (items.length === 0) {
-    return (
-      <p className="py-4 text-center text-xs text-muted-foreground">{emptyMessage}</p>
-    );
+    return <p className="py-4 text-center text-xs text-muted-foreground">{emptyMessage}</p>;
   }
 
   return (
@@ -108,14 +106,14 @@ function EntityList({
       {items.map((item) => (
         <div
           key={item.id}
-          className="flex items-center justify-between gap-2 rounded-md border px-3 py-2"
+          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2"
         >
           <span className="truncate text-xs font-medium">{item.name}</span>
-          {item.extra && (
-            <span className="shrink-0 text-[0.625rem] text-muted-foreground">
+          {item.extra ? (
+            <span className="shrink-0 truncate text-[0.625rem] text-muted-foreground">
               {item.extra}
             </span>
-          )}
+          ) : null}
         </div>
       ))}
     </div>
@@ -126,18 +124,20 @@ function CardBlock({
   title,
   subtitle,
   children,
+  className,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="gap-0.5">
+    <Card className={className}>
+      <CardHeader>
         <CardTitle>{title}</CardTitle>
-        {subtitle && (
+        {subtitle ? (
           <p className="text-xs/relaxed text-muted-foreground">{subtitle}</p>
-        )}
+        ) : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -145,7 +145,7 @@ function CardBlock({
 }
 
 /* ------------------------------------------------------------------ */
-/* Entity statistics panels (no header/back — embedded in model tabs)  */
+/* Entity statistics panels                                            */
 /* ------------------------------------------------------------------ */
 
 export function UserStats({ userId }: { userId: number }) {
@@ -157,7 +157,7 @@ export function UserStats({ userId }: { userId: number }) {
     });
   }, [userId]);
 
-  if (!data) return <Spinner className="mx-auto mt-8 size-5" />;
+  if (!data) return <Spinner className="mx-auto mt-8 size-5 text-muted-foreground" />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -188,7 +188,7 @@ export function RoleStats({ roleId }: { roleId: number }) {
     });
   }, [roleId]);
 
-  if (!data) return <Spinner className="mx-auto mt-8 size-5" />;
+  if (!data) return <Spinner className="mx-auto mt-8 size-5 text-muted-foreground" />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -219,7 +219,7 @@ export function DomainStats({ domainId }: { domainId: number }) {
     });
   }, [domainId]);
 
-  if (!data) return <Spinner className="mx-auto mt-8 size-5" />;
+  if (!data) return <Spinner className="mx-auto mt-8 size-5 text-muted-foreground" />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -265,7 +265,7 @@ export function AppStats({ appId }: { appId: number }) {
     });
   }, [appId]);
 
-  if (!data) return <Spinner className="mx-auto mt-8 size-5" />;
+  if (!data) return <Spinner className="mx-auto mt-8 size-5 text-muted-foreground" />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -288,24 +288,36 @@ export function AppStats({ appId }: { appId: number }) {
         </CardBlock>
 
         <CardBlock
+          className="lg:col-span-2"
           title="Versions"
           subtitle="Versions with their bundle counts. Click a version for details."
         >
-          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
-            {data.statistics.versions.map((version) => (
-              <button
-                key={version.id}
-                type="button"
-                className="flex cursor-pointer items-center justify-between gap-2 rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent/60"
-                onClick={() => navigate(`/dashboard/apps/${appId}/versions/${version.id}`)}
-              >
-                <span className="truncate text-xs font-medium">{version.name}</span>
-                <span className="shrink-0 text-[0.625rem] text-muted-foreground">
-                  {version.status} · {version.bundles_count} bundles
-                </span>
-              </button>
-            ))}
-          </div>
+          {data.statistics.versions.length === 0 ? (
+            <EmptyState
+              className="border-0 py-6"
+              title="No versions"
+              description="This app has no versions yet."
+            />
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {data.statistics.versions.map((version) => (
+                <button
+                  key={version.id}
+                  type="button"
+                  className={cn(
+                    "flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-left transition-colors",
+                    "hover:border-primary/40 hover:bg-primary/5",
+                  )}
+                  onClick={() => navigate(`/dashboard/apps/${appId}/versions/${version.id}`)}
+                >
+                  <span className="truncate text-xs font-medium">{version.name}</span>
+                  <span className="shrink-0 text-[0.625rem] text-muted-foreground">
+                    {version.status} · {version.bundles_count} bundles
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </CardBlock>
       </div>
     </div>
@@ -321,7 +333,7 @@ export function VersionStats({ versionId }: { versionId: number }) {
     });
   }, [versionId]);
 
-  if (!data) return <Spinner className="mx-auto mt-8 size-5" />;
+  if (!data) return <Spinner className="mx-auto mt-8 size-5 text-muted-foreground" />;
 
   return (
     <div className="flex flex-col gap-4">
@@ -333,7 +345,9 @@ export function VersionStats({ versionId }: { versionId: number }) {
         title="Bundles"
         subtitle={
           data.statistics.latest_bundle
-            ? `Latest bundle: ${data.statistics.latest_bundle.name ?? data.statistics.latest_bundle.id}`
+            ? `Latest bundle: ${
+                data.statistics.latest_bundle.name ?? data.statistics.latest_bundle.id
+              }`
             : "No latest bundle."
         }
       >

@@ -1,52 +1,37 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { Globe, Plus } from "lucide-react";
 
 import Domain, { IDomain } from "@/models/Domain";
+import PageHeader from "@/components/PageHeader";
+import ErrorAndRedirect from "@/components/ErrorAndRedirect";
+import ImagePicker from "@/components/ImagePicker";
+import ConfirmDelete from "@/components/ConfirmDelete";
+import { DomainStats } from "@/components/StatisticsViews";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import ImagePicker from "@/components/ImagePicker";
-import { DomainStats } from "@/components/StatisticsViews";
+import { Input, Textarea } from "@/components/ui/form";
+import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Save, Trash2 } from "lucide-react";
-import { can, isPrivilegedRole } from "@/utils/permissions";
+import { Spinner } from "@/components/ui/feedback";
+import { useToast } from "@/components/ui/toast";
+
+import { can } from "@/utils/permissions";
 
 export default function DomainTab() {
-  const params = useParams();
-  const { id } = params;
+  const { id } = useParams();
 
-  console.log("Location", window.location.href, "DomainTab params:", params);
+  if (!id) return <DomainCreate />;
 
-  if (id) return <DomainShow domainId={Number(id)} />;
+  const domainId = Number(id);
+  if (!Number.isInteger(domainId))
+    return <ErrorAndRedirect message="Invalid domain ID." route="/dashboard/domains" />;
 
-  return <DomainCreate />;
+  return <DomainShow domainId={domainId} />;
 }
-
-/* ------------------------------------------------------------------ */
-/* Create                                                              */
-/* ------------------------------------------------------------------ */
 
 interface DomainFormValues {
   name: string;
@@ -55,10 +40,10 @@ interface DomainFormValues {
 
 function DomainCreate() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { register, handleSubmit, setError, formState } = useForm<DomainFormValues>();
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
-  const privileged = isPrivilegedRole();
 
   const onSubmit = async (data: DomainFormValues) => {
     setSubmitting(true);
@@ -71,77 +56,76 @@ function DomainCreate() {
     const response = await Domain.create(formData);
 
     if (response.success) {
+      toast.success("Domain created");
       navigate(`/dashboard/domains/${(response.data as IDomain)?.id}`);
       return;
     }
 
-    if (response.errors?.name)
-      setError("name", { type: "manual", message: response.errors.name });
     setError("root", { type: "error", message: response.message });
     setSubmitting(false);
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      <div>
-        <h1 className="text-sm font-semibold tracking-tight">Add Domain</h1>
-        <p className="text-xs text-muted-foreground">
-          Create a new organizational domain.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+      <PageHeader
+        title="Add domain"
+        description="Create an organizational group to scope access."
+        breadcrumbs={[
+          { label: "Domains", to: "/dashboard/domains" },
+          { label: "Add domain" },
+        ]}
+      />
 
       <Card>
-        <CardContent className="flex flex-col gap-4 pt-4">
-          {formState.errors.root && (
-            <Alert variant="destructive">{formState.errors.root.message}</Alert>
-          )}
+        <CardContent className="pt-5">
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {formState.errors.root ? (
+              <Alert variant="destructive">{formState.errors.root.message}</Alert>
+            ) : null}
 
-          <Field>
-            <FieldLabel htmlFor="name">Name</FieldLabel>
-            <FieldContent>
-              <Input id="name" placeholder="IT Department" {...register("name")} />
-              <FieldError>{formState.errors.name?.message}</FieldError>
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldContent>
+                <Input id="name" placeholder="Engineering" {...register("name", { required: "Name is required." })} />
+                <FieldError>{formState.errors.name?.message}</FieldError>
+              </FieldContent>
+            </Field>
 
-          <Field>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="description"
-                placeholder="Short description of the domain"
-                {...register("description")}
-              />
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <FieldContent>
+                <Textarea id="description" placeholder="What is this domain for?" {...register("description")} />
+              </FieldContent>
+            </Field>
 
-          <Field>
-            <FieldLabel>Image</FieldLabel>
-            <FieldContent>
-              <ImagePicker image={image} onChange={setImage} disabled={!privileged} />
-            </FieldContent>
-          </Field>
+            <Field>
+              <FieldLabel>Image</FieldLabel>
+              <FieldContent>
+                <ImagePicker image={image} onChange={setImage} />
+              </FieldContent>
+            </Field>
 
-          <Button type="button" onClick={handleSubmit(onSubmit)} disabled={submitting}>
-            {submitting ? <Spinner className="size-3.5" /> : <Plus />}
-            Create Domain
-          </Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => navigate("/dashboard/domains")}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={submitting}>
+                <Plus /> Create domain
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Show / Edit                                                        */
-/* ------------------------------------------------------------------ */
-
 function DomainShow({ domainId }: { domainId: number }) {
   const navigate = useNavigate();
   const [domain, setDomain] = useState<IDomain>();
-
   const [reload, setReload] = useState(0);
-  const refresh = () => setReload((value) => value + 1);
+
+  const refresh = useCallback(() => setReload((value) => value + 1), []);
 
   useEffect(() => {
     Domain.find(domainId).then((response) => {
@@ -150,76 +134,64 @@ function DomainShow({ domainId }: { domainId: number }) {
     });
   }, [domainId, reload, navigate]);
 
-  if (!domain) return <Spinner className="mx-auto mt-16 size-6" />;
+  if (!domain) return <Spinner className="mx-auto mt-16 size-6 text-muted-foreground" />;
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <div className="flex w-full items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          {domain.image_url ? (
-            <img
-              src={domain.image_url}
-              alt={domain.name}
-              className="size-10 rounded-md object-cover ring-1 ring-foreground/10"
+    <div className="flex w-full flex-col gap-5">
+      <PageHeader
+        title={domain.name}
+        description={domain.description}
+        breadcrumbs={[
+          { label: "Domains", to: "/dashboard/domains" },
+          { label: domain.name },
+        ]}
+        icon={
+          domain.image_url ? (
+            <img src={domain.image_url} alt={domain.name} className="size-10 rounded-xl object-cover" />
+          ) : (
+            <Globe className="size-5" />
+          )
+        }
+        actions={
+          can({ permission: "domain.delete" }) ? (
+            <ConfirmDelete
+              title={`Delete ${domain.name}?`}
+              description="This permanently deletes the domain and removes its bindings."
+              onConfirm={() => Domain.delete(domain.id)}
+              onDeleted={() => navigate("/dashboard/domains")}
             />
-          ) : null}
-          <div>
-            <h1 className="text-sm font-semibold tracking-tight">{domain.name}</h1>
-            <p className="text-xs text-muted-foreground">Domain details</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {can({ permission: "domain.delete" }) && (
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={<Button variant="outline" className="text-destructive" />}
-              >
-                <Trash2 />
-                Delete
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {domain.name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently remove the domain and all of its bindings.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      const response = await Domain.delete(domain.id);
-                      if (response.success) navigate("/dashboard/domains");
-                    }}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-
-          <Button variant="outline" onClick={() => navigate("/dashboard/domains")}>
-            Back
-          </Button>
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
-          {can({ roles: ["super-admin", "admin"] }) && (
+          {can({ roles: ["super-admin", "admin"] }) ? (
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          )}
+          ) : null}
         </TabsList>
 
-        <TabsContent value="details" className="mt-3">
+        <TabsContent value="details" className="mt-4">
           {can({ permission: "domain.update" }) ? (
             <DomainEditForm domain={domain} onSaved={refresh} />
-          ) : null}
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col gap-2 pt-5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Name</span>
+                  <span>{domain.name}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Description</span>
+                  <span className="text-right">{domain.description || "—"}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="statistics" className="mt-3">
+        <TabsContent value="statistics" className="mt-4">
           <DomainStats domainId={domainId} />
         </TabsContent>
       </Tabs>
@@ -228,22 +200,15 @@ function DomainShow({ domainId }: { domainId: number }) {
 }
 
 function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => void }) {
-  const { register, handleSubmit, reset, setError, formState } =
-    useForm<DomainFormValues>({
-      defaultValues: {
-        name: domain.name,
-        description: domain.description,
-      },
-    });
+  const toast = useToast();
+  const { register, handleSubmit, reset, setError, formState } = useForm<DomainFormValues>({
+    defaultValues: { name: domain.name, description: domain.description },
+  });
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
-  const privileged = isPrivilegedRole();
 
   useEffect(() => {
-    reset({
-      name: domain.name,
-      description: domain.description,
-    });
+    reset({ name: domain.name, description: domain.description });
   }, [domain, reset]);
 
   const onSubmit = async (data: DomainFormValues) => {
@@ -257,13 +222,12 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
     const response = await Domain.update(domain.id, formData);
 
     if (response.success) {
+      toast.success("Changes saved");
       onSaved();
       setSubmitting(false);
       return;
     }
 
-    if (response.errors?.name)
-      setError("name", { type: "manual", message: response.errors.name });
     setError("root", { type: "error", message: response.message });
     setSubmitting(false);
   };
@@ -271,44 +235,42 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit Domain</CardTitle>
+        <CardTitle>Details</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {formState.errors.root && (
-          <Alert variant="destructive">{formState.errors.root.message}</Alert>
-        )}
+      <CardContent>
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          {formState.errors.root ? (
+            <Alert variant="destructive">{formState.errors.root.message}</Alert>
+          ) : null}
 
-        <Field>
-          <FieldLabel htmlFor="name">Name</FieldLabel>
-          <FieldContent>
-            <Input id="name" {...register("name")} />
-            <FieldError>{formState.errors.name?.message}</FieldError>
-          </FieldContent>
-        </Field>
+          <Field>
+            <FieldLabel htmlFor="name">Name</FieldLabel>
+            <FieldContent>
+              <Input id="name" {...register("name", { required: "Name is required." })} />
+              <FieldError>{formState.errors.name?.message}</FieldError>
+            </FieldContent>
+          </Field>
 
-        <Field>
-          <FieldLabel htmlFor="description">Description</FieldLabel>
-          <FieldContent>
-            <Textarea id="description" {...register("description")} />
-          </FieldContent>
-        </Field>
+          <Field>
+            <FieldLabel htmlFor="description">Description</FieldLabel>
+            <FieldContent>
+              <Textarea id="description" {...register("description")} />
+            </FieldContent>
+          </Field>
 
-        <Field>
-          <FieldLabel>Image</FieldLabel>
-          <FieldContent>
-            <ImagePicker
-              image={image}
-              onChange={setImage}
-              value={domain.image_url}
-              disabled={!privileged}
-            />
-          </FieldContent>
-        </Field>
+          <Field>
+            <FieldLabel>Image</FieldLabel>
+            <FieldContent>
+              <ImagePicker image={image} onChange={setImage} value={domain.image_url} />
+            </FieldContent>
+          </Field>
 
-        <Button type="button" onClick={handleSubmit(onSubmit)} disabled={submitting}>
-          {submitting ? <Spinner className="size-3.5" /> : <Save />}
-          Save changes
-        </Button>
+          <div className="flex justify-end">
+            <Button type="submit" loading={submitting}>
+              Save changes
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );

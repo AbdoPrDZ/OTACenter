@@ -5,7 +5,7 @@ OTACenter is a Laravel application with a React 19 frontend built using Vite and
 
 - **Backend Framework:** Laravel 13 (PHP 8.3+)
 - **Frontend Framework:** React 19 + TypeScript + Vite
-- **UI Components:** Tailwind CSS v4, Lucide React, Base UI (`@base-ui/react/*`)
+- **UI Components:** Tailwind CSS v4 with hand-built React primitives (no component library), Lucide React
 - **Authentication & Security:** Laravel Sanctum, LDAPRecord (`directorytree/ldaprecord-laravel`), Spatie Permissions
 
 ---
@@ -17,10 +17,11 @@ doc before exploring or changing code** instead of re-deriving everything from s
 
 - `backend/INDEX.md` — backend doc map + gotchas. Sub-docs: `SRC.md` (base `Controller`/`Model`/`ValidationType`),
   `TABLING.md`, `MODELS.md`, `CONTROLLERS.md`, `ROUTES.md`, `AUTH-LDAP.md`, `DATABASE.md`, `TESTS.md`.
-- `frontend/COMPONENTS.md` — every React component (global, `ui/` primitives, dashboard shell).
-- `frontend/UTILS-UI.md` — UI & navigation utils (`cn`, `useIsMobile`, file pickers, `Router`/`DashboardRouter`)
-  **and the Tailwind v4 styling setup** (`resources/css/app.css`).
-- `frontend/UTILS-API.md` — API layer & modelization (axios bootstrap, `Request`, `Model`/`createModel`, frontend models).
+- `frontend/INDEX.md` — frontend doc map + stack + directory map + ground rules.
+- `frontend/DESIGN.md` — design system: theme tokens, `app.css`, dark-first theming, layout shell.
+- `frontend/COMPONENTS.md` — every React component (UI primitives, shared components, dashboard shell, tabs).
+- `frontend/NAVIGATION.md` — `Router`/`DashboardRouter`, the route table, nav config, access control.
+- `frontend/DATA.md` — API layer & modelization (axios bootstrap, `Request`, `Model`/`createModel`, models, permissions).
 - `frontend/TESTS.md` — Vitest/Testing Library setup, commands, and conventions.
 
 Keep these docs up to date when making significant structural changes, and add new explainers for new areas.
@@ -49,10 +50,10 @@ See `backend/MODELS.md` for tables/relations/validation and `backend/ROUTES.md` 
 - `routes/` - API (`api.php`), web (`web.php`), channels, console routing definitions
 - `database/` - Migrations, seeders, and factories
 - `resources/js/` - React frontend source code
-  - `apps/dashboard/` - Main dashboard SPA & tabs (`HomeTab`, `AppsTab`/`AppTab`, `DomainsTab`/`DomainTab`, `UsersTab`, `RolesTab`/`RoleTab`, `PermissionsTab`/`PermissionTab`, `StatisticsTab`, `SettingsTab`)
-    - `components/` - Dashboard shell: `Layout`, `SideMenu`, `AppNavbar`, `Header`, `UserMenu`
-  - `apps/auth/` - Authentication UI
-  - `components/` - Shared React components (UI components, `ModelDataTable`, `Form`, `RouteLoading`, `navigation.ts`)
+  - `apps/dashboard/` - Main dashboard SPA & tabs (`HomeTab`, `AppsTab`/`AppTab`, `DomainsTab`/`DomainTab`, `UsersTab`/`UserTab`, `RolesTab`/`RoleTab`, `PermissionsTab`/`PermissionTab`, `VersionTab`, `BundleTab`, `StatisticsTab`, `SettingsTab`)
+    - `components/` - Dashboard shell: `Layout`, `Sidebar`, `Topbar`, `UserMenu`, `CommandPalette`
+  - `apps/auth/` - Authentication UI (`index.tsx`, `register.tsx`, `AuthShell.tsx`)
+  - `components/` - Shared React components + hand-built `ui/` primitives (Button, Input, Modal, Dropdown, `SearchableSelect`, …), `ModelDataTable`, `PageHeader`, `navigation.ts`
   - `models/` - Frontend data model definitions
   - `utils/` - Frontend HTTP, router, and field utilities
 - `resources/css/app.css` - **The single Tailwind v4 stylesheet** (theme tokens, oklch palettes, `dark`
@@ -64,15 +65,20 @@ See `backend/MODELS.md` for tables/relations/validation and `backend/ROUTES.md` 
 
 ## Current State: Dashboard Shell
 
-The dashboard layout uses a **"mobile drawer + desktop sidebar"** scheme (confirmed choice). Detailed
-architecture, component roles, and conventions are in `frontend/COMPONENTS.md`; routing in `frontend/UTILS-UI.md`
-(`Router`/`DashboardRouter`).
+The frontend was **rebuilt from scratch** (2026) with a plain Tailwind CSS v4 + React design — **no
+shadcn, no Base UI, no component library**. It is **dark-first** (indigo accent) with a light/system
+toggle, a collapsible desktop sidebar + mobile drawer, a topbar with breadcrumbs + a `Ctrl/⌘ K` command
+palette, toasts, and a hand-built primitive set. Architecture is in `frontend/COMPONENTS.md`, design
+system in `frontend/DESIGN.md`, routing in `frontend/NAVIGATION.md`, data layer in `frontend/DATA.md`.
+
+The `resources-old/` directory is a **frozen fallback copy of the previous (shadcn/Base UI) UI** — kept
+for reference, never imported.
 
 Quality status:
-- `npm run build` passes; shell files typecheck clean (`npx tsc --noEmit`).
-- `tsconfig.json` uses `"ignoreDeprecations": "5.0"` (installed TypeScript is 5.9.x).
-- Pre-existing, not-yet-fixed TS errors live in `apps/auth/index.tsx`, `components/Form.tsx`, and
-  `ui/scroll-area.tsx` — unrelated to the shell.
+- `npm run build`, `npx tsc --noEmit`, and `npm test` (31 tests) all pass.
+- `resources/` was recreated; `vite.config.js`, `tsconfig.json`, and `vitest.config.js` already point at it.
+- Removed unused deps: `shadcn`, `@base-ui/react`, `tw-animate-css`, `react-icons`,
+  `embla-carousel-react`, `recharts` (and `components.json`).
 
 ---
 
@@ -120,5 +126,6 @@ npm run build
    `postcss.config.js`. Add theme tokens to the `@theme` / `@theme inline` blocks in `resources/css/app.css`,
    and keep that as the only stylesheet. **Never use the v3 `@tailwind base/components/utilities` directives**
    — under v4 they silently drop preflight and all theme colours, producing an all-white unstyled app.
-   Use `@import 'tailwindcss'`. See `frontend/UTILS-UI.md` → Styling.
+   Use `@import 'tailwindcss'`. **Build UI from the hand-written primitives in `components/ui/` — do not add
+   shadcn/Base UI/other component libraries.** See `frontend/DESIGN.md`.
 4. **Database & Migrations:** Always create structured migration files for schema changes.

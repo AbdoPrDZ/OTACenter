@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import ReactDOM from "react-dom/client";
+import { RefreshCw } from "lucide-react";
 
-import { TfiReload as ReplayIcon } from "react-icons/tfi";
-
-import { TooltipProvider } from "@/components/ui/tooltip"
 import DashboardRouter from "@/apps/dashboard/router";
 import User from "@/models/User";
 import { Button } from "@/components/ui/button";
-import Center from "@/components/ui/center";
-import Typography from "@/components/ui/typography";
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner } from "@/components/ui/feedback";
+import { ThemeProvider } from "@/components/ui/theme";
+import { ToastProvider } from "@/components/ui/toast";
 
 import "@/utils/bootstrap";
 
@@ -20,17 +18,16 @@ export default function Dashboard() {
 
   const load = async () => {
     setLoading(true);
-
     setError(undefined);
 
     const response = await User.auth();
 
     if (response.success && response.data) {
       setLoading(false);
-
       return;
-    } else setError(response.message);
+    }
 
+    setError(response.message);
     setLoading(false);
   };
 
@@ -39,26 +36,25 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <TooltipProvider>
-      {loading ? (
-        <Center>
-          <Spinner />
-        </Center>
-      ) : error ? (
-        <Center>
-          <Typography variant="h6" color="error">
-            {error}
-          </Typography>
-
-          <Button onClick={() => load()}>
-            <ReplayIcon /> Retry
-          </Button>
-        </Center>
-      ) : (
-        <RouterProvider router={DashboardRouter.load()} />
-      )}
-    </TooltipProvider>
-  )
+    <ThemeProvider>
+      <ToastProvider>
+        {loading ? (
+          <div className="flex h-dvh items-center justify-center">
+            <Spinner className="size-6 text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-sm font-medium text-destructive">{error}</p>
+            <Button variant="outline" onClick={load}>
+              <RefreshCw /> Retry
+            </Button>
+          </div>
+        ) : (
+          <RouterProvider router={DashboardRouter.load()} />
+        )}
+      </ToastProvider>
+    </ThemeProvider>
+  );
 }
 
 const root = document.getElementById("root") as HTMLElement;
@@ -66,5 +62,5 @@ const root = document.getElementById("root") as HTMLElement;
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <Dashboard />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
