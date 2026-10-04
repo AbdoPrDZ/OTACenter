@@ -12,7 +12,8 @@
   <a href="#configuration">Configuration</a> •
   <a href="#api">API</a> •
   <a href="#testing">Testing</a> •
-  <a href="#project-layout">Layout</a>
+  <a href="#project-layout">Layout</a> •
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
@@ -25,8 +26,8 @@
 | Auth | LDAPRecord (`directorytree/ldaprecord-laravel`) + Laravel Sanctum |
 | Authorization | Spatie Permissions (roles + per-route permission middleware) |
 | Frontend | React 19, TypeScript, Vite 8 |
-| Styling | Tailwind CSS v4 (CSS-first, single stylesheet) |
-| Components | Base UI primitives, TanStack Table, Recharts, Lucide, shadcn/ui conventions |
+| Styling | Tailwind CSS v4 (CSS-first, single stylesheet), dark-first with light/system toggle |
+| Components | Hand-built Tailwind primitives, TanStack Table, Lucide icons |
 | Storage | Local disk (configurable), SQLite / MySQL / PostgreSQL |
 | Tests | PHPUnit 12 (backend), Vitest + Testing Library (frontend) |
 
@@ -41,9 +42,8 @@ plain Blade entry points that boot React. There is no Inertia — the Blade view
 - **Apps** — name, unique package name, summary, description, logo, and a screenshot gallery.
 - **Versions** — a release of an app, each with a changelog, a status
   (`draft` / `review` / `published` / `cancelled`), an API key, and a **required** `.apk` installer.
-- **Bundles** — a ZIP artifact attached to a version. Exactly one bundle is *active* per version
-  (`versions.latest_id`); one version is *latest* per app (`apps.latest_id`). "Publish" is simply
-  pointing `latest_id` at the resource.
+- **Bundles** — a ZIP artifact attached to a version. The version's *active* bundle is stored on
+  `versions.latest_id`, and an app's *latest* version on `apps.latest_id` (set from the app form).
 - **Files** — every uploaded artifact (logos, images, APKs, ZIPs) is a row in `files` with a
   **non-incrementing string primary key** and a public URL served by `GET /files/{name}`.
 
@@ -74,8 +74,10 @@ Read-only aggregates (`/api/statistics/*`, gated by `role:super-admin,admin`): g
 status breakdowns, plus per-entity panels embedded as inner tabs on every model page.
 
 ### Dashboard
-Desktop sidebar + mobile drawer shell, server-driven data tables with debounced search, server-side
-sort and pagination, and permission-gated actions throughout.
+A dark-first, responsive shell: collapsible desktop sidebar with a mobile drawer, sticky topbar with
+breadcrumbs, a `Ctrl/⌘ K` command palette, light/dark/system theme toggle, and toasts. Content is built
+from server-driven data tables (debounced search, server-side sort and pagination, column visibility)
+with permission-gated actions throughout.
 
 ---
 
@@ -190,7 +192,7 @@ List endpoints accept `page`, `pageSize`, `search`, `sort[<field>]=asc|desc`, an
 |--------|-----------|
 | `/api/auth` | `POST /login`, `POST /register` (invite token), `GET /me`, `PUT /profile`, `DELETE /logout` |
 | `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*` (bind/unbind), `/{app}/version/*` |
-| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy, `/{bundle}/activate` |
+| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy |
 | `/api/domain` | index, store, show, update, destroy |
 | `/api/user` | index, show, destroy, `POST /invite`, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*` |
 | `/api/role` | index, show, `/{role}/permission/*`, `/{role}/user` (index) |
@@ -226,12 +228,14 @@ app/
   Models/                 App, Version, Bundle, Domain, User, File, Device, …
   Models/Traits/Tabling   Server-side sort / search / filter / paginate pipeline
 resources/js/
-  apps/auth/              Auth SPA
-  apps/dashboard/         Dashboard SPA, shell components, and tabs
-  components/             Shared components + ui/ primitives
+  apps/auth/              Auth SPA (login, register, split-screen shell)
+  apps/dashboard/         Dashboard SPA: index, router, shell components/, tabs/
+  components/             Shared components (PageHeader, ModelDataTable, Logo, …)
+  components/ui/          Hand-built primitives (Button, Modal, Dropdown, SelectMenu, …)
   models/                 Typed frontend models (createModel factory)
   utils/                  axios bootstrap, Request wrapper, router, RBAC helpers
-resources/css/app.css     The single Tailwind v4 stylesheet
+resources/css/app.css     The single Tailwind v4 stylesheet (theme tokens + palettes)
+resources/views/          Blade shells: layout, dashboard, auth, welcome
 routes/
   web.php                 SPA shells, file serving, and the admin JSON API
   ota_client.php          Device API (mounted at /ota-client)
@@ -249,8 +253,13 @@ tests/                    PHPUnit feature tests
 - **Tailwind is v4, CSS-first.** There is no `tailwind.config.js` and no `postcss.config.js`. Theme
   tokens live in the `@theme` blocks in `resources/css/app.css`. Do not add v3
   `@tailwind base/components/utilities` directives — they silently break preflight and all theme colors.
-- **Base UI, not Radix.** UI primitives are built on `@base-ui/react/*` with the `render` prop for
-  polymorphism, and every component sets a `data-slot` attribute.
+- **UI is built in-house.** Components come from the hand-written primitives in
+  `resources/js/components/ui/`, written with raw Tailwind utilities. No shadcn, no Base UI, no Radix.
+  Style them with the semantic tokens (`bg-card`, `text-muted-foreground`, `bg-primary`, `border-border`,
+  …) so light/dark switching is automatic.
+- **Always send an explicit `pageSize`.** The `Tabling` trait falls back to the *total row count* when
+  `pageSize` is absent, so a count or option fetch without it loads every row. Note `pageSize` must be
+  at least `5`.
 
 ---
 
@@ -261,9 +270,7 @@ If you deploy this publicly, review these before exposing it:
 - `AuthController::login` logs full credentials at INFO level — remove that before production.
 - `.env` is gitignored; never commit credentials.
 - `AuthController::logout` revokes **all** of the user's tokens, not just the current one.
-- The `pageSize` list parameter is unbounded and defaults to the full row count — consider capping it
-  for large datasets.
-- The `Tabling` response includes the raw SQL in a `query` field — a debug leftover worth removing.
+- The `pageSize` list parameter has no upper bound (minimum `5`) — consider capping it for large datasets.
 
 ---
 

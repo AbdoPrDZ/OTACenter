@@ -71,12 +71,10 @@ toggle, a collapsible desktop sidebar + mobile drawer, a topbar with breadcrumbs
 palette, toasts, and a hand-built primitive set. Architecture is in `frontend/COMPONENTS.md`, design
 system in `frontend/DESIGN.md`, routing in `frontend/NAVIGATION.md`, data layer in `frontend/DATA.md`.
 
-The `resources-old/` directory is a **frozen fallback copy of the previous (shadcn/Base UI) UI** — kept
-for reference, never imported.
+The previous (shadcn/Base UI) frontend has been removed; it remains available in git history.
 
 Quality status:
 - `npm run build`, `npx tsc --noEmit`, and `npm test` (31 tests) all pass.
-- `resources/` was recreated; `vite.config.js`, `tsconfig.json`, and `vitest.config.js` already point at it.
 - Removed unused deps: `shadcn`, `@base-ui/react`, `tw-animate-css`, `react-icons`,
   `embla-carousel-react`, `recharts` (and `components.json`).
 
