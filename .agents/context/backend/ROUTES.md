@@ -31,8 +31,10 @@
 ## OTA client API — `routes/ota_client.php` → `/ota-client`
 Mounted from the `bootstrap/app.php` `then` closure: `Route::middleware('ota-client')->prefix('ota-client')`.
 The `ota-client` middleware group = `EnsureFrontendRequestsAreStateful` + `throttle:api` +
-`SubstituteBindings` + **`DeviceMiddleware`** (resolves/creates the device from the request and stashes
-its id in `$request->attributes->set('device_id', ...)`).
+`SubstituteBindings`. The `/app/*` routes then add **`ota.api_key`** (`OtaApiKeyMiddleware`, matches the
+`API-KEY` header against the version — no session) followed by **`device`** (`DeviceMiddleware`, resolves
+or creates the device from the request and stashes its id in `$request->attributes->set('device_id', ...)`).
+`/v1/health` stays public.
 | Route | Controller | Notes |
 |-------|-----------|-------|
 | `GET /ota-client/v1/health` | `OTAClient\AppController::health` | reachability check |

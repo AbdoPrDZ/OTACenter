@@ -70,7 +70,8 @@ React. There is no Inertia; the Blade views are just shells.
 A separate, device-facing API is mounted at `/ota-client/v1` for native clients:
 - `GET /ota-client/v1/health` — reachability check.
 - `POST /ota-client/v1/app/info` — body `{ package, version, bundle }`; resolves the app/version/bundle
-  and reports `availableUpdates`. Devices self-register via the `X-Device-Info` header
+  and reports `availableUpdates`. The version's `API-KEY` header authorizes the call — no login session is
+  required. Devices register via the `X-Device-Info` header
   (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) through `DeviceMiddleware`.
 
 ### Statistics
@@ -405,7 +406,7 @@ Two JSON surfaces:
 | Prefix | Auth | Purpose |
 |--------|------|---------|
 | `/api/*` | Sanctum SPA session or bearer token | Admin API (defined in `routes/web.php` under a `prefix('api')` group) |
-| `/ota-client/v1/*` | Sanctum + `DeviceMiddleware` | Device-facing OTA API (`routes/ota_client.php`) |
+| `/ota-client/v1/*` | `API-KEY` (version key) + `DeviceMiddleware` | Device-facing OTA API (`routes/ota_client.php`) |
 | `/files/{name}` | none | Streams a stored artifact from the `public` disk |
 
 Every admin response uses the same envelope:

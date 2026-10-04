@@ -20,7 +20,8 @@ downloaded bundle has been activated.
 **runtimeVersion** — a compatibility key in the bundle manifest that must match the host APK's
 `versionName`. A JS-only update keeps the same `runtimeVersion`; native changes require a new APK.
 
-**Session** — a short-lived token returned by `/ota-client/v1/app/info`, required to download a bundle.
+**Session** — a token returned by `/ota-client/v1/app/info` for SDK compatibility; the OTA endpoints are authorized by
+the `API-KEY` header, not this session.
 
 **Device fingerprint** — the `X-Device-Info` header (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) sent by the
 client so the server can register and target devices.

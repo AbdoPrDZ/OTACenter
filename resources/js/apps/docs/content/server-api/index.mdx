@@ -11,7 +11,7 @@ OTACenter exposes two JSON surfaces plus one file route.
 | Prefix | Auth | Purpose |
 |--------|------|---------|
 | `/api/*` | Sanctum SPA session or bearer token | Admin API |
-| `/ota-client/v1/*` | Sanctum + `DeviceMiddleware` | Device-facing OTA API |
+| `/ota-client/v1/*` | `API-KEY` (version key) + `DeviceMiddleware` | Device-facing OTA API |
 | `/files/{name}` | none | Streams a stored artifact |
 
 ## Pages in this section

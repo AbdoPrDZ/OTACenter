@@ -6,12 +6,30 @@ order: 10
 
 # OTA client API
 
-Mounted at `/ota-client/v1` for native clients. Requests carry Sanctum plus the `DeviceMiddleware`
-fingerprint; the version's `API-KEY` authenticates the update check.
+Mounted at `/ota-client/v1` for native clients. **Every call under `/app` is authorized by the version's
+`API-KEY`** — the key stored on the `Version` being checked. No login session or Sanctum token is
+required: a client holding the right key may check for updates and download the artifacts.
+
+Requests also carry the `X-Device-Info` fingerprint, which registers and identifies the device. It is an
+identifier, not a credential.
+
+## Authentication
+
+```http
+API-KEY: <versions.api_key>
+X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
+```
+
+- A missing or wrong key returns `401` (`{ success: false, errors: { api_key: … } }`) **before** the device
+  is registered.
+- The key is compared against the version the request resolves to: the bound `{version}` or `{bundle}` on a
+  download, or the `package` + `version` named in the `/app/info` payload.
+- A key belongs to one version, so it cannot reach another app's artifacts.
 
 ## `GET /ota-client/v1/health`
 
-Reachability probe. The SDK resolves `false` instead of throwing when it is unreachable.
+Reachability probe — **public**, no key. The SDK resolves `false` instead of throwing when it is
+unreachable.
 
 ## `POST /ota-client/v1/app/info`
 
@@ -24,13 +42,6 @@ Reachability probe. The SDK resolves `false` instead of throwing when it is unre
 }
 ```
 
-Headers:
-
-```http
-API-KEY: <version.api_key>
-X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
-```
-
 Response:
 
 ```jsonc
@@ -40,19 +51,30 @@ Response:
     "version": { "id": "…", "name": "1.4.0" },   // a new APK
     "bundle":  { "id": "…", "name": "1.4.0" }    // a new JS bundle
   },
-  "session": "…"                                  // short-lived download token
+  "session": "…"                                  // optional, see below
 }
 ```
 
-## Bundle download
+## Downloads
 
-The engine downloads the bundle ZIP using the returned `session`. It verifies the `manifest.json`
-(`runtimeVersion`, `checksum`, `size`) before staging.
+```http
+GET /ota-client/v1/app/update/version/{version}   API-KEY: <version.api_key>
+GET /ota-client/v1/app/update/bundle/{bundle}     API-KEY: <version.api_key>
+```
+
+Both stream the stored artifact and record a download history row. The key must belong to the artifact's
+version.
+
+## The returned `session`
+
+`/app/info` still returns a `session` for SDK compatibility, but downloads no longer require it — the
+`API-KEY` is the credential. Treat it as optional.
 
 ## Device registration
 
-Devices self-register on first contact via `DeviceMiddleware` using the `X-Device-Info` header
-(`did`, `mf`, `br`, `mdl`, `av`, `sdv`).
+Devices self-register on first contact via the `X-Device-Info` header (`did`, `mf`, `br`, `mdl`, `av`,
+`sdv`). The server creates or resolves the device after the key is accepted. `did` is client-supplied, so
+it identifies a device rather than authenticating it.
 
 ## Client side
 

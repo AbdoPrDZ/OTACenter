@@ -36,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
       'role'               => \App\Http\Middleware\RoleMiddleware::class,
       'permission'         => \App\Http\Middleware\PermissionMiddleware::class,
       'rec.parent'         => \App\Http\Middleware\EnsureParentChild::class,
+      'device'             => \App\Http\Middleware\DeviceMiddleware::class,
+      'ota.api_key'        => \App\Http\Middleware\OtaApiKeyMiddleware::class,
       'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
     ]);
     $middleware->group('web', [
@@ -57,7 +59,8 @@ return Application::configure(basePath: dirname(__DIR__))
       'throttle:api',
       \Illuminate\Routing\Middleware\SubstituteBindings::class,
       // \App\Http\Middleware\VerifyCsrfToken::class,
-      \App\Http\Middleware\DeviceMiddleware::class,
+      // DeviceMiddleware is applied per-route, after the API key check, so a
+      // caller without a valid key never registers a device.
     ]);
     //
   })

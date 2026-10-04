@@ -35,7 +35,7 @@ order: 3
 |--------|------|
 | `GET` | `/ota-client/v1/health` |
 | `POST` | `/ota-client/v1/app/info` |
-| `GET` | `/ota-client/v1/bundle/…` (session-gated) |
+| `GET` | `/ota-client/v1/update/version/{version}` (API-KEY authorized) |
 
 <Callout type="info" title="Named routes">
 SPA paths come from `DashboardRouter.routes` (`resources/js/apps/dashboard/router.tsx`). The `/docs`

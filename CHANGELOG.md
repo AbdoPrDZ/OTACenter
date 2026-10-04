@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-04
+
+### Added
+
+- **OTA API key authentication** — `/ota-client/v1/app/*` is now authorized by the version's `API-KEY`
+  header instead of a Sanctum session. `OtaApiKeyMiddleware` compares it (constant-time) against the bound
+  `{version}`/`{bundle}`, or against the `package` + `version` named in the `/app/info` payload, so the
+  key is checked before a device is registered. A missing or wrong key returns `401`, and a key only
+  reaches the artifacts of its own version. `GET /ota-client/v1/health` stays public.
+- **`tests/Feature/OtaApiKeyTest.php`** — first coverage of the OTA surface: missing / wrong / correct key
+  on the update check, API-key-only downloads, cross-app key isolation and the public health probe.
+
+### Changed
+
+- Dropped `auth:sanctum` from the OTA download routes and moved `DeviceMiddleware` out of the
+  `ota-client` group onto the `/app/*` routes, after the key check. `/app/info` still returns a `session`
+  for SDK compatibility, but it is no longer required to download.
+
+### Security
+
+- Removed the live request-attribute dump in `OTAClient\AppController::updateVersion`, which wrote the
+  request (including the bearer token) to the application log on every version download.
+
 ## [1.0.0] - 2026-10-04
 
 ### Added
@@ -100,5 +123,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.1.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/AbdoPrDZ/OTACenter/releases/tag/v0.1.0
