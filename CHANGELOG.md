@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
     big **animated** `<Flow>` / `<FlowStep>` diagrams (CSS-only beams and dots).
 - **Client SDK docs** — install and usage guides for the [`ota-client`](https://github.com/AbdoPrDZ/react-ota-client)
   React Native package, cross-linked with the server's `/ota-client/v1` API.
+- **Docker** — a multi-stage `Dockerfile` (Vite build, then `php:8.4-fpm` with nginx + php-fpm under
+  supervisor) and a `docker-compose.yml` stack (app, Postgres, queue worker, scheduler). The entrypoint
+  runs migrations and caches config on first boot; uploads and the database persist in named volumes.
 - **Brand identity** — custom OTACenter logo mark (broadcast "push" arrow framed by signal brackets on
   an indigo→violet tile) as `resources/js/components/Logo.tsx`, plus `public/favicon.svg` and a `<link
   rel="icon">` in the Blade layout.

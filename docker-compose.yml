@@ -1,0 +1,87 @@
+name: otacenter
+
+# Shared service definition (image, env file, storage volume).
+x-app: &app
+  image: otacenter:latest
+  build:
+    context: .
+  restart: unless-stopped
+  env_file:
+    - .env
+  volumes:
+    - otacenter-storage:/var/www/html/storage
+
+# Shared environment. Container-level values override anything in .env.
+x-environment: &app-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: ${APP_URL:-http://localhost:8000}
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_DATABASE: ${DB_DATABASE:-otacenter}
+  DB_USERNAME: ${DB_USERNAME:-otacenter}
+  DB_PASSWORD: ${DB_PASSWORD:-secret}
+  SESSION_DRIVER: file
+  CACHE_STORE: file
+  QUEUE_CONNECTION: database
+  RUN_MIGRATIONS: "true"
+
+services:
+  # nginx + php-fpm (Dockerfile default command).
+  app:
+    <<: *app
+    environment:
+      <<: *app-env
+    ports:
+      - "${APP_PORT:-8000}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Background queue worker (needs the `jobs` table migrated by the app).
+  queue:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "false"
+    command:
+      ["php", "artisan", "queue:work", "--tries=3", "--timeout=300", "--no-interaction"]
+    healthcheck:
+      disable: true
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # Laravel scheduler loop (no-op unless you add scheduled tasks).
+  scheduler:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "false"
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck:
+      disable: true
+    depends_on:
+      app:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-otacenter}
+      POSTGRES_USER: ${DB_USERNAME:-otacenter}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - otacenter-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  otacenter-storage:
+  otacenter-db:

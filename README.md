@@ -139,6 +139,29 @@ The public home is at `http://localhost:8000/`, the docs at `/docs`, and the das
 > Tip: SQLite is the default database and works out of the box. `.env.example` also carries commented
 > MySQL/PostgreSQL blocks.
 
+### Docker
+
+A production image and compose stack are included: the `Dockerfile` builds the frontend, installs PHP on
+`php:8.4-fpm`, and runs **nginx + php-fpm** under supervisor; `docker-compose.yml` runs the app plus a
+Postgres database, a queue worker and the scheduler.
+
+```bash
+cp .env.example .env          # if you don't already have one
+docker compose up -d --build
+```
+
+- The app is served at `http://localhost:8000` (override the host port with `APP_PORT`).
+- Postgres runs in the `db` service (defaults `otacenter` / `secret`; override with `DB_DATABASE`,
+  `DB_USERNAME`, `DB_PASSWORD`). The Laravel `.env` is loaded, but the container's `APP_*` / `DB_*`
+  values override it.
+- Migrations run automatically on first boot of the `app` container; the `queue` and `scheduler`
+  containers run with `RUN_MIGRATIONS=false`.
+- Uploads persist in the `otacenter-storage` volume; the database in `otacenter-db` (`docker compose
+  down -v` removes them).
+
+To use **SQLite** instead, drop the `db` service and set `DB_CONNECTION=sqlite` with a volume mounted at
+`/var/www/html/database`.
+
 ---
 
 ## Configuration
