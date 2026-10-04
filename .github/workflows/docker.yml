@@ -21,9 +21,9 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  # Kept lowercase and literal: ghcr.io requires a lowercase path, while
-  # github.repository would be "AbdoPrDZ/OTACenter".
-  IMAGE_NAME: otacenter
+  # Full lowercase namespace: ghcr.io requires the owner in the path, and the
+  # path must be lowercase — "AbdoPrDZ/OTACenter" is rejected with a 400.
+  IMAGE_NAME: abdoprdz/otacenter
 
 jobs:
   build:
