@@ -517,4 +517,4 @@ If you deploy this publicly, review these before exposing it:
 
 ## License
 
-[MIT](LICENSE) — as declared in `composer.json`.
+[GPL-3.0-or-later](LICENSE) — full text in [`LICENSE`](LICENSE), as declared in `composer.json`.

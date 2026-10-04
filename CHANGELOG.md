@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Relicensed under the GNU GPL v3** (`GPL-3.0-or-later`), replacing MIT. `LICENSE` now holds the full
+  GPL-3.0 text; `composer.json` declares the SPDX identifier.
 - **The compose stack now reads `.env.docker`, not `.env`**, keeping container configuration separate
   from a local development env file. Copy `.env.docker.example` and start it with
   `docker compose --env-file .env.docker up -d --build` (or export `COMPOSE_ENV_FILES=.env.docker`
