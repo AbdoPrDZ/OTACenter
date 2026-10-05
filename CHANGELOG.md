@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.3] - 2026-10-05
+
+### Fixed
+
+- **Long app descriptions failed to save** with `value too long for type character varying(255)`.
+  `apps.description` and the `versions` / `bundles` `changelog` columns were `VARCHAR(255)` while the API
+  accepts free text. A migration now makes all three `TEXT`, so full descriptions and changelogs save.
+
 ## [1.6.2] - 2026-10-05
 
 ### Fixed
