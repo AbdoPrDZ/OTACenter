@@ -95,6 +95,19 @@ class BundleController extends Controller
     ]);
   }
 
+  /**
+   * Make this bundle the version's active one (writes `versions.latest_id`,
+   * the pointer the OTA API reports as `availableUpdates.bundle`).
+   */
+  public function activate(App $app, Version $version, Bundle $bundle)
+  {
+    $version->update(['latest_id' => $bundle->id]);
+
+    return $this->apiSuccessResponse("Bundle activated successfully", [
+      'item' => $version->fresh()->toArray(),
+    ]);
+  }
+
   public function destroy(App $app, Version $version, Bundle $bundle)
   {
     if ($version->latest_id === $bundle->id) {

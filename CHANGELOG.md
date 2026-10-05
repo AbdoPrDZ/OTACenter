@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-10-05
+
+### Added
+
+- **Activate a bundle.** A version's active bundle (`versions.latest_id`) can be chosen from the dashboard:
+  `POST /api/app/{app}/version/{version}/bundle/{bundle}/activate` (gated by `permission:bundle.publish`)
+  plus an **Activate** action on each inactive row of the bundles table. Nothing could set that pointer
+  before — only deleting a bundle cleared it — so which bundle the OTA API reports as
+  `availableUpdates.bundle` was not changeable.
+- **The version's APK file is visible.** The version header now shows the attached file name
+  (`Version 2 · APK: …apk`), and the "Replace APK" field passes the current file so it no longer reads
+  "No file chosen" for a version that has one.
+
+### Fixed
+
+- `tests/Feature/BundleTest.php` created versions without `api_key`, which the `versions` table declares
+  NOT NULL, so all six of its tests errored before reaching their assertions.
+
 ## [1.1.1] - 2026-10-04
 
 ### Fixed
@@ -134,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.2.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v0.1.0...v1.0.0

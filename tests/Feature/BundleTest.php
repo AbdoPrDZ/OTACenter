@@ -26,6 +26,7 @@ class BundleTest extends TestCase
       'changelog' => 'Initial release',
       'app_id' => $app->id,
       'status' => 'draft',
+      'api_key' => 'test-api-key',
       'file_id' => $file->name,
     ]);
 

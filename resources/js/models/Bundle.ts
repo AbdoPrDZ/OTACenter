@@ -80,6 +80,14 @@ export default class Bundle extends BundleModel {
     });
   }
 
+  static async activate(appId: number, versionId: number, bundleId: number) {
+    return Request.post({
+      url: `${this.endpointFor(appId, versionId)}/${bundleId}/activate`,
+      dataField: "item",
+      dataEncoding: async (data) => await Bundle.decode(data),
+    });
+  }
+
   static async destroy(appId: number, versionId: number, bundleId: number) {
     return Request.delete({ url: `${this.endpointFor(appId, versionId)}/${bundleId}` });
   }

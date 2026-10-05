@@ -219,7 +219,7 @@ function VersionShow({ appId, versionId }: { appId: number; versionId: number })
     <div className="flex w-full flex-col gap-5">
       <PageHeader
         title={version.name}
-        description={`Version ${version.id}${version.latest_id ? " · published" : ""}`}
+        description={`Version ${version.id}${version.file_id ? ` · APK: ${version.file_id}` : ""}${version.latest_id ? " · published" : ""}`}
         breadcrumbs={[
           { label: "Apps", to: "/dashboard/apps" },
           { label: appName ?? "App", to: `/dashboard/apps/${appId}` },
@@ -260,7 +260,13 @@ function VersionShow({ appId, versionId }: { appId: number; versionId: number })
               <VersionEditForm appId={appId} version={version} onSaved={refresh} />
             ) : null}
 
-            <BundlesSection appId={appId} versionId={versionId} version={version} reload={reload} />
+            <BundlesSection
+              appId={appId}
+              versionId={versionId}
+              version={version}
+              reload={reload}
+              onActivated={refresh}
+            />
           </div>
         </TabsContent>
 
@@ -354,6 +360,7 @@ function VersionEditForm({
             label="Replace APK"
             file={file}
             onPick={setFile}
+            current={version.file_id}
             hint="Leave empty to keep the current file."
           />
 
@@ -377,13 +384,33 @@ function BundlesSection({
   versionId,
   version,
   reload,
+  onActivated,
 }: {
   appId: number;
   versionId: number;
   version: IVersion;
   reload: number;
+  onActivated: () => void;
 }) {
   const navigate = useNavigate();
+  const toast = useToast();
+  const [activating, setActivating] = useState<number>();
+
+  const activate = async (bundle: IBundle) => {
+    setActivating(bundle.id);
+
+    const response = await Bundle.activate(appId, versionId, bundle.id);
+
+    setActivating(undefined);
+
+    if (response.success) {
+      toast.success(`${bundle.name ?? "Bundle"} is now active`);
+      onActivated();
+      return;
+    }
+
+    toast.error("Could not activate bundle", response.message);
+  };
 
   const columns = useMemo<DataTableColumn<IBundle>[]>(
     () => [
@@ -451,6 +478,24 @@ function BundlesSection({
           enableSearch={false}
           onRowClick={(row) =>
             navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/${row.id}`)
+          }
+          actions={
+            can({ permission: "bundle.publish" })
+              ? (row) =>
+                  version.latest_id === row.id ? null : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      loading={activating === row.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        activate(row);
+                      }}
+                    >
+                      Activate
+                    </Button>
+                  )
+              : undefined
           }
         />
       </CardContent>

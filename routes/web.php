@@ -148,6 +148,7 @@ Route::prefix('api')->group(function () {
 
               Route::prefix('/{bundle}')->whereNumber('bundle')->middleware(['permission:bundle.view', 'rec.parent:version-versions-id,bundle-bundles-version_id'])->group(function () {
                 Route::get('/', [BundleController::class, 'show'])->middleware('permission:bundle.view')->name('app.version.bundle.show');
+                Route::post('/activate', [BundleController::class, 'activate'])->middleware('permission:bundle.publish')->name('app.version.bundle.activate');
                 Route::put('/', [BundleController::class, 'update'])->middleware('permission:bundle.update')->name('app.version.bundle.update');
                 Route::delete('/', [BundleController::class, 'destroy'])->middleware('permission:bundle.delete')->name('app.version.bundle.destroy');
               });
