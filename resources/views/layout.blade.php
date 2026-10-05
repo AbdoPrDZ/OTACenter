@@ -12,8 +12,11 @@
 
   <title>{{ $title }}</title>
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="mask-icon" href="/favicon.svg" color="#6366f1" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/Logo-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/Logo-192.png" />
+  <link rel="apple-touch-icon" href="/Logo-192.png" />
 
   {{-- Apply the stored theme before first paint to avoid a flash. --}}
   <script>

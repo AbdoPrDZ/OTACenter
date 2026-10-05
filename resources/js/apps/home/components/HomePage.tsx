@@ -95,7 +95,7 @@ export default function HomePage() {
               Self-hosted · Over-the-Air distribution
             </span>
 
-            <LogoMark className="size-16 shadow-md" />
+            <LogoMark className="size-32 drop-shadow-lg sm:size-40 md:size-48" />
 
             <h1 className="max-w-3xl font-display text-4xl font-semibold tracking-tight text-balance md:text-6xl">
               Ship updates without the app store.

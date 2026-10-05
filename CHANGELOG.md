@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.1] - 2026-10-05
+
+### Changed
+
+- **New brand mark.** The hand-drawn SVG logo (a push arrow on an indigo→violet tile) is replaced by the
+  new cloud + push-arrow artwork everywhere it appears — the dashboard sidebar and home card, the auth
+  pages, the site header/footer shared by `/`, `/store` and `/docs`, and the home hero. `LogoMark` is now
+  a single `<img>` served from `public/` (`/favicon.svg`, so it stays sharp from the 36px sidebar chip up
+  to the 192px hero) with an optional `src` override, instead of an inline SVG that generated a gradient
+  id per instance.
+- **Favicons regenerated** from the new artwork: `public/favicon.svg` and `public/favicon.ico`, plus
+  `Logo-32.png` / `Logo-64.png` / `Logo-192.png`. The Blade layout declares the full set (SVG, `.ico`,
+  32px and 192px PNG and an `apple-touch-icon`); the SVG-only `mask-icon` link is gone.
+- **Mark resized** where it was too small to read: the home hero is now `size-32 sm:size-40 md:size-48`
+  with a `drop-shadow` that follows the artwork's alpha, the login brand block `size-16` with a larger
+  wordmark and heading, the dashboard home card `size-16`, and the site footer `size-10`.
+
 ## [1.6.0] - 2026-10-05
 
 ### Added

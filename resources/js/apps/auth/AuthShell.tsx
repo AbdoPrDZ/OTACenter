@@ -28,8 +28,8 @@ export default function AuthShell({
         <div className="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-primary/10 blur-3xl" />
 
         <div className="relative flex items-center gap-2.5">
-          <LogoMark className="size-10" />
-          <span className="font-display text-lg font-semibold tracking-tight">
+          <LogoMark className="size-16" />
+          <span className="font-display text-3xl font-semibold tracking-tight">
             OTACenter
           </span>
         </div>
@@ -67,7 +67,7 @@ export default function AuthShell({
           </div>
 
           <div className="mb-6">
-            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{title}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           </div>
 

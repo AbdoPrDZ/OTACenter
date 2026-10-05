@@ -9,7 +9,7 @@ export default function SiteFooter() {
     <footer className="border-t border-border bg-muted/20">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row">
         <div className="flex items-center gap-2.5">
-          <Logo markClassName="size-7" />
+          <Logo markClassName="size-10" />
         </div>
 
         <nav className="flex items-center gap-5 text-xs text-muted-foreground">

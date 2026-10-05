@@ -1,61 +1,25 @@
-import { useId } from "react";
-
 import { cn } from "@/lib/utils";
 
 /**
- * OTACenter brand mark — an upward "push" arrow (over-the-air delivery) framed
- * by broadcast signal brackets, on a rounded indigo→violet tile.
+ * OTACenter brand mark — the cloud + push-arrow mark (`public/favicon.svg`), so
+ * it stays crisp at every size from the 36px sidebar chip to the 192px home
+ * hero. Pass `src` to swap in a raster rendition (e.g. `Logo-192.png`).
  */
 export function LogoMark({
   className,
   title = "OTACenter",
+  src = "/favicon.svg",
 }: {
   className?: string;
   title?: string;
+  src?: string;
 }) {
-  const rawId = useId();
-  const gradientId = `ota-logo-${rawId.replace(/[^a-zA-Z0-9]/g, "")}`;
-
   return (
-    <svg
-      viewBox="0 0 32 32"
-      role="img"
-      aria-label={title}
-      className={cn("shrink-0", className)}
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="100%" stopColor="#8b5cf6" />
-        </linearGradient>
-      </defs>
-
-      <rect width="32" height="32" rx="8.5" fill={`url(#${gradientId})`} />
-
-      {/* Broadcast signal brackets */}
-      <path
-        d="M7 11c-2.6 3.4-2.6 6.6 0 10"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
-      <path
-        d="M25 11c2.6 3.4 2.6 6.6 0 10"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
-
-      {/* Upward push arrow */}
-      <path
-        d="M16 6.2 22.8 14h-4.1v10h-5.4V14H9.2z"
-        fill="#fff"
-      />
-    </svg>
+    <img
+      src={src}
+      alt={title}
+      className={cn("shrink-0 object-contain", className)}
+    />
   );
 }
 

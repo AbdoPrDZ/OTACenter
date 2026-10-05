@@ -72,9 +72,9 @@ export default function HomeTab() {
       <Card className="relative overflow-hidden border-primary/20">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-transparent" />
         <CardContent className="relative flex flex-wrap items-center justify-between gap-4 pt-5">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-xl">
-              <LogoMark className="size-11" />
+          <div className="flex items-center gap-4">
+            <span className="flex size-16 items-center justify-center rounded-2xl">
+              <LogoMark className="size-16" />
             </span>
             <div>
               <h1 className="text-base font-semibold tracking-tight">
