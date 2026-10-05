@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.2] - 2026-10-05
+
+### Fixed
+
+- **The dashboard crashed when an app had no description.** The `App` frontend model decoded
+  `description` (and `summary`) as **required**, but both columns are nullable — so a single app without
+  a description threw `Field description is required` while loading, blanking the Home page and the apps
+  table. Both fields are now optional, matching the API.
+
 ## [1.6.1] - 2026-10-05
 
 ### Changed
@@ -21,15 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Mark resized** where it was too small to read: the home hero is now `size-32 sm:size-40 md:size-48`
   with a `drop-shadow` that follows the artwork's alpha, the login brand block `size-16` with a larger
   wordmark and heading, the dashboard home card `size-16`, and the site footer `size-10`.
-
-## [1.6.1] - 2026-10-05
-
-### Fixed
-
-- **The dashboard crashed when an app had no description.** The `App` frontend model decoded
-  `description` (and `summary`) as **required**, but both columns are nullable — so a single app without
-  a description threw `Field description is required` while loading, blanking the Home page and the apps
-  table. Both fields are now optional, matching the API.
 
 ## [1.6.0] - 2026-10-05
 
