@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { Input, Textarea } from "@/components/ui/form";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
+import { Switch } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
@@ -36,14 +37,40 @@ export default function DomainTab() {
 interface DomainFormValues {
   name: string;
   description: string;
+  is_public: boolean;
+}
+
+function PublicField({
+  checked,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="is_public">Public</FieldLabel>
+      <FieldContent>
+        <label className="flex cursor-pointer items-center gap-3 text-sm">
+          <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label="Public domain" />
+          <span className="text-muted-foreground">
+            Show every app in this domain on the public store
+          </span>
+        </label>
+      </FieldContent>
+    </Field>
+  );
 }
 
 function DomainCreate() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { register, handleSubmit, setError, formState } = useForm<DomainFormValues>();
+  const { register, handleSubmit, watch, setValue, setError, formState } = useForm<DomainFormValues>({
+    defaultValues: { is_public: false },
+  });
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
+  const isPublic = watch("is_public");
 
   const onSubmit = async (data: DomainFormValues) => {
     setSubmitting(true);
@@ -51,6 +78,7 @@ function DomainCreate() {
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("description", data.description);
+    formData.append("is_public", data.is_public ? "1" : "0");
     if (image) formData.append("image", image);
 
     const response = await Domain.create(formData);
@@ -104,6 +132,8 @@ function DomainCreate() {
                 <ImagePicker image={image} onChange={setImage} />
               </FieldContent>
             </Field>
+
+            <PublicField checked={isPublic} onCheckedChange={(value) => setValue("is_public", value)} />
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => navigate("/dashboard/domains")}>
@@ -186,6 +216,10 @@ function DomainShow({ domainId }: { domainId: number }) {
                   <span className="text-muted-foreground">Description</span>
                   <span className="text-right">{domain.description || "—"}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Public</span>
+                  <span>{domain.is_public ? "Yes" : "No"}</span>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -201,14 +235,23 @@ function DomainShow({ domainId }: { domainId: number }) {
 
 function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => void }) {
   const toast = useToast();
-  const { register, handleSubmit, reset, setError, formState } = useForm<DomainFormValues>({
-    defaultValues: { name: domain.name, description: domain.description },
+  const { register, handleSubmit, reset, watch, setValue, setError, formState } = useForm<DomainFormValues>({
+    defaultValues: {
+      name: domain.name,
+      description: domain.description,
+      is_public: domain.is_public,
+    },
   });
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
+  const isPublic = watch("is_public");
 
   useEffect(() => {
-    reset({ name: domain.name, description: domain.description });
+    reset({
+      name: domain.name,
+      description: domain.description,
+      is_public: domain.is_public,
+    });
   }, [domain, reset]);
 
   const onSubmit = async (data: DomainFormValues) => {
@@ -217,6 +260,7 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("description", data.description);
+    formData.append("is_public", data.is_public ? "1" : "0");
     if (image) formData.append("image", image);
 
     const response = await Domain.update(domain.id, formData);
@@ -264,6 +308,8 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
               <ImagePicker image={image} onChange={setImage} value={domain.image_url} />
             </FieldContent>
           </Field>
+
+          <PublicField checked={isPublic} onCheckedChange={(value) => setValue("is_public", value)} />
 
           <div className="flex justify-end">
             <Button type="submit" loading={submitting}>

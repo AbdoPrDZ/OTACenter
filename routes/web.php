@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PublicStoreController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StatisticsController;
 use App\Http\Controllers\UserController;
@@ -15,8 +16,12 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'home')->name('home');
 
 Route::view('docs{any}', 'docs')
-  ->where('any', '^(?!api|dashboard|auth).*')
+  ->where('any', '^(?!api|dashboard|auth|store).*')
   ->name('docs');
+
+Route::view('store{any}', 'store')
+  ->where('any', "^(?!api|dashboard|auth|docs).*")
+  ->name('store');
 
 Route::view('register', 'auth')
   ->name('register')
@@ -38,6 +43,14 @@ Route::get('files/{file}', function (File $file) {
 
 
 Route::prefix('api')->group(function () {
+  # Public app store — deliberately unauthenticated.
+  Route::prefix('public')->middleware('throttle:api')->group(function () {
+    Route::get('/apps', [PublicStoreController::class, 'index']);
+    Route::get('/domains', [PublicStoreController::class, 'domains']);
+    Route::get('/apps/{app}', [PublicStoreController::class, 'show'])->whereNumber('app');
+    Route::get('/apps/{app}/download', [PublicStoreController::class, 'download'])->whereNumber('app');
+  });
+
   Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register')->middleware('auth:sanctum', 'ability:user.invite');

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-10-05
+
+### Added
+
+- **Public app store.** A new public SPA at `/store` (with a detail page at `/store/apps/{id}`) lists
+  every app that belongs to a domain flagged **Public** and has at least one published version, and
+  installs its published `.apk` — no account required. Domains gain an `is_public` flag (new migration,
+  plus a boolean cast, `toArray()` and *both* validation rule sets — the rules are the write whitelist)
+  toggled from the domain form under the existing `domain.update` permission. Domains stay private by
+  default.
+  - **Public JSON API**, unauthenticated and throttled: `GET /api/public/apps` (search, `domain`,
+    pagination), `GET /api/public/domains`, `GET /api/public/apps/{app}` and
+    `GET /api/public/apps/{app}/download`. `PublicStoreController` builds its own response shapes and
+    never returns the version `api_key`, stored file names or filesystem paths.
+  - `…/download` streams the app's latest version when published (else the newest published one) and
+    records a `DownloadHistory` row.
+  - `/store` is the fifth Vite/React entry (`resources/js/apps/store`) with its own Blade shell, and a
+    `Store` link in the public site header and footer.
+
+### Changed
+
+- `npm run build` now compiles five SPAs (`home`, `store`, `docs`, `auth`, `dashboard`).
+
 ## [1.3.0] - 2026-10-05
 
 ### Added
@@ -170,6 +193,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.4.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.0...v1.1.1

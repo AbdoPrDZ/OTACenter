@@ -38,6 +38,7 @@ export default defineConfig({
     laravel({
       input: [
         'resources/js/apps/home/index.tsx',
+        'resources/js/apps/store/index.tsx',
         'resources/js/apps/docs/index.tsx',
         'resources/js/apps/auth/index.tsx',
         'resources/js/apps/dashboard/index.tsx',

@@ -1,0 +1,68 @@
+---
+title: App store
+description: Publish apps to the public store by marking a domain public.
+order: 5
+---
+
+# App store
+
+OTACenter can expose a **public app store** at `/store`, where anyone can browse and install the apps
+you publish — no account required. Access is controlled entirely by **domains**: a domain is either
+private (dashboard only) or public.
+
+## Mark a domain public
+
+<Steps>
+<Step title="Open the domain">
+
+Dashboard → **Domains** → the domain you want to publish.
+
+</Step>
+<Step title="Flip the Public switch">
+
+Turn on **Public** in the domain's details and save. Domains are **private by default**, so nothing is
+exposed until you do this. The toggle is part of `domain.update` — available to `super-admin` and `admin`.
+
+</Step>
+<Step title="Bind apps to it">
+
+Publish each app's version (`status = published`) and bind the app to that domain from the app's
+**Domains** tab. An app only appears once it has a published version.
+
+</Step>
+</Steps>
+
+<Callout type="info" title="What the store shows">
+An app is listed when it belongs to **at least one public domain** *and* has **at least one published
+version**. Everything else stays in the dashboard.
+</Callout>
+
+## What visitors see
+
+- **`/store`** — a searchable grid of every app from the public domains, with a filter per domain.
+- **`/store/apps/{id}`** — the app's logo, screenshots, description, published versions and changelogs.
+- **Install** — downloads the latest published `.apk`.
+
+The install button serves the app's *latest version when it is published*, otherwise the newest published
+version. Each download is recorded in `download_histories`, so you can see how many installs an app gets.
+
+## The public API
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/api/public/apps` | catalogue; `search`, `domain`, `page`, `pageSize` |
+| `GET` | `/api/public/domains` | the public domains (for the filter) |
+| `GET` | `/api/public/apps/{app}` | one app, with `download_url` |
+| `GET` | `/api/public/apps/{app}/download` | streams the `.apk` (throttled) |
+
+These routes are **unauthenticated and throttled**. They build their own response shapes and never
+include the version `api_key`, stored file names or filesystem paths — unlike the admin endpoints, whose
+per-role serialization is only meant to be read by authenticated users.
+
+<Callout type="warning" title="A public domain is genuinely public">
+Anyone who can reach the site can list, inspect and download every app in a public domain, and a private
+domain's apps disappear from the store immediately when you untick **Public** (or unpublish the app's
+only version).
+</Callout>
+
+Next: [Testing](/guides/testing).

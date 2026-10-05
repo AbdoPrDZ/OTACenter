@@ -180,3 +180,19 @@ id in `$request->attributes->set('device_id', ...)`.
 
 > The `info` response names are exact (camelCase `appId`, `versionId`, `bundleId`) — matched by the
 > native OTA client app.
+
+## `PublicStoreController` — public app store (unauthenticated)
+
+Mounted at `/api/public` (see ROUTES.md), **outside** the `auth:sanctum` group, throttled. It only ever
+touches apps bound to a domain with `is_public = true` that also have a `status = 'published'` version
+(`publicAppsQuery()` / `isPublic()`), and it builds its own response shapes: `App::toArray()` and
+`Version::toArray()` are **not** used, because their privileged branch is selected for every request
+(the `$user?->role || 'user'` + loose-`switch` quirk) and would leak `api_key`, `file_id` and `path`.
+
+| Method | Notes |
+|--------|-------|
+| `index` | `GET /api/public/apps` — `tablingCollect` over `publicAppsQuery()` (search + optional `domain` filter + pagination); `map`s each app to a card (`id, name, package_name, summary, logo_url, domains[], version, updated_at`) via `card()`. |
+| `domains` | `GET /api/public/domains` — public domains that have at least one published app, with `apps_count` (drives the store's filter). |
+| `show` | `GET /api/public/apps/{app}` — 404 unless `isPublic()`; adds `description`, `screenshots[]`, published `versions[]` (name, changelog, size, created_at) and `download_url`. |
+| `download` | `GET /api/public/apps/{app}/download` — 404 unless `isPublic()`; streams `installableVersion()` (the app's `latest` when published, else the newest published) via `response()->download()` and writes a `DownloadHistory` row with null `user_id`/`device_id`. |
+

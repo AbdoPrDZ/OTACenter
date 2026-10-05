@@ -8,6 +8,7 @@ export interface IDomain extends IModel {
   id: number;
   name: string;
   description: string;
+  is_public: boolean;
   image_url?: string;
   created_at: string;
   updated_at: string;
@@ -17,6 +18,7 @@ const DomainModel = createModel<IDomain>("domain", [
   { name: "id", type: "number" },
   { name: "name", type: "string", required: true },
   { name: "description", type: "string" },
+  { name: "is_public", type: "boolean" },
   { name: "image_url", type: "string" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },

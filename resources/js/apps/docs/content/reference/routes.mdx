@@ -11,10 +11,20 @@ order: 3
 | Method | Path | Serves |
 |--------|------|--------|
 | `GET` | `/` | `home` SPA |
+| `GET` | `/store{any}` | `store` SPA |
 | `GET` | `/docs{any}` | `docs` SPA |
 | `GET` | `/register`, `/auth{any}` | `auth` SPA |
 | `GET` | `/dashboard{any}` | `dashboard` SPA |
 | `GET` | `/files/{name}` | a stored artifact |
+
+## Public store API (`/api/public`, no auth)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/public/apps` | catalogue of apps in public domains (search, `domain`, pagination) |
+| `GET` | `/api/public/domains` | the public domains, for the store's filter |
+| `GET` | `/api/public/apps/{app}` | one app: screenshots, published versions, `download_url` |
+| `GET` | `/api/public/apps/{app}/download` | streams the latest published `.apk` (throttled) |
 
 ## Admin API (`/api`)
 

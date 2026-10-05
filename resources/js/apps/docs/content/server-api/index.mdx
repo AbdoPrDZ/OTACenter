@@ -6,11 +6,12 @@ order: 1
 
 # Server API
 
-OTACenter exposes two JSON surfaces plus one file route.
+OTACenter exposes three JSON surfaces plus one file route.
 
 | Prefix | Auth | Purpose |
 |--------|------|---------|
 | `/api/*` | Sanctum SPA session or bearer token | Admin API |
+| `/api/public/*` | none (throttled) | Public app store catalogue and downloads |
 | `/ota-client/v1/*` | `API-KEY` (version key) + `DeviceMiddleware` | Device-facing OTA API |
 | `/files/{name}` | none | Streams a stored artifact |
 

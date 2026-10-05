@@ -51,6 +51,7 @@ See `backend/MODELS.md` for tables/relations/validation and `backend/ROUTES.md` 
 - `database/` - Migrations, seeders, and factories
 - `resources/js/` - React frontend source code
   - `apps/home/` - Public landing SPA at `/` (`index.tsx`, `components/HomePage.tsx`)
+  - `apps/store/` - Public app store SPA at `/store` (`index.tsx`, `router.tsx`, `api.ts`, `components/`) for apps in public domains
   - `apps/docs/` - MDX documentation SPA at `/docs` (`index.tsx`, `router.tsx`, `manifest.ts`, `components/`, `content/*.mdx`)
   - `apps/dashboard/` - Main dashboard SPA & tabs (`HomeTab`, `AppsTab`/`AppTab`, `DomainsTab`/`DomainTab`, `UsersTab`/`UserTab`, `RolesTab`/`RoleTab`, `PermissionsTab`/`PermissionTab`, `VersionTab`, `BundleTab`, `StatisticsTab`, `SettingsTab`)
     - `components/` - Dashboard shell: `Layout`, `Sidebar`, `Topbar`, `UserMenu`, `CommandPalette`
@@ -75,8 +76,9 @@ system in `frontend/DESIGN.md`, routing in `frontend/NAVIGATION.md`, data layer 
 
 The previous (shadcn/Base UI) frontend has been removed; it remains available in git history.
 
-The app also has a **public site**: a landing page at `/` (`apps/home`) and an **MDX documentation site**
-at `/docs` (`apps/docs`), both Vite/React SPAs sharing the dashboard theme, built with `@mdx-js/rollup` +
+The app also has a **public site**: a landing page at `/` (`apps/home`), a public **app store** at
+`/store` (`apps/store`, showing apps from domains flagged public) and an **MDX documentation site**
+at `/docs` (`apps/docs`), all Vite/React SPAs sharing the dashboard theme, built with `@mdx-js/rollup` +
 Shiki. Routes are served by `home`/`docs` Blade shells.
 
 Quality status:

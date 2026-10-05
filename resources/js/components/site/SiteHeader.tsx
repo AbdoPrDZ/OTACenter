@@ -7,13 +7,14 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { key: "home", href: "/", label: "Home" },
+  { key: "store", href: "/store", label: "Store" },
   { key: "docs", href: "/docs", label: "Docs" },
 ] as const;
 
 export default function SiteHeader({
   active,
 }: {
-  active?: "home" | "docs";
+  active?: "home" | "store" | "docs";
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">

@@ -34,9 +34,9 @@
 | Storage | Local disk (configurable), SQLite / MySQL / PostgreSQL |
 | Tests | PHPUnit 12 (backend), Vitest + Testing Library (frontend) |
 
-There are four SPAs — a public **home** (`/`), an MDX **docs** site (`/docs`), an **auth** page
-(`/auth`) and the **admin dashboard** (`/dashboard`) — each served by a plain Blade shell that boots
-React. There is no Inertia; the Blade views are just shells.
+There are five SPAs — a public **home** (`/`), a public **app store** (`/store`), an MDX **docs** site
+(`/docs`), an **auth** page (`/auth`) and the **admin dashboard** (`/dashboard`) — each served by a plain
+Blade shell that boots React. There is no Inertia; the Blade views are just shells.
 
 ---
 
@@ -98,6 +98,20 @@ theme and tokens.
 - **MDX components**: `<Callout>`, numbered `<Steps>` / `<Step>`, and big animated `<Flow>` / `<FlowStep>`
   diagrams (CSS-only beams and dots).
 - Internal links and `#anchors` are handled inside the docs SPA, so they stay under `/docs`.
+
+### Public app store
+
+A public **app store** at `/store`, with a detail page per app at `/store/apps/{id}`. Super admins and
+admins flag an organizational **domain** as **Public** on the domain form; every app bound to a public
+domain that also has a **published** version is listed there for anyone to browse and install — no
+account required.
+
+- **Install** downloads the app version's `.apk` through `GET /api/public/apps/{app}/download`, which
+  records a `DownloadHistory` row and never exposes the stored file name.
+- The store's public JSON API (`/api/public/apps`, `/api/public/domains`) is unauthenticated and
+  whitelists its own fields — it never returns the version `api_key`, file paths or other privileged
+  data.
+- Domains are **private by default**; nothing leaves the dashboard until one is marked public.
 
 ---
 
@@ -406,6 +420,7 @@ Two JSON surfaces:
 | Prefix | Auth | Purpose |
 |--------|------|---------|
 | `/api/*` | Sanctum SPA session or bearer token | Admin API (defined in `routes/web.php` under a `prefix('api')` group) |
+| `/api/public/*` | none (throttled) | Public app store catalogue and `.apk` downloads |
 | `/ota-client/v1/*` | `API-KEY` (version key) + `DeviceMiddleware` | Device-facing OTA API (`routes/ota_client.php`) |
 | `/files/{name}` | none | Streams a stored artifact from the `public` disk |
 
@@ -469,6 +484,7 @@ app/
   Models/Traits/Tabling   Server-side sort / search / filter / paginate pipeline
 resources/js/
   apps/home/              Public landing SPA (/)
+  apps/store/             Public app store SPA (/store)
   apps/docs/              MDX documentation SPA (/docs) + content/
   apps/auth/              Auth SPA (login, register)
   apps/dashboard/         Dashboard SPA: index, router, shell components/, tabs/
@@ -477,7 +493,7 @@ resources/js/
   models/                 Typed frontend models (createModel factory)
   utils/                  axios bootstrap, Request wrapper, router, RBAC helpers
 resources/css/app.css     The single Tailwind v4 stylesheet (theme tokens + palettes)
-resources/views/          Blade shells: layout, home, docs, dashboard, auth
+resources/views/          Blade shells: layout, home, store, docs, dashboard, auth
 routes/
   web.php                 SPA shells, file serving, and the admin JSON API
   ota_client.php          Device API (mounted at /ota-client)

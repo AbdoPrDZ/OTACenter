@@ -78,6 +78,9 @@ Every protected route carries a `permission:{name}` middleware (see `AUTH-LDAP.m
   separately by email and typed by hand).
 - `auth{any}` (catch-all, `guest`): Blade `auth` view. Regex `^(?!api|dashboard).*` excludes API & dashboard paths.
 - `dashboard{any}` (catch-all, `auth:sanctum`): Blade `dashboard` view. Regex `^(?!api|auth).*`.
+- `store{any}` (catch-all, public): Blade `store` view - the public **app store** SPA. Regex
+  `^(?!api|dashboard|auth|docs).*`. Its data comes from the unauthenticated `/api/public/*` group
+  (`PublicStoreController`), which is deliberately mounted **outside** the `auth:sanctum` group.
 - `GET files/{file}` → `File` route-model-bound by string PK `name`, streams
   `Storage::disk('public')->path($file->path)` via `response()->file(...)`. This is the URL produced by
   `File::getUrlAttribute()` (`{host}/files/{name}`).

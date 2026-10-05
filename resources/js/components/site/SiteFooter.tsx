@@ -16,6 +16,9 @@ export default function SiteFooter() {
           <a href="/" className="transition-colors hover:text-foreground">
             Home
           </a>
+          <a href="/store" className="transition-colors hover:text-foreground">
+            Store
+          </a>
           <a href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </a>

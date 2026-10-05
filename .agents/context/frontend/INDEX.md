@@ -33,6 +33,7 @@ resources/
   js/
     apps/
       home/                         # Public landing SPA (/): index.tsx, components/HomePage.tsx
+      store/                        # Public app store SPA (/store): index.tsx, router.tsx, api.ts, components/
       docs/                         # MDX docs SPA (/docs): index.tsx, router.tsx, manifest.ts, components/, content/
       auth/                         # Login + Register SPA (index.tsx, register.tsx, AuthShell.tsx)
       dashboard/                    # Dashboard SPA

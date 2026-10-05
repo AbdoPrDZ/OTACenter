@@ -31,15 +31,17 @@ Conventions used across models:
   record, and accepts `latest_id => sometimes|nullable|exists:versions,id`.
 
 ## `Domain` — table `domains`
-`#[Fillable(['name', 'description', 'image_id'])]`
+`#[Fillable(['name', 'description', 'is_public', 'image_id'])]`
 - `$appends` → `image_url`.
 - `$filterable` → `name`, `description`.
-- **Per-role `toArray()`**: base = `id, name, description, image_url, created_at`; privileged
+- **Per-role `toArray()`**: base = `id, name, description, is_public, image_url, created_at`; privileged
   (`super-admin`/`admin`/`developer`) adds `image_id, updated_at`.
 - **Relations**: `image()` → `belongsTo(File, 'image_id', 'name')`; `users()` →
   `belongsToMany(User, user_domains, domain_id, user_id)`; `apps()` →
   `belongsToMany(App, app_domains, domain_id, app_id)`.
-- **Validation**: create requires `name`, nullable `description`/`image`. Update `sometimes`; note the
+- **Validation**: create requires `name`, nullable `description`/`image`, plus a `sometimes|boolean`
+  `is_public` (cast to bool) that publishes the domain's apps on the public store
+  (`PublicStoreController`). Update `sometimes`; note the
   update rules include a stray `summary` field (not a real column) — bug.
 
 ## `Version` — table `versions`
