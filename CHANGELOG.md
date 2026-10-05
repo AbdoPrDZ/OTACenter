@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with a `drop-shadow` that follows the artwork's alpha, the login brand block `size-16` with a larger
   wordmark and heading, the dashboard home card `size-16`, and the site footer `size-10`.
 
+## [1.6.1] - 2026-10-05
+
+### Fixed
+
+- **The dashboard crashed when an app had no description.** The `App` frontend model decoded
+  `description` (and `summary`) as **required**, but both columns are nullable — so a single app without
+  a description threw `Field description is required` while loading, blanking the Home page and the apps
+  table. Both fields are now optional, matching the API.
+
 ## [1.6.0] - 2026-10-05
 
 ### Added
