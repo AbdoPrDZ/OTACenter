@@ -85,7 +85,7 @@ function AppCreate() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader
         title="Add app"
         description="Publish a new application to the center."
@@ -95,7 +95,7 @@ function AppCreate() {
         ]}
       />
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardContent className="pt-5">
           <form
             className="flex flex-col gap-4"

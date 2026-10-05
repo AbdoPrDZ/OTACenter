@@ -94,7 +94,7 @@ function DomainCreate() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader
         title="Add domain"
         description="Create an organizational group to scope access."
@@ -104,7 +104,7 @@ function DomainCreate() {
         ]}
       />
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardContent className="pt-5">
           <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
             {formState.errors.root ? (

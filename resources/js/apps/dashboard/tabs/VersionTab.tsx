@@ -159,7 +159,7 @@ function VersionCreate({ appId }: { appId: number }) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader
         title="Add version"
         description="Create a new version and attach its build."
@@ -170,7 +170,7 @@ function VersionCreate({ appId }: { appId: number }) {
         ]}
       />
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardContent className="pt-5">
           <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
             {formState.errors.root ? (

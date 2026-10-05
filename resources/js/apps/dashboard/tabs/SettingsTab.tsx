@@ -52,10 +52,10 @@ export default function SettingsTab() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader title="Settings" description="Manage your profile and preferences." />
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Profile</CardTitle>
         </CardHeader>
@@ -99,7 +99,7 @@ export default function SettingsTab() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
         </CardHeader>

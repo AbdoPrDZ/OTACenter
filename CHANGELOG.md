@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.5.1] - 2026-10-05
+
+### Fixed
+
+- **Form pages no longer shrink the page header.** Every dashboard form page (`AppTab`, `VersionTab`,
+  `BundleTab` — create and detail, `DomainTab`, `SettingsTab`) wrapped its entire content in a
+  `max-w-2xl` container, so the breadcrumb bar and title were narrowed and centred along with the form.
+  The page wrapper is now full width and only the card keeps the width limit, so the header spans the
+  content area like it does everywhere else.
+
 ## [1.5.0] - 2026-10-05
 
 ### Added
@@ -205,6 +215,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.5.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.2.0...v1.3.0

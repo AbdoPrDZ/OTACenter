@@ -172,7 +172,7 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader
         title="Add bundle"
         description="Upload a distributable ZIP build for this version."
@@ -184,7 +184,7 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
         ]}
       />
 
-      <Card>
+      <Card className="mx-auto w-full max-w-2xl">
         <CardContent className="flex flex-col gap-4 pt-5">
           <Field>
             <FieldLabel htmlFor="bundle-name">Bundle version name</FieldLabel>
@@ -285,7 +285,7 @@ function BundleShow({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <PageHeader
         title={bundle.name ?? `Bundle #${bundle.id}`}
         description={bundle.file_id}
@@ -308,7 +308,7 @@ function BundleShow({
       />
 
       {can({ permission: "bundle.update" }) ? (
-        <Card>
+        <Card className="mx-auto w-full max-w-2xl">
           <CardHeader>
             <CardTitle>Details</CardTitle>
           </CardHeader>
@@ -346,7 +346,7 @@ function BundleShow({
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="mx-auto w-full max-w-2xl">
           <CardHeader>
             <CardTitle>Details</CardTitle>
           </CardHeader>
