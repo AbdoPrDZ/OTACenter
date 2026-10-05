@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Device;
+use App\Models\Log;
 use App\Src\Controller;
 use Closure;
 use Illuminate\Http\Request;
@@ -61,6 +62,15 @@ class DeviceMiddleware
     );
 
     $request->attributes->set('device_id', $device->id);
+
+    if ($device->wasRecentlyCreated) {
+      Log::record(
+        'device.register',
+        "Device {$device->did} registered",
+        array_values(array_filter([$device, $user])),
+        ['model' => $device->model, 'brand' => $device->brand],
+      );
+    }
 
     return $next($request);
   }

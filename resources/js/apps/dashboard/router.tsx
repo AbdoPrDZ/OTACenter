@@ -56,6 +56,8 @@ export default class extends Router {
       title: "Permission Details",
     },
     { name: "statistics", path: "/dashboard/statistics", title: "Statistics" },
+    { name: "reviews", path: "/dashboard/reviews", title: "Reviews" },
+    { name: "logs", path: "/dashboard/logs", title: "Activity" },
     { name: "settings", path: "/dashboard/settings", title: "Settings" },
   ];
 
@@ -81,6 +83,9 @@ export default class extends Router {
     const PermissionTab = React.lazy(() => import("@/apps/dashboard/tabs/PermissionTab"));
 
     const StatisticsTab = React.lazy(() => import("@/apps/dashboard/tabs/StatisticsTab"));
+
+    const ReviewsTab = React.lazy(() => import("@/apps/dashboard/tabs/ReviewsTab"));
+    const LogsTab = React.lazy(() => import("@/apps/dashboard/tabs/LogsTab"));
 
     const SettingsTab = React.lazy(() => import("@/apps/dashboard/tabs/SettingsTab"));
 
@@ -110,6 +115,8 @@ export default class extends Router {
         <Route path={this.getPath("permissions")} element={page(<PermissionsTab />)} />
         <Route path={this.getPath("permission.show")} element={page(<PermissionTab />)} />
         <Route path={this.getPath("statistics")} element={page(<StatisticsTab />)} />
+        <Route path={this.getPath("reviews")} element={page(<ReviewsTab />)} />
+        <Route path={this.getPath("logs")} element={page(<LogsTab />)} />
         <Route path={this.getPath("settings")} element={page(<SettingsTab />)} />
       </Route>
     );

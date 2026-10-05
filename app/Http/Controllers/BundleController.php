@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\App;
 use App\Models\Bundle;
 use App\Models\DownloadHistory;
+use App\Models\Log;
 use App\Models\Version;
 use App\Src\Controller;
 use App\Src\ValidationType;
@@ -68,6 +69,8 @@ class BundleController extends Controller
       'file_id'   => $file->name,
     ]);
 
+    Log::record('bundle.created', "Bundle {$bundle->name} created", array_values(array_filter([$bundle, $version, $app, Auth::user()])));
+
     return $this->apiSuccessResponse("Bundle created successfully", [
       'item' => $bundle->toArray(),
     ]);
@@ -90,6 +93,8 @@ class BundleController extends Controller
       $bundle->update(['file_id' => $file->name]);
     }
 
+    Log::record('bundle.updated', "Bundle {$bundle->name} updated", array_values(array_filter([$bundle, $version, $app, Auth::user()])));
+
     return $this->apiSuccessResponse("Bundle updated successfully", [
       'item' => $bundle->toArray(),
     ]);
@@ -103,6 +108,8 @@ class BundleController extends Controller
   {
     $version->update(['latest_id' => $bundle->id]);
 
+    Log::record('bundle.activated', "Bundle {$bundle->name} activated", array_values(array_filter([$bundle, $version, $app, Auth::user()])));
+
     return $this->apiSuccessResponse("Bundle activated successfully", [
       'item' => $version->fresh()->toArray(),
     ]);
@@ -113,6 +120,8 @@ class BundleController extends Controller
     if ($version->latest_id === $bundle->id) {
       $version->update(['latest_id' => null]);
     }
+
+    Log::record('bundle.deleted', "Bundle {$bundle->name} deleted", array_values(array_filter([$bundle, $version, $app, Auth::user()])));
 
     $bundle->delete();
 

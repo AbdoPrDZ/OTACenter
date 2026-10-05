@@ -137,7 +137,7 @@ class User extends Authenticatable implements LdapAuthenticatable
     return match ($type) {
       ValidationType::Update => [
         'name'        => 'sometimes|required|string|max:255',
-        'image'       => 'nullable|file|mimes:jpeg,png,jpg,bmp,svg|max:2048'
+        'image'       => 'nullable|file|mimes:jpeg,png,jpg,bmp,svg|max:4096',
       ],
     };
   }

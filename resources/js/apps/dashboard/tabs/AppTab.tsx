@@ -12,6 +12,8 @@ import PageHeader from "@/components/PageHeader";
 import ImagePicker from "@/components/ImagePicker";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
 import ConfirmDelete from "@/components/ConfirmDelete";
+import ReviewsList from "@/components/ReviewsList";
+import ActivityList from "@/components/ActivityList";
 import { AppStats } from "@/components/StatisticsViews";
 
 import { Button } from "@/components/ui/button";
@@ -213,6 +215,12 @@ function AppShow({ appId }: { appId: number }) {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
+          {can({ permission: "review.view" }) ? (
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          ) : null}
+          {can({ permission: "log.view" }) ? (
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+          ) : null}
           {can({ roles: ["super-admin", "admin"] }) ? (
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
           ) : null}
@@ -234,6 +242,14 @@ function AppShow({ appId }: { appId: number }) {
 
         <TabsContent value="statistics" className="mt-4">
           <AppStats appId={appId} />
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-4">
+          <ReviewsList appId={appId} />
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-4">
+          <ActivityList url={`/app/${appId}/log`} />
         </TabsContent>
       </Tabs>
     </div>

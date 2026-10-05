@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\App;
 use App\Models\Bundle;
 use App\Models\DownloadHistory;
+use App\Models\Log;
 use App\Models\Version;
 use App\Src\Controller;
 use App\Src\ValidationType;
@@ -70,6 +71,8 @@ class VersionController extends Controller
       'file_id' => $file->name,
     ]);
 
+    Log::record('version.created', "Version {$version->name} created for {$app->name}", array_values(array_filter([$version, $app, Auth::user()])));
+
     return $this->apiSuccessResponse("Version created successfully", [
       'item' => $version->toArray(),
     ]);
@@ -100,6 +103,8 @@ class VersionController extends Controller
       }
     }
 
+    Log::record('version.updated', "Version {$version->name} updated", array_values(array_filter([$version, $app, Auth::user()])));
+
     return $this->apiSuccessResponse("Version updated successfully", [
       'item' => $version->fresh()->toArray(),
     ]);
@@ -107,6 +112,8 @@ class VersionController extends Controller
 
   public function destroy(App $app, Version $version)
   {
+    Log::record('version.deleted', "Version {$version->name} deleted", array_values(array_filter([$version, $app, Auth::user()])));
+
     $version->delete();
 
     return $this->apiSuccessResponse("Version deleted successfully");

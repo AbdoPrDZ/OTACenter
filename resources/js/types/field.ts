@@ -5,6 +5,7 @@ export const FieldTypes = [
   'date',
   'enum',
   'array',
+  'object',
 ];
 
 interface BaseField<T> {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\App;
 use App\Models\Domain;
 use App\Models\DownloadHistory;
+use App\Models\Log;
+use App\Models\Review;
 use App\Models\Version;
 use App\Src\Controller;
 use Illuminate\Http\Request;
@@ -43,6 +45,7 @@ class PublicStoreController extends Controller
       ],
       query: $query,
       selects: ['apps.*'],
+      rawSelects: $this->ratingSelects(),
       map: fn (App $app) => $this->card($app),
     );
   }
@@ -80,6 +83,12 @@ class PublicStoreController extends Controller
       'versions' => fn ($q) => $q->where('status', 'published')->orderByDesc('id'),
     ]);
 
+    $app->loadAvg(['reviews' => fn ($q) => $q->where('status', 'published')], 'rating');
+    $app->loadCount(['reviews' => fn ($q) => $q->where('status', 'published')]);
+    $app->load([
+      'reviews' => fn ($q) => $q->where('status', 'published')->with('user')->orderByDesc('id')->limit(20),
+    ]);
+
     return $this->apiSuccessResponse("App retrieved successfully", [
       'item' => [
         ...$this->card($app),
@@ -96,13 +105,41 @@ class PublicStoreController extends Controller
             'created_at' => $version->created_at?->toIso8601String(),
           ])
           ->values(),
+        'reviews' => $app->reviews
+          ->map(fn ($review) => [
+            'id'         => $review->id,
+            'rating'     => (int) $review->rating,
+            'title'      => $review->title,
+            'comment'    => $review->comment,
+            'user'       => $review->user ? [
+              'name'      => $review->user->name,
+              'image_url' => $review->user->image_url,
+            ] : null,
+            'created_at' => $review->created_at?->toIso8601String(),
+          ])
+          ->values(),
         'download_url' => url("/api/public/apps/{$app->id}/download"),
       ],
     ]);
   }
 
-  public function download(App $app)
+  /** Paginated published reviews for one public app. */
+  public function reviews(Request $request, App $app)
   {
+    if (!$this->isPublic($app))
+      return $this->apiErrorResponse("App not found", [], 404);
+
+    $request->mergeIfMissing(['page' => 1, 'pageSize' => 20]);
+
+    return Review::tablingCollect(
+      $request,
+      load: ['user'],
+      selects: ['reviews.*'],
+      query: Review::query()->where('app_id', $app->id)->where('status', 'published'),
+    );
+  }
+
+  public function download(App $app)  {
     if (!$this->isPublic($app))
       return $this->apiErrorResponse("App not found", [], 404);
 
@@ -122,6 +159,13 @@ class PublicStoreController extends Controller
       'target_type' => Version::class,
       'target_id'   => $version->id,
     ]);
+
+    Log::record(
+      'download',
+      "Downloaded {$app->name} {$version->name}",
+      [$app, $version],
+      ['version' => $version->name],
+    );
 
     return response()->download(
       Storage::disk('public')->path($file->path),
@@ -185,6 +229,17 @@ class PublicStoreController extends Controller
         ->values(),
       'version'    => $version?->name,
       'updated_at' => $version?->created_at?->toIso8601String(),
+      'rating_avg'   => $app->reviews_avg_rating !== null ? (float) $app->reviews_avg_rating : null,
+      'rating_count' => (int) ($app->reviews_count ?? 0),
+    ];
+  }
+
+  /** Correlated sub-selects for the review aggregate (Tabling overwrites `select`). */
+  private function ratingSelects(): array
+  {
+    return [
+      'reviews_avg_rating' => "(select round(avg(rating), 1) from reviews where reviews.app_id = apps.id and reviews.status = 'published' and reviews.deleted_at is null)",
+      'reviews_count'      => "(select count(*) from reviews where reviews.app_id = apps.id and reviews.status = 'published' and reviews.deleted_at is null)",
     ];
   }
 

@@ -4,10 +4,13 @@ use App\Http\Controllers\AppController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PublicStoreController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StatisticsController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VersionController;
 use App\Models\File;
@@ -48,7 +51,23 @@ Route::prefix('api')->group(function () {
     Route::get('/apps', [PublicStoreController::class, 'index']);
     Route::get('/domains', [PublicStoreController::class, 'domains']);
     Route::get('/apps/{app}', [PublicStoreController::class, 'show'])->whereNumber('app');
+    Route::get('/apps/{app}/reviews', [PublicStoreController::class, 'reviews'])->whereNumber('app');
     Route::get('/apps/{app}/download', [PublicStoreController::class, 'download'])->whereNumber('app');
+  });
+
+  # Private app store — authenticated. The download resolves its own auth so a
+  # browser fallback can pass the token as `?token=`; the list/show endpoints use
+  # the standard Sanctum guard + `app.view` permission.
+  Route::prefix('store')->group(function () {
+    Route::get('/apps/{app}/download', [StoreController::class, 'download'])
+      ->whereNumber('app')
+      ->name('store.apps.download');
+
+    Route::middleware(['auth:sanctum', 'permission:app.view'])->group(function () {
+      Route::get('/apps', [StoreController::class, 'index'])->name('store.apps.index');
+      Route::get('/apps/{app}', [StoreController::class, 'show'])->whereNumber('app')->name('store.apps.show');
+      Route::get('/apps/{app}/reviews', [StoreController::class, 'reviews'])->whereNumber('app')->name('store.apps.reviews');
+    });
   });
 
   Route::prefix('auth')->group(function () {
@@ -84,6 +103,14 @@ Route::prefix('api')->group(function () {
     });
 
     Route::get('/permission', [PermissionController::class, 'index'])->middleware('permission:permission.view')->name('permission.index');
+
+    Route::prefix('review')->group(function () {
+      Route::get('/', [ReviewController::class, 'index'])->middleware('permission:review.view')->name('review.index');
+    });
+
+    Route::prefix('log')->group(function () {
+      Route::get('/', [LogController::class, 'index'])->middleware('permission:log.view')->name('log.index');
+    });
 
     Route::prefix('domain')->group(function () {
       Route::get('/', [DomainController::class, 'index'])->middleware('permission:domain.view')->name('domain.index');
@@ -122,6 +149,8 @@ Route::prefix('api')->group(function () {
           Route::post('/{domain}', [DomainController::class, 'bindUser'])->middleware('permission:domain.assign_user')->name('user.domain.bind');
           Route::delete('/{domain}', [DomainController::class, 'unbindUser'])->middleware('permission:domain.unassign_user')->name('user.domain.unbind');
         });
+
+        Route::get('/log', [LogController::class, 'indexByUser'])->middleware('permission:log.view')->name('user.log.index');
       });
     });
 
@@ -145,6 +174,20 @@ Route::prefix('api')->group(function () {
           Route::post('/{domain}', [DomainController::class, 'bindApp'])->middleware('permission:domain.assign_app')->name('app.domain.bind');
           Route::delete('/{domain}', [DomainController::class, 'unbindApp'])->middleware('permission:domain.unassign_app')->name('app.domain.unbind');
         });
+
+        Route::prefix('/review')->group(function () {
+          Route::get('/', [ReviewController::class, 'indexByApp'])->middleware('permission:review.view')->name('app.review.index');
+          Route::get('/me', [ReviewController::class, 'mine'])->middleware('permission:review.view')->name('app.review.mine');
+          Route::post('/', [ReviewController::class, 'store'])->middleware('permission:review.create')->name('app.review.store');
+
+          Route::prefix('/{review}')->whereNumber('review')->group(function () {
+            Route::put('/', [ReviewController::class, 'update'])->middleware('permission:review.view')->name('app.review.update');
+            Route::delete('/', [ReviewController::class, 'destroy'])->middleware('permission:review.view')->name('app.review.destroy');
+            Route::post('/moderate', [ReviewController::class, 'moderate'])->middleware('permission:review.moderate')->name('app.review.moderate');
+          });
+        });
+
+        Route::get('/log', [LogController::class, 'indexByApp'])->middleware('permission:log.view')->name('app.log.index');
 
         Route::prefix('/version')->group(function () {
           Route::get('/', [VersionController::class, 'index'])->middleware('permission:version.view')->name('app.version.index');

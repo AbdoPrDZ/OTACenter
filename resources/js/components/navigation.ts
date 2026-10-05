@@ -4,8 +4,10 @@ import {
   Home,
   KeyRound,
   PanelsTopLeft,
+  ScrollText,
   Settings,
   ShieldCheck,
+  Star,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -88,6 +90,24 @@ export const NAV_ITEMS: NavItem[] = [
     access: { roles: ["super-admin", "admin"] },
   },
   {
+    name: "reviews",
+    label: "Reviews",
+    description: "Ratings and user feedback",
+    icon: Star,
+    activeNames: ["reviews"],
+    group: "general",
+    access: { permission: "review.view" },
+  },
+  {
+    name: "logs",
+    label: "Activity",
+    description: "Audit log of events",
+    icon: ScrollText,
+    activeNames: ["logs"],
+    group: "general",
+    access: { permission: "log.view" },
+  },
+  {
     name: "settings",
     label: "Settings",
     description: "Your profile and preferences",
@@ -132,6 +152,9 @@ export const ROUTE_ACCESS: Record<string, RouteAccess> = {
   "permission.show": { permission: "permission.view" },
 
   statistics: { roles: ["super-admin", "admin"] },
+
+  reviews: { permission: "review.view" },
+  logs: { permission: "log.view" },
 };
 
 export function getRouteAccess(name?: string): RouteAccess {

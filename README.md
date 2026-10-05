@@ -75,6 +75,10 @@ A separate, device-facing API is mounted at `/ota-client/v1` for native clients:
   and reports `availableUpdates`. The version's `API-KEY` header authorizes the call — no login session is
   required. Devices register via the `X-Device-Info` header
   (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) through `DeviceMiddleware`.
+- `POST /ota-client/v1/app/event` — body `{ package, version, bundle?, event, message?, meta? }`; records a
+  client activity event (`update.available` / `update.refused` / `update.downloaded` / `update.installed` /
+  `update.failed` / `update.rollback` / `bundle.launch_confirmed` / `bundle.launch_failed`) against the
+  device, app and version.
 
 ### Statistics
 Read-only aggregates (`/api/statistics/*`, gated by `role:super-admin,admin`): global totals with
@@ -114,6 +118,39 @@ account required.
   whitelists its own fields — it never returns the version `api_key`, file paths or other privileged
   data.
 - Domains are **private by default**; nothing leaves the dashboard until one is marked public.
+
+### Private app store
+
+A signed-in user's own catalogue, served by `StoreController` under `/api/store` (Sanctum bearer token):
+
+- `GET /api/store/apps` lists every app bound to one of the user's domains that has a published version
+  (`super-admin` / `admin` / `developer` see the whole catalogue), with search and pagination.
+- `GET /api/store/apps/{app}` returns the detail (screenshots, versions, published reviews) and
+  `GET /api/store/apps/{app}/download` streams the latest published `.apk`, records a `DownloadHistory`
+  row and sends a `Content-Length` + filename. The token may also be passed as `?token=` so a browser can
+  complete the download.
+- Cards and detail include `rating_avg` / `rating_count`, and `GET /api/store/apps/{app}/reviews` pages
+  the published reviews.
+
+### Reviews & ratings
+
+- One review per user per app (1–5 stars, optional title and comment), published immediately and
+  moderated from the dashboard (`published` / `rejected`).
+- App cards and detail expose the aggregate via `rating_avg` / `rating_count`; the detail embeds its
+  published reviews, and `GET /api/public/apps/{app}/reviews` pages them publicly.
+- Permissions: `review.view` / `review.create` / `review.update` (all roles), `review.delete` /
+  `review.moderate` (admin).
+
+### Activity log
+
+- An append-only `logs` table plus a `log_holders` relation: one record can be attached to many models at
+  once (user, app, version, bundle, device, review…), so "what happened to this app" and "what this user
+  did" are plain relations.
+- Server-side hooks cover downloads, OTA `version.install` / `bundle.install`, `device.register`, auth
+  events, review changes and the admin `app.*` / `version.*` / `bundle.*` edits. Native clients report
+  their own update events to `POST /ota-client/v1/app/event`.
+- The dashboard has a global **Activity** page and per-app / per-user **Activity** tabs; permissions
+  `log.view` (admin + developer) and `log.delete` (admin).
 
 ---
 
@@ -422,9 +459,13 @@ Two JSON surfaces:
 | Prefix | Auth | Purpose |
 |--------|------|---------|
 | `/api/*` | Sanctum SPA session or bearer token | Admin API (defined in `routes/web.php` under a `prefix('api')` group) |
-| `/api/public/*` | none (throttled) | Public app store catalogue and `.apk` downloads |
+| `/api/public/*` | none (throttled) | Public app store catalogue, reviews and `.apk` downloads |
+| `/api/store/*` | Sanctum bearer token | The signed-in user's private (domain-scoped) store catalogue and downloads |
 | `/ota-client/v1/*` | `API-KEY` (version key) + `DeviceMiddleware` | Device-facing OTA API (`routes/ota_client.php`) |
 | `/files/{name}` | none | Streams a stored artifact from the `public` disk |
+
+> Requests carrying an `Authorization: Bearer` token are exempt from CSRF (they are not cookie
+> sessions), so native clients can call the mutating endpoints directly.
 
 Every admin response uses the same envelope:
 
@@ -448,12 +489,15 @@ List endpoints accept `page`, `pageSize`, `search`, `sort[<field>]=asc|desc`, an
 | Prefix | Operations |
 |--------|-----------|
 | `/api/auth` | `POST /login`, `POST /register` (invite token), `GET /me`, `PUT /profile`, `DELETE /logout` |
-| `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*` (bind/unbind), `/{app}/version/*` |
+| `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*` (bind/unbind), `/{app}/version/*`, `/{app}/review/*`, `/{app}/log` |
 | `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy |
 | `/api/domain` | index, store, show, update, destroy |
-| `/api/user` | index, show, destroy, `POST /invite`, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*` |
+| `/api/user` | index, show, destroy, `POST /invite`, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*`, `/{user}/log` |
+| `/api/review` | index (all reviews) |
+| `/api/log` | index (global activity) |
 | `/api/role` | index, show, `/{role}/permission/*`, `/{role}/user` (index) |
 | `/api/statistics` | `general`, `byUser`, `byRole`, `byDomain`, `byApp`, `byVersion` — all `role:super-admin,admin` |
+| `/api/store` | `GET /apps`, `/apps/{app}`, `/apps/{app}/download`, `/apps/{app}/reviews` (bearer token) |
 
 </details>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\App;
 use App\Models\AppScreenshot;
 use App\Models\DownloadHistory;
+use App\Models\Log;
 use App\Models\Version;
 use App\Src\Controller;
 use App\Src\ValidationType;
@@ -72,6 +73,8 @@ class AppController extends Controller
       $app->update(['logo_id' => $logo->name]);
     }
 
+    Log::record('app.created', "App {$app->name} created", array_values(array_filter([$app, Auth::user()])));
+
     return $this->apiSuccessResponse("App created successfully", [
       'item' => $app->toArray(),
     ]);
@@ -102,6 +105,8 @@ class AppController extends Controller
       }
     }
 
+    Log::record('app.updated', "App {$app->name} updated", array_values(array_filter([$app, Auth::user()])));
+
     return $this->apiSuccessResponse("App updated successfully", [
       'item' => $app->fresh()->toArray(),
     ]);
@@ -109,6 +114,8 @@ class AppController extends Controller
 
   public function destroy(App $app)
   {
+    Log::record('app.deleted', "App {$app->name} deleted", array_values(array_filter([$app, Auth::user()])));
+
     $app->delete();
 
     return $this->apiSuccessResponse("App deleted successfully");
@@ -128,7 +135,7 @@ class AppController extends Controller
   public function storeScreenshot(Request $request, App $app)
   {
     $validator = Validator::make($request->all(), [
-      'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+      'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
     ]);
 
     if ($validator->fails())

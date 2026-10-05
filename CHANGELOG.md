@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-10-05
+
+### Added
+
+- **App reviews & ratings.** A signed-in user reviews an app once (one per user per app) with a 1–5
+  rating and an optional title and comment. Reviews publish immediately and can be moderated
+  (`published` / `rejected`) or deleted by an admin. App cards and detail now carry `rating_avg` /
+  `rating_count`, and the detail includes its published reviews.
+  - New `reviews` table (soft-deleted — a re-submission reuses and restores the previous row so the
+    `(user_id, app_id)` unique index holds), a `Review` model and a `ReviewController`.
+  - Endpoints: `GET /api/review`, `GET|POST /api/app/{app}/review`, `GET /api/app/{app}/review/me`,
+    `PUT|DELETE /api/app/{app}/review/{review}`, `POST /api/app/{app}/review/{review}/moderate`,
+    `GET /api/public/apps/{app}/reviews` (public) and `GET /api/store/apps/{app}/reviews` (authed).
+- **Activity log.** An append-only `logs` table plus a `log_holders` relation, so one record can be
+  attached to several models (user, app, version, bundle, device, review…) at once — a relation, not a
+  JSON blob. `Log::record()` writes an entry, and the dashboard gains a global **Activity** page plus
+  per-app / per-user **Activity** tabs. Endpoints: `GET /api/log`, `GET /api/app/{app}/log`,
+  `GET /api/user/{user}/log`.
+  - Logged server-side: `auth.login|failed|logout`, `download` (public + private store),
+    `version.install` / `bundle.install` (OTA downloads), `device.register`, `review.created|moderated`
+    and the admin `app.*` / `version.*` / `bundle.*` changes.
+  - **Client-reported events:** `POST /ota-client/v1/app/event` (API key + device) records
+    `update.available|refused|downloaded|installed|failed|rollback` and
+    `bundle.launch_confirmed|launch_failed`, so a device's update decisions land in the same log.
+- **Authenticated private store API.** `GET /api/store/apps` (the caller's domain-scoped catalogue),
+  `GET /api/store/apps/{app}`, `GET /api/store/apps/{app}/download` (records history, sends
+  `Content-Length` and a filename; the bearer token may also travel as `?token=` for the browser
+  fallback) and `GET /api/store/apps/{app}/reviews`.
+- **Reviews & Activity in the dashboard** — new sidebar entries and route access, with a `ReviewsList`
+  (moderation actions) and an `ActivityList` (holders as chips) shared by the global pages and the
+  App/User inner tabs.
+- New seeded permissions: `review.view|create|update|delete|moderate`, `log.view|delete`.
+- `GET /api/auth/me` and `PUT /api/auth/profile` now include the user's `domains`.
+
+### Changed
+
+- **CSRF is skipped for bearer-token requests.** The JSON API lives in the `web` group, so a mobile
+  client using a Sanctum **bearer** token could not satisfy CSRF and got a `419`. A request that carries
+  an `Authorization: Bearer` header is authenticated by that token and cannot be forged cross-site, so
+  `VerifyCsrfToken` now lets it through; the dashboard SPA (cookie + CSRF) is unaffected.
+- Image/logo upload size limit raised from 2 MB to 4 MB (`App`, `Domain`, `User`).
+
+### Fixed
+
+- **Re-submitting a review after deleting it no longer fails** with a unique-constraint violation —
+  the soft-deleted review is reused and restored instead of inserted.
+
 ## [1.5.2] - 2026-10-05
 
 ### Fixed

@@ -69,6 +69,15 @@ class SecuritySeeder extends Seeder
       'screenshot.create'    => ['super-admin', 'admin', 'developer'],
       'screenshot.update'    => ['super-admin', 'admin', 'developer'],
       'screenshot.delete'    => ['super-admin', 'admin'],
+
+      'review.view'          => ['super-admin', 'admin', 'developer', 'user'],
+      'review.create'        => ['super-admin', 'admin', 'developer', 'user'],
+      'review.update'        => ['super-admin', 'admin', 'developer', 'user'],
+      'review.delete'        => ['super-admin', 'admin'],
+      'review.moderate'      => ['super-admin', 'admin'],
+
+      'log.view'             => ['super-admin', 'admin', 'developer'],
+      'log.delete'           => ['super-admin', 'admin'],
     ];
 
     foreach ($security as $permission => $roles) {

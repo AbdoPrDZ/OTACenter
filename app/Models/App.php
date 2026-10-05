@@ -34,6 +34,11 @@ class App extends Model
     return $this->hasMany(Version::class, 'app_id', 'id');
   }
 
+  public function reviews()
+  {
+    return $this->hasMany(Review::class, 'app_id', 'id');
+  }
+
   public function latest()
   {
     return $this->belongsTo(Version::class, 'latest_id', 'id');
@@ -104,7 +109,7 @@ class App extends Model
         'summary'      => 'nullable|string|max:255',
         'description'  => 'nullable|string',
         'status'       => 'sometimes|nullable|string|in:draft,review,published,cancelled',
-        'logo'         => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'logo'         => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
       ValidationType::Update => [
         'name'         => 'sometimes|required|string|max:255',
@@ -113,7 +118,7 @@ class App extends Model
         'description'  => 'sometimes|nullable|string',
         'status'       => 'sometimes|nullable|string|in:draft,review,published,cancelled',
         'latest_id'    => 'sometimes|nullable|exists:versions,id',
-        'logo'         => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'logo'         => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
     };
   }

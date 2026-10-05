@@ -91,14 +91,14 @@ class Domain extends Model
         'name'         => 'required|string|max:255',
         'description'  => 'nullable|string',
         'is_public'    => 'sometimes|boolean',
-        'image'        => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'image'        => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
       ValidationType::Update => [
         'name'         => 'sometimes|required|string|max:255',
         'summary'      => 'sometimes|nullable|string|max:255',
         'description'  => 'sometimes|nullable|string',
         'is_public'    => 'sometimes|boolean',
-        'image'        => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        'image'        => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
     };
   }

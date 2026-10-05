@@ -6,6 +6,8 @@ use App\Models\App;
 use App\Models\Bundle;
 use App\Models\Device;
 use App\Models\DownloadHistory;
+use App\Models\Log;
+use App\Models\User;
 use App\Models\Version;
 use App\Http\Middleware\OtaApiKeyMiddleware;
 use App\Src\Controller;
@@ -110,6 +112,70 @@ class AppController extends Controller
       ]
     ]);
   }
+  /**
+   * Records a client-reported event (install, refuse, rollback…). The device is
+   * resolved by DeviceMiddleware; the app/version/bundle come from the payload.
+   */
+  public function event(Request $request)
+  {
+    $validator = Validator::make($request->all(), [
+      'package' => 'required|string',
+      'version' => 'required|string',
+      'bundle'  => 'nullable|string',
+      'event'   => 'required|string|max:255',
+      'message' => 'nullable|string|max:1000',
+      'meta'    => 'nullable',
+    ]);
+
+    if ($validator->fails())
+      return $this->apiInvalidValuesResponse($validator->errors()->toArray());
+
+    $event = $request->input('event');
+
+    $allowed = [
+      'update.available',
+      'update.refused',
+      'update.downloaded',
+      'update.installed',
+      'update.failed',
+      'update.rollback',
+      'bundle.launch_confirmed',
+      'bundle.launch_failed',
+    ];
+
+    if (!in_array($event, $allowed, true))
+      return $this->apiSingleErrorResponse('event', 'Unsupported event');
+
+    $app = App::where('package_name', $request->package)->first();
+    if (!$app) return $this->apiSingleErrorResponse('package', 'Invalid package name');
+
+    $version = Version::where('app_id', $app->id)->where('name', $request->version)->first();
+    if (!$version) return $this->apiSingleErrorResponse('version', 'Invalid version');
+
+    if (!OtaApiKeyMiddleware::matches($version->api_key, $request->attributes->get('api_key')))
+      return $this->apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
+
+    $bundle = null;
+    if ($request->filled('bundle'))
+      $bundle = Bundle::where('version_id', $version->id)->where('name', $request->bundle)->first();
+
+    $device = Device::find($request->attributes->get('device_id'));
+
+    $holders = array_values(array_filter([$device, $app, $version, $bundle]));
+    $user = $device?->user_id ? User::find($device->user_id) : null;
+    if ($user) $holders[] = $user;
+
+    // The native client sends `meta` as a JSON string (form-encoded request).
+    $meta = $request->input('meta');
+    if (is_string($meta)) {
+      $decoded = json_decode($meta, true);
+      $meta = is_array($decoded) ? $decoded : null;
+    }
+
+    Log::record($event, $request->input('message'), $holders, $meta);
+
+    return $this->apiSuccessResponse('Event recorded successfully');
+  }
 
   public function updateBundle(Request $request, Bundle $bundle)
   {
@@ -129,6 +195,13 @@ class AppController extends Controller
       'target_type' => Bundle::class,
       'target_id'   => $bundle->id,
     ]);
+
+    Log::record(
+      'bundle.install',
+      "Bundle {$bundle->name} downloaded",
+      array_values(array_filter([$device, $bundle->version?->app, $bundle->version, $bundle])),
+      ['bundle' => $bundle->name],
+    );
 
     return response()->file(Storage::disk('public')->path($file->path), [
       'Content-Length' => Storage::disk('public')->size($file->path),
@@ -153,6 +226,13 @@ class AppController extends Controller
       'target_type' => Version::class,
       'target_id'   => $version->id,
     ]);
+
+    Log::record(
+      'version.install',
+      "Version {$version->name} downloaded",
+      array_values(array_filter([$device, $version->app, $version])),
+      ['version' => $version->name],
+    );
 
     return response()->file(Storage::disk('public')->path($file->path), [
       'Content-Length' => Storage::disk('public')->size($file->path),

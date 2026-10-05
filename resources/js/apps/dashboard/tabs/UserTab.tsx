@@ -9,6 +9,7 @@ import Role, { IRole } from "@/models/Role";
 
 import PageHeader from "@/components/PageHeader";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
+import ActivityList from "@/components/ActivityList";
 import { UserStats } from "@/components/StatisticsViews";
 import { Avatar, Spinner } from "@/components/ui/feedback";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,9 @@ function UserShow({ userId }: { userId: number }) {
           ) : null}
           {can({ roles: ["super-admin", "admin"] }) ? (
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
+          ) : null}
+          {can({ permission: "log.view" }) ? (
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           ) : null}
         </TabsList>
 
@@ -181,6 +185,10 @@ function UserShow({ userId }: { userId: number }) {
 
         <TabsContent value="statistics" className="mt-4">
           <UserStats userId={userId} />
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-4">
+          <ActivityList url={`/user/${userId}/log`} />
         </TabsContent>
       </Tabs>
     </div>

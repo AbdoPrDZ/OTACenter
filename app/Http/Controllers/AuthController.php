@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Log;
 use App\Models\User;
 use App\Src\Controller;
 use App\Src\ValidationType;
@@ -60,9 +61,10 @@ class AuthController extends Controller
       if (Hash::check($request->password, $user->password)) {
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
-      } else
+      } else {
+        Log::record('auth.failed', "Failed login for {$request->login}", [], ['login' => $request->login]);
         return $this->apiErrorResponse('Invalid credentials');
-
+      }
     # If the user doesn't exist in the local database, or if they don't have a password set, attempt LDAP authentication
     else {
       $login = $request->login;
@@ -80,6 +82,7 @@ class AuthController extends Controller
       \Log::info('Attempting LDAP authentication with credentials: ' . json_encode($credentials));
       if (!Auth::attempt($credentials, $remember)) {
         \Log::warning('LDAP authentication failed for user: ' . $login);
+        Log::record('auth.failed', "Failed login for {$login}", [], ['login' => $login]);
         return $this->apiErrorResponse('Invalid credentials');
       }
     }
@@ -91,6 +94,8 @@ class AuthController extends Controller
 
     if (!$user)
       return $this->apiErrorResponse('Some gone wrong, please try again later.');
+
+    Log::record('auth.login', "{$user->login} signed in", [$user]);
 
     return $this->apiSuccessResponse('User logged in successfully', [
       'token' => $user->createToken('user')->plainTextToken,
@@ -157,6 +162,12 @@ class AuthController extends Controller
       'image_url'   => $user->image_url,
       'roles'       => $user->getRoleNames(),
       'permissions' => $user->getAllPermissions()->pluck('name'),
+      'domains'     => $user->domains
+        ->map(fn ($domain) => [
+          'id'   => $domain->id,
+          'name' => $domain->name,
+        ])
+        ->values(),
       // 'echo_token' => $user->createToken('echo')->plainTextToken,
     ];
   }
@@ -170,6 +181,8 @@ class AuthController extends Controller
 
     session()->flush();
     auth('web')->logout();
+
+    Log::record('auth.logout', "{$user->login} signed out", [$user]);
 
     return $this->apiSuccessResponse('User logged out successfully');
   }
