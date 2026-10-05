@@ -127,6 +127,30 @@ class OtaApiKeyTest extends TestCase
     $this->assertDatabaseCount('devices', 0);
   }
 
+  public function test_version_download_accepts_the_api_key_as_a_query_parameter(): void
+  {
+    [, $version] = $this->seedApp();
+
+    // The browser-opened APK link cannot set headers, so it carries the key in
+    // the query along with the device id.
+    $response = $this->get(
+      "/ota-client/v1/app/update/version/$version->id?api_key=secret-api-key&did=query-device"
+    );
+
+    $response->assertOk();
+    $response->assertHeader('Content-Length', strlen('apk-bytes'));
+  }
+
+  public function test_version_download_rejects_a_wrong_query_api_key(): void
+  {
+    [, $version] = $this->seedApp();
+
+    $this->get("/ota-client/v1/app/update/version/$version->id?api_key=wrong&did=query-device")
+      ->assertStatus(401);
+
+    $this->assertDatabaseCount('devices', 0);
+  }
+
   public function test_bundle_download_rejects_a_key_from_another_app(): void
   {
     [, , $bundle] = $this->seedApp('key-of-app-a', 'com.example.app-a');

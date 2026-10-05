@@ -27,7 +27,9 @@ class OtaApiKeyMiddleware
    */
   public function handle(Request $request, Closure $next): Response
   {
-    $provided = $request->header('API-KEY');
+    // The header is the normal path. `?api_key=` exists for URLs a browser
+    // opens directly (the APK download link), where headers cannot be set.
+    $provided = $request->header('API-KEY') ?: $request->query('api_key');
 
     if (!is_string($provided) || $provided === '')
       return Controller::apiSingleErrorResponse('api_key', 'Missing API key', [], 401);

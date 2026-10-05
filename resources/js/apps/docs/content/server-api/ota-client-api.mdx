@@ -77,6 +77,16 @@ GET /ota-client/v1/app/update/bundle/{bundle}     API-KEY: <version.api_key>
 Both stream the stored artifact and record a download history row. The key must belong to the artifact's
 version.
 
+The APK download can also be opened by a **browser** (the SDK's "download new version" action hands the
+URL to the OS). A browser cannot set the `API-KEY` header, so the key is accepted from the query as well:
+
+```http
+GET /ota-client/v1/app/update/version/{version}?api_key=<version.api_key>&did=<device id>
+```
+
+`api_key` is read only when the header is absent. Since it then travels in the URL (history, server
+logs), prefer the header for the SDK's own requests.
+
 ## The returned `session`
 
 `/app/info` still returns a `session` for SDK compatibility, but downloads no longer require it — the
