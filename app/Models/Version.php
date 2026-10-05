@@ -42,6 +42,7 @@ class Version extends Model
       'status'     => $this->status,
       'latest_id'  => $this->latest_id,
       'latest'     => $this->latest?->toArray(),
+      'default_bundle_version' => $this->default_bundle_version,
       'created_at' => $this->created_at,
     ];
 
@@ -89,6 +90,7 @@ class Version extends Model
         'status'       => 'sometimes|nullable|string|in:draft,review,published,cancelled',
         'api_key'      => 'required|string|max:255',
         'latest_id'    => 'nullable|exists:bundles,id',
+        'default_bundle_version' => 'nullable|string|max:255',
       ],
       ValidationType::Update => [
         'name'      => 'sometimes|required|string|max:255',
@@ -97,6 +99,7 @@ class Version extends Model
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
         'api_key'   => 'sometimes|required|string|max:255',
         'latest_id' => 'sometimes|nullable|exists:bundles,id',
+        'default_bundle_version' => 'sometimes|nullable|string|max:255',
       ],
     };
   }

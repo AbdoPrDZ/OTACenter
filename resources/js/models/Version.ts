@@ -13,6 +13,7 @@ export interface IVersion extends IModel {
   file_id: string;
   api_key: string;
   latest_id: number | null;
+  default_bundle_version: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,7 @@ const VersionModel = createModel<IVersion>("version", [
   { name: "file_id", type: "string" },
   { name: "api_key", type: "string", required: true },
   { name: "latest_id", type: "number" },
+  { name: "default_bundle_version", type: "string" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },
 ], true);

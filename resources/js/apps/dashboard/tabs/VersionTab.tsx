@@ -100,6 +100,7 @@ interface VersionFormValues {
   name: string;
   api_key: string;
   changelog: string;
+  default_bundle_version?: string;
 }
 
 function VersionCreate({ appId }: { appId: number }) {
@@ -117,6 +118,7 @@ function VersionCreate({ appId }: { appId: number }) {
     formData.append("name", data.name);
     formData.append("api_key", data.api_key);
     formData.append("changelog", data.changelog);
+    formData.append("default_bundle_version", data.default_bundle_version ?? "");
     if (file) formData.append("file", file);
 
     const response = await Version.store(appId, formData);
@@ -177,6 +179,20 @@ function VersionCreate({ appId }: { appId: number }) {
             </Field>
 
             <FileField label="APK file" file={file} onPick={setFile} />
+
+            <Field>
+              <FieldLabel htmlFor="default_bundle_version">Default bundle version</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="default_bundle_version"
+                  placeholder="0.0.1"
+                  {...register("default_bundle_version")}
+                />
+                <p className="text-[0.6875rem] text-muted-foreground">
+                  Bundle name embedded in the APK. A device reporting it is offered the active bundle.
+                </p>
+              </FieldContent>
+            </Field>
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
@@ -293,6 +309,7 @@ function VersionEditForm({
       name: version.name,
       api_key: version.api_key,
       changelog: version.changelog,
+      default_bundle_version: version.default_bundle_version ?? "",
     },
   });
   const [file, setFile] = useState<File>();
@@ -305,6 +322,7 @@ function VersionEditForm({
     formData.append("name", data.name);
     formData.append("api_key", data.api_key);
     formData.append("changelog", data.changelog);
+    formData.append("default_bundle_version", data.default_bundle_version ?? "");
     if (file) formData.append("file", file);
 
     const response = await Version.updateForApp(appId, version.id, formData);
@@ -353,6 +371,16 @@ function VersionEditForm({
             <FieldLabel htmlFor="changelog">Changelog</FieldLabel>
             <FieldContent>
               <Textarea id="changelog" {...register("changelog")} />
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="default_bundle_version">Default bundle version</FieldLabel>
+            <FieldContent>
+              <Input id="default_bundle_version" placeholder="0.0.1" {...register("default_bundle_version")} />
+              <p className="text-[0.6875rem] text-muted-foreground">
+                Bundle name embedded in the APK. A device reporting it is offered the active bundle.
+              </p>
             </FieldContent>
           </Field>
 

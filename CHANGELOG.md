@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-10-05
+
+### Added
+
+- **`default_bundle_version` is now visible and editable.** The column was fillable but missing from
+  `Version::toArray()` and from the version forms, so it never appeared in a response and could not be set
+  from the dashboard. The version endpoints now return it, and both the create and edit forms expose a
+  "Default bundle version" field. `Version.ts` declares the field as well — the frontend decoder only
+  keeps the fields a model lists, so a response key alone would still have been dropped.
+
+### Fixed
+
+- **`default_bundle_version` could never be written through the API.** `VersionController::store` and
+  `::update` derive the writable attributes from the model's validation rules
+  (`array_diff(array_keys($rules), ['file'])`), and the field was in neither the Create nor the Update
+  set. That is what made `/ota-client/v1/app/info` answer `400 "Invalid bundle version"` for a device
+  reporting the bundle name embedded in its APK — the case `default_bundle_version` exists to accept.
+
 ## [1.2.0] - 2026-10-05
 
 ### Added
@@ -152,6 +170,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.3.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.0.0...v1.1.0
