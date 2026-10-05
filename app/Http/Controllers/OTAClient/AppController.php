@@ -67,6 +67,7 @@ class AppController extends Controller
         $available_version = [
           'id' => $app->latest_id,
           'name' => $latest->name,
+          'updateType' => $latest->update_type,
         ];
       }
     }
@@ -79,6 +80,7 @@ class AppController extends Controller
         $available_bundle = [
           'id'   => $version->latest_id,
           'name' => $latestBundle->name,
+          'updateType' => $latestBundle->update_type,
         ];
       }
     }

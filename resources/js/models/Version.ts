@@ -10,6 +10,7 @@ export interface IVersion extends IModel {
   name: string;
   changelog: string;
   status: "draft" | "review" | "published" | "cancelled";
+  update_type: "optional" | "force";
   file_id: string;
   api_key: string;
   latest_id: number | null;
@@ -24,6 +25,7 @@ const VersionModel = createModel<IVersion>("version", [
   { name: "name", type: "string", required: true },
   { name: "changelog", type: "string" },
   { name: "status", type: "enum", enum: ["draft", "review", "published", "cancelled"] },
+  { name: "update_type", type: "enum", enum: ["optional", "force"] },
   { name: "file_id", type: "string" },
   { name: "api_key", type: "string", required: true },
   { name: "latest_id", type: "number" },

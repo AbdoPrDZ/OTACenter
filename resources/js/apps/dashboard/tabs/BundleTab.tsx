@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
+import { Select } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
 
@@ -104,6 +105,33 @@ function ZipField({
   );
 }
 
+function UpdateTypeField({
+  value,
+  onChange,
+}: {
+  value: "optional" | "force";
+  onChange: (value: "optional" | "force") => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="update_type">Update type</FieldLabel>
+      <FieldContent>
+        <Select
+          id="update_type"
+          value={value}
+          onChange={(event) => onChange(event.target.value as "optional" | "force")}
+        >
+          <option value="optional">Optional — the user may skip it</option>
+          <option value="force">Force install — the user must install it</option>
+        </Select>
+        <p className="text-[0.6875rem] text-muted-foreground">
+          Forced updates cannot be dismissed by the OTA client.
+        </p>
+      </FieldContent>
+    </Field>
+  );
+}
+
 function BundleCreate({ appId, versionId }: { appId: number; versionId: number }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -111,6 +139,7 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
   const versionName = useVersionName(appId, versionId);
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState<string>();
+  const [updateType, setUpdateType] = useState<"optional" | "force">("optional");
   const [file, setFile] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
 
@@ -123,6 +152,7 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
     setSubmitting(true);
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("update_type", updateType);
     if (file) formData.append("file", file);
 
     const response = await Bundle.store(appId, versionId, formData);
@@ -175,6 +205,8 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
 
           <ZipField file={file} onPick={setFile} />
 
+          <UpdateTypeField value={updateType} onChange={setUpdateType} />
+
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
@@ -209,6 +241,7 @@ function BundleShow({
   const [file, setFile] = useState<File>();
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState<string>();
+  const [updateType, setUpdateType] = useState<"optional" | "force">("optional");
   const [submitting, setSubmitting] = useState(false);
 
   const versionPath = `/dashboard/apps/${appId}/versions/${versionId}`;
@@ -218,6 +251,7 @@ function BundleShow({
       if (response.success && response.data) {
         setBundle(response.data);
         setName(response.data.name ?? "");
+        setUpdateType(response.data.update_type ?? "optional");
       } else if (!response.success && response.status === 404) {
         navigate(versionPath);
       }
@@ -235,6 +269,7 @@ function BundleShow({
     setSubmitting(true);
     const formData = new FormData();
     formData.append("name", name);
+    formData.append("update_type", updateType);
     if (file) formData.append("file", file);
 
     const response = await Bundle.updateForVersion(appId, versionId, bundleId, formData);
@@ -301,6 +336,8 @@ function BundleShow({
               hint="Leave empty to keep the current file."
             />
 
+            <UpdateTypeField value={updateType} onChange={setUpdateType} />
+
             <div className="flex justify-end">
               <Button loading={submitting} onClick={save}>
                 Save changes
@@ -321,6 +358,10 @@ function BundleShow({
             <div className="flex justify-between">
               <span className="text-muted-foreground">File</span>
               <span className="font-mono">{bundle.file_id}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Update type</span>
+              <span>{bundle.update_type === "force" ? "Force install" : "Optional"}</span>
             </div>
             {bundle.url ? (
               <div className="flex justify-between gap-4">

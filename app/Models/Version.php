@@ -6,7 +6,7 @@ use App\Src\Model;
 use App\Src\ValidationType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
-#[Fillable(['app_id', 'name', 'changelog', 'status', 'file_id', 'api_key', 'default_bundle_version', 'latest_id'])]
+#[Fillable(['app_id', 'name', 'changelog', 'status', 'update_type', 'file_id', 'api_key', 'default_bundle_version', 'latest_id'])]
 class Version extends Model
 {
   public function app()
@@ -40,6 +40,7 @@ class Version extends Model
       'name'       => $this->name,
       'changelog'  => $this->changelog,
       'status'     => $this->status,
+      'update_type' => $this->update_type,
       'latest_id'  => $this->latest_id,
       'latest'     => $this->latest?->toArray(),
       'default_bundle_version' => $this->default_bundle_version,
@@ -88,6 +89,7 @@ class Version extends Model
         'changelog'    => 'required|string',
         'file'         => 'required|file|extensions:apk|max:102400',
         'status'       => 'sometimes|nullable|string|in:draft,review,published,cancelled',
+        'update_type'  => 'sometimes|nullable|string|in:optional,force',
         'api_key'      => 'required|string|max:255',
         'latest_id'    => 'nullable|exists:bundles,id',
         'default_bundle_version' => 'nullable|string|max:255',
@@ -97,6 +99,7 @@ class Version extends Model
         'changelog' => 'sometimes|required|string',
         'file'      => 'sometimes|required|file|extensions:apk|max:102400',
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
+        'update_type' => 'sometimes|nullable|string|in:optional,force',
         'api_key'   => 'sometimes|required|string|max:255',
         'latest_id' => 'sometimes|nullable|exists:bundles,id',
         'default_bundle_version' => 'sometimes|nullable|string|max:255',

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormRegister } from "react-hook-form";
 import { FileUp, Plus, Rocket } from "lucide-react";
 
 import Version, { IVersion } from "@/models/Version";
@@ -18,6 +18,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import { Input, Textarea } from "@/components/ui/form";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
+import { Select } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/feedback";
 import { useToast } from "@/components/ui/toast";
@@ -101,13 +102,33 @@ interface VersionFormValues {
   api_key: string;
   changelog: string;
   default_bundle_version?: string;
+  update_type: "optional" | "force";
+}
+
+function UpdateTypeField({ register }: { register: UseFormRegister<VersionFormValues> }) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="update_type">Update type</FieldLabel>
+      <FieldContent>
+        <Select id="update_type" {...register("update_type")}>
+          <option value="optional">Optional — the user may skip it</option>
+          <option value="force">Force install — the user must install it</option>
+        </Select>
+        <p className="text-[0.6875rem] text-muted-foreground">
+          Forced updates cannot be dismissed by the OTA client.
+        </p>
+      </FieldContent>
+    </Field>
+  );
 }
 
 function VersionCreate({ appId }: { appId: number }) {
   const navigate = useNavigate();
   const toast = useToast();
   const appName = useAppName(appId);
-  const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>();
+  const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>({
+    defaultValues: { update_type: "optional" },
+  });
   const [file, setFile] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
 
@@ -119,6 +140,7 @@ function VersionCreate({ appId }: { appId: number }) {
     formData.append("api_key", data.api_key);
     formData.append("changelog", data.changelog);
     formData.append("default_bundle_version", data.default_bundle_version ?? "");
+    formData.append("update_type", data.update_type);
     if (file) formData.append("file", file);
 
     const response = await Version.store(appId, formData);
@@ -193,6 +215,8 @@ function VersionCreate({ appId }: { appId: number }) {
                 </p>
               </FieldContent>
             </Field>
+
+            <UpdateTypeField register={register} />
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
@@ -310,6 +334,7 @@ function VersionEditForm({
       api_key: version.api_key,
       changelog: version.changelog,
       default_bundle_version: version.default_bundle_version ?? "",
+      update_type: version.update_type ?? "optional",
     },
   });
   const [file, setFile] = useState<File>();
@@ -323,6 +348,7 @@ function VersionEditForm({
     formData.append("api_key", data.api_key);
     formData.append("changelog", data.changelog);
     formData.append("default_bundle_version", data.default_bundle_version ?? "");
+    formData.append("update_type", data.update_type);
     if (file) formData.append("file", file);
 
     const response = await Version.updateForApp(appId, version.id, formData);
@@ -383,6 +409,8 @@ function VersionEditForm({
               </p>
             </FieldContent>
           </Field>
+
+          <UpdateTypeField register={register} />
 
           <FileField
             label="Replace APK"

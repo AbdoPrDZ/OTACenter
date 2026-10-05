@@ -9,6 +9,7 @@ export interface IBundle extends IModel {
   version_id: number;
   name?: string;
   status?: "draft" | "review" | "published" | "cancelled";
+  update_type: "optional" | "force";
   file_id: string;
   url?: string;
   created_at: string;
@@ -20,6 +21,7 @@ const BundleModel = createModel<IBundle>("bundle", [
   { name: "version_id", type: "number" },
   { name: "name", type: "string" },
   { name: "status", type: "enum", enum: ["draft", "review", "published", "cancelled"] },
+  { name: "update_type", type: "enum", enum: ["optional", "force"] },
   { name: "file_id", type: "string" },
   { name: "url", type: "string" },
   { name: "created_at", type: "date" },

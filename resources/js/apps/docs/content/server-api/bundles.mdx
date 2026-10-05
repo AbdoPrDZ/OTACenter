@@ -24,6 +24,7 @@ A bundle is the ZIP artifact (JS bundle + `manifest.json`) that devices download
 |-------|------|-------|
 | `name` | string | bundle version string |
 | `file_id` | string | the ZIP `File` |
+| `update_type` | enum | `optional` · `force` — whether the OTA client may skip the update |
 | `url` | string? | download URL (privileged roles) |
 
 ```jsonc

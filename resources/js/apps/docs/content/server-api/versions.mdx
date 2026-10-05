@@ -26,6 +26,7 @@ Versions are nested under an app. The parent is verified by the `rec.parent` mid
 | `changelog` | text | release notes |
 | `api_key` | string | the client sends it as `API-KEY` |
 | `status` | enum | `draft` · `review` · `published` · `cancelled` |
+| `update_type` | enum | `optional` · `force` — whether the OTA client may skip the update |
 | `file` | file | the APK installer (create/update) |
 | `latest_id` | int? | the version's active bundle |
 

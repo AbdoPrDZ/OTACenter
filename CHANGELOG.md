@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-10-05
+
+### Added
+
+- **Forced vs optional updates.** Versions and bundles now carry an `update_type` (`optional`, the
+  default, or `force`), set per row in the dashboard. The OTA update check reports it on each offer as
+  `availableUpdates.version.updateType` / `availableUpdates.bundle.updateType`, so the client can force
+  the user to install instead of offering a "Not now". Backward compatible: older clients ignore the
+  field, and a client talking to an older server treats the update as `optional`.
+  - New migrations add the column to `versions` and `bundles`; both models expose it in `toArray()` and
+    accept it in their validation rules (the rules are the write whitelist). Adds `OtaUpdateTypeTest`.
+
 ## [1.4.0] - 2026-10-05
 
 ### Added
@@ -193,6 +205,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.5.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.1.1...v1.2.0

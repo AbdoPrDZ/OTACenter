@@ -45,8 +45,10 @@ Blade shell that boots React. There is no Inertia; the Blade views are just shel
 ### App & release management
 - **Apps** — name, unique package name, summary, description, logo, and a screenshot gallery.
 - **Versions** — a release of an app, each with a changelog, a status
-  (`draft` / `review` / `published` / `cancelled`), an API key, and a **required** `.apk` installer.
-- **Bundles** — a ZIP artifact attached to a version. The version's *active* bundle is stored on
+  (`draft` / `review` / `published` / `cancelled`), an **`update_type`** (`optional` or `force`, whether
+  the OTA client may skip the update), an API key, and a **required** `.apk` installer.
+- **Bundles** — a ZIP artifact attached to a version, with its own **`update_type`** (`optional` or
+  `force`). The version's *active* bundle is stored on
   `versions.latest_id`, and an app's *latest* version on `apps.latest_id` (set from the app form).
 - **Files** — every uploaded artifact (logos, images, APKs, ZIPs) is a row in `files` with a
   **non-incrementing string primary key** and a public URL served by `GET /files/{name}`.

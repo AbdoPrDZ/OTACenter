@@ -6,7 +6,7 @@ use App\Src\Model;
 use App\Src\ValidationType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
-#[Fillable(['version_id', 'name', 'changelog', 'status', 'file_id'])]
+#[Fillable(['version_id', 'name', 'changelog', 'status', 'update_type', 'file_id'])]
 class Bundle extends Model
 {
   protected $filterable = ['name'];
@@ -32,6 +32,7 @@ class Bundle extends Model
       'name'       => $this->name,
       'changelog'  => $this->changelog,
       'status'     => $this->status,
+      'update_type' => $this->update_type,
       'created_at' => $this->created_at,
     ];
 
@@ -76,12 +77,14 @@ class Bundle extends Model
         'changelog' => 'nullable|string',
         'file'      => 'required|file|extensions:zip,tar,gz|max:102400',
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
+        'update_type' => 'sometimes|nullable|string|in:optional,force',
       ],
       ValidationType::Update => [
         'name'      => 'sometimes|required|string|max:255',
         'changelog' => 'sometimes|nullable|string',
         'file'      => 'sometimes|required|file|extensions:zip,tar,gz|max:102400',
         'status'    => 'sometimes|nullable|string|in:draft,review,published,cancelled',
+        'update_type' => 'sometimes|nullable|string|in:optional,force',
       ],
     };
   }

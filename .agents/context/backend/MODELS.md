@@ -45,10 +45,11 @@ Conventions used across models:
   update rules include a stray `summary` field (not a real column) — bug.
 
 ## `Version` — table `versions`
-`#[Fillable(['app_id', 'name', 'changelog', 'status', 'file_id', 'api_key', 'latest_id'])]`
-- **Per-role `toArray()`**: base = `id, app_id, name, changelog, status, latest_id, created_at`;
-  privileged (`super-admin`/`admin`/`developer`) adds `file_id, url, api_key, updated_at` (the
+`#[Fillable(['app_id', 'name', 'changelog', 'status', 'update_type', 'file_id', 'api_key', 'latest_id'])]`
+- **Per-role `toArray()`**: base = `id, app_id, name, changelog, status, update_type, latest_id, created_at`; privileged (`super-admin`/`admin`/`developer`) adds `file_id, url, api_key, updated_at` (the
   download URL and API key are hidden from `user`/`guest`).
+- `update_type` is `optional` (default) or `force`, and is reported by
+  `OTAClient\AppController::info()` as `availableUpdates.version.updateType`.
 - **Relations**: `app()` → `belongsTo(App)`; `file()` → `belongsTo(File, 'file_id', 'name')`;
   `bundles()` → `hasMany(Bundle, 'version_id', 'id')`; `latest()` →
   `belongsTo(Bundle, 'latest_id', 'id')` (the version's active/latest bundle).
@@ -60,10 +61,12 @@ Conventions used across models:
   defaults a missing `status` to `draft` on create.)
 
 ## `Bundle` — table `bundles`
-`#[Fillable(['version_id', 'name', 'changelog', 'status', 'file_id'])]`
-- `$appends` → `url` (via `file?->url`); `$filterable` → `name`.
-- **Per-role `toArray()`**: base = `id, version_id, name, changelog, status, created_at`; privileged
+`#[Fillable(['version_id', 'name', 'changelog', 'status', 'update_type', 'file_id'])]`
+- `$appends`  `url` (via `file?->url`); `$filterable`  `name`.
+- **Per-role `toArray()`**: base = `id, version_id, name, changelog, status, update_type, created_at`; privileged
   (`super-admin`/`admin`/`developer`) adds `file_id, url, updated_at`.
+- `update_type` is `optional` (default) or `force`, and is reported by
+  `OTAClient\AppController::info()` as `availableUpdates.bundle.updateType`.
 - **Relations**: `version()` → `belongsTo(Version, 'version_id', 'id')`; `file()` →
   `belongsTo(File, 'file_id', 'name')`.
 - **Validation**: create requires **`name`** (the bundle version string, mirroring `versions.name` —

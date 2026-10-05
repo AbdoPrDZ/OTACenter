@@ -48,12 +48,24 @@ Response:
 {
   "appId": "…", "versionId": "…", "bundleId": "…",
   "availableUpdates": {
-    "version": { "id": "…", "name": "1.4.0" },   // a new APK
-    "bundle":  { "id": "…", "name": "1.4.0" }    // a new JS bundle
+    "version": { "id": "…", "name": "1.4.0", "updateType": "optional" },  // a new APK
+    "bundle":  { "id": "…", "name": "1.4.0", "updateType": "force" }      // a new JS bundle
   },
   "session": "…"                                  // optional, see below
 }
 ```
+
+## Update type
+
+Each offered update carries an `updateType` of `optional` or `force`, set per version and per bundle in
+the dashboard:
+
+- **`optional`** (default) — the client may show a "Not now" and let the user continue on the old build.
+- **`force`** — the client must install it: the SDK hides the escape hatch, blocks the back gesture and
+  refuses to dismiss the update.
+
+Old clients ignore the extra field, and a client talking to an older server treats the update as
+`optional`, so adding it is backward compatible.
 
 ## Downloads
 
