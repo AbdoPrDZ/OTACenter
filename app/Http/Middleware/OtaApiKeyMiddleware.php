@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\App;
 use App\Models\Bundle;
 use App\Models\Version;
 use App\Src\Controller;
@@ -80,11 +81,16 @@ class OtaApiKeyMiddleware
     $package = $request->input('package');
     $name    = $request->input('version');
 
-    if (is_string($package) && is_string($name))
-      return Version::where('name', $name)
-        ->whereHas('app', fn($query) => $query->where('package_name', $package))
-        ->value('api_key');
+    if (!is_string($package) || !is_string($name)) return null;
 
-    return null;
+    $app = App::where('package_name', $package)->first();
+    if (!$app) return null;
+
+    $version = Version::where('app_id', $app->id)->where('name', $name)->first();
+
+    # Same fallback as AppController::info(): a device on a build this server does
+    # not list is authorized by the app's current version key, so the check can
+    # still answer with the version update instead of "Invalid version".
+    return $version?->api_key ?? $app->latest?->api_key;
   }
 }

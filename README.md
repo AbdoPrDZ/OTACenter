@@ -73,7 +73,8 @@ A separate, device-facing API is mounted at `/ota-client/v1` for native clients:
 - `GET /ota-client/v1/health` — reachability check.
 - `POST /ota-client/v1/app/info` — body `{ package, version, bundle }`; resolves the app/version/bundle
   and reports `availableUpdates`. The version's `API-KEY` header authorizes the call — no login session is
-  required. Devices register via the `X-Device-Info` header
+  required; a build the server no longer lists is authorized by the app's current version key and still
+  receives the update, instead of a `400 Invalid version`. Devices register via the `X-Device-Info` header
   (`did`, `mf`, `br`, `mdl`, `av`, `sdv`) through `DeviceMiddleware`.
 - `POST /ota-client/v1/app/event` — body `{ package, version, bundle?, event, message?, meta? }`; records a
   client activity event (`update.available` / `update.refused` / `update.downloaded` / `update.installed` /

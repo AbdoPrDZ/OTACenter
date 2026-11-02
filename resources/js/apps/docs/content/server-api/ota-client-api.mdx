@@ -23,7 +23,8 @@ X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
 - A missing or wrong key returns `401` (`{ success: false, errors: { api_key: … } }`) **before** the device
   is registered.
 - The key is compared against the version the request resolves to: the bound `{version}` or `{bundle}` on a
-  download, or the `package` + `version` named in the `/app/info` payload.
+  download, or the `package` + `version` named in the `/app/info` payload — falling back to the app's
+  current version when that version is not listed.
 - A key belongs to one version, so it cannot reach another app's artifacts.
 
 ## `GET /ota-client/v1/health`
@@ -54,6 +55,13 @@ Response:
   "session": "…"                                  // optional, see below
 }
 ```
+
+If the reported `version` is not a version of the app — an old APK, or a build that was never published here —
+the check still succeeds: the call is authorized with the app's current version key and
+`availableUpdates.version` names that current version, instead of failing with `400 Invalid version`. The
+reported `bundle` is only validated when the version is known (a registered bundle of it, or its
+`default_bundle_version`), so an unknown build never fails on the bundle name embedded in its APK. `versionId`
+is `null` in that case.
 
 ## Update type
 

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`/ota-client/v1/app/info` answered `400 "Invalid version"` for a device running a build the dashboard no
+  longer lists.** The controller required the reported `version` to be a `Version` row of the app, so an old
+  APK (or one installed straight from a file) could never learn about the current version — exactly the
+  clients that need the update most. An unlisted version now falls back to `app.latest`: the API key is
+  checked against that version (also in `OtaApiKeyMiddleware`, before the device is registered),
+  `availableUpdates.version` reports it, and the reported `bundle` is only validated when the version is
+  known (a registered bundle of it, or its `default_bundle_version`). `versionId` is `null` in the response
+  for an unlisted version, and the device is linked to the app on the first check that names a listed
+  version (`device_apps.version_id` is required).
+- **Covered by `tests/Feature/OtaStaleVersionTest.php`** — unlisted version gets the update, wrong key is
+  rejected before the device is registered, and a listed version still enforces its bundle /
+  `default_bundle_version`.
+
 ## [1.6.3] - 2026-10-05
 
 ### Fixed
@@ -305,6 +322,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Laravel 13 + React 19 platform: apps, versions, bundles, domains, LDAP users, roles and permissions,
   the device-facing OTA client API, statistics, and the admin dashboard.
 
+[1.6.3]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.2...v1.6.3
+[Unreleased]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.3...HEAD
 [1.5.2]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.4.0...v1.5.0

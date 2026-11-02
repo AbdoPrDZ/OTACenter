@@ -35,6 +35,11 @@ Every test:
   irrelevant. `activate`/`destroy` assert on `versions.latest_id` being set / nulled. Includes a
   rejection case proving the `rec.parent` middleware returns 404 when a bundle belongs to a different
   version.
+- `OtaStaleVersionTest` — the device API when the installed `version` is not a row of the app (old APK /
+  unpublished build): the check still returns the `app.latest` update, is authorized by that version's
+  key (wrong key rejected **before** the device is registered), skips the `device_apps` link, and reports
+  `versionId: null`. Also covers the listed-version rules (`default_bundle_version`, registered bundle,
+  unknown bundle rejected) and an app with no current version.
 - `tests/Feature/Rbac/SuperAdminAccessTest` — adversarial baseline for the most-privileged role. Positive
   paths (full app/domain/bundle CRUD, domain bind) + negative "crack" tests that **must not be allowed
   even for a superadmin**: 401 unauthenticated, 400 validation bypasses (duplicate `package_name`,

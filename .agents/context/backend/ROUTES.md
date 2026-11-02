@@ -39,7 +39,7 @@ or creates the device from the request and stashes its id in `$request->attribut
 | Route | Controller | Notes |
 |-------|-----------|-------|
 | `GET /ota-client/v1/health` | `OTAClient\AppController::health` | reachability check |
-| `POST /ota-client/v1/app/info` | `OTAClient\AppController::info` | body `{ package, version, bundle }`; resolves app/version/bundle by name and reports `availableUpdates` |
+| `POST /ota-client/v1/app/info` | `OTAClient\AppController::info` | body `{ package, version, bundle }`; resolves app/version/bundle by name and reports `availableUpdates`. An installed `version` the server does not list falls back to the app's `latest` version (key + `availableUpdates.version`), so old builds still learn about the update. |
 
 ### Route → permission map (enforced via `permission:` middleware)
 Every protected route carries a `permission:{name}` middleware (see `AUTH-LDAP.md` for the seeded matrix;

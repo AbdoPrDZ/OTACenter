@@ -37,32 +37,48 @@ class AppController extends Controller
     if (!$app) return $this->apiSingleErrorResponse('package', 'Invalid package name');
 
     $version = Version::where('app_id', $app->id)->where('name', $request->version)->first();
-    if (!$version) return $this->apiSingleErrorResponse('version', 'Invalid version');
+
+    # A device can report a build the dashboard no longer lists: an old APK, or a
+    # build that was never published here. It still has to learn about the current
+    # version, so authorize it against the app's latest version instead of
+    # rejecting the whole check with "Invalid version".
+    $current = $version ?? $app->latest;
+    if (!$current) return $this->apiSingleErrorResponse('version', 'Invalid version');
 
     # OtaApiKeyMiddleware already matched the header against this version; this
     # repeats the check so the controller never trusts an unverified request.
-    if (!OtaApiKeyMiddleware::matches($version->api_key, $request->attributes->get('api_key')))
+    if (!OtaApiKeyMiddleware::matches($current->api_key, $request->attributes->get('api_key')))
       return $this->apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
 
-    $bundle = Bundle::where('version_id', $version->id)->where('name', $request->bundle)->first();
-    if (!$bundle && $version->default_bundle_version !== $request->bundle)
-      return $this->apiSingleErrorResponse('bundle', 'Invalid bundle version');
+    # The reported bundle belongs to the version embedded in the installed APK, so
+    # it is only verifiable when that version is known: either a registered bundle
+    # of it, or the `default_bundle_version` shipped inside the APK.
+    $bundle = null;
+    if ($version) {
+      $bundle = Bundle::where('version_id', $version->id)->where('name', $request->bundle)->first();
+      if (!$bundle && $version->default_bundle_version !== $request->bundle)
+        return $this->apiSingleErrorResponse('bundle', 'Invalid bundle version');
+    }
 
     $device_id = $request->attributes->get('device_id');
     $device = Device::find($device_id);
 
     if (!$device) throw new \Exception("Device not found for device_id: $device_id");
 
-    # attach device to app with version and bundle
-    $device->apps()->syncWithoutDetaching([
-      $app->id => [
-        'version_id' => $version->id,
-        'bundle_id'  => $bundle ? $bundle->id : null,
-      ]
-    ]);
+    # Attach the device to the app with the version and bundle it reports. An
+    # unlisted version has no row to point at (`device_apps.version_id` is
+    # required), so it is linked once it reports a version that exists here.
+    if ($version) {
+      $device->apps()->syncWithoutDetaching([
+        $app->id => [
+          'version_id' => $version->id,
+          'bundle_id'  => $bundle ? $bundle->id : null,
+        ]
+      ]);
+    }
 
     $available_version = null;
-    if ($app->latest_id && $version->id !== $app->latest_id) {
+    if ($app->latest_id && $version?->id !== $app->latest_id) {
       $latest = $app->latest;
 
       if ($latest) {
@@ -75,7 +91,7 @@ class AppController extends Controller
     }
 
     $available_bundle = null;
-    if (!$available_version && $version->latest_id && $bundle?->id !== $version->latest_id) {
+    if (!$available_version && $version && $version->latest_id && $bundle?->id !== $version->latest_id) {
       $latestBundle = $version->latest;
 
       if ($latestBundle) {
@@ -93,7 +109,7 @@ class AppController extends Controller
       [
         'device_id'  => $device->id,
         'app_id'     => $app->id,
-        'version_id' => $version->id,
+        'version_id' => $version?->id,
         'bundle_id'  => $bundle ? $bundle->id : null,
       ]
     )->plainTextToken;
@@ -103,7 +119,8 @@ class AppController extends Controller
         'session' => $session,
         'device_id' => $device->id,
         'appId'     => $app->id,
-        'versionId' => $version->id,
+        # null when the device reports a version this server does not list.
+        'versionId' => $version?->id,
         'bundleId'  => $bundle ? $bundle->id : null,
         'availableUpdates' => [
           'version' => $available_version ? $available_version : null,
