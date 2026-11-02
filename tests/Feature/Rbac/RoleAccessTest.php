@@ -151,6 +151,7 @@ class RoleAccessTest extends TestCase
       'app_id' => $app->id,
       'status' => 'draft',
       'file_id' => $file->name,
+      'api_key' => 'test-api-key',
     ]);
 
     $bundleFile = File::create(['name' => 'bundle-file-' . uniqid(), 'disk' => 'public', 'path' => 'bundles/b.zip']);

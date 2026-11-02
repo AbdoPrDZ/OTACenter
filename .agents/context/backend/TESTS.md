@@ -57,15 +57,13 @@ Every test:
 ## Known-broken / pre-existing failures
 - `AuthTest::test_login_returns_a_token_for_the_seeded_user` — 500 "Session store not set on request":
   `AuthController::login` calls `$request->session()` but the `api` group has no session middleware.
-- `RoleBindingTest::test_attach_and_detach_user_to_role` — posts to `POST /role/{role}/user/{user}`, which
-  is **not** in the router (role↔user binding is `POST/DELETE /user/{user}/role/{role}`) → 404. The test
-  targets a route that doesn't exist.
-- `RoleAccessTest` — 3 data sets fail with 404 for the same reason:
-  "admin can attach user to role" (200 expected), "developer cannot attach user to role" (403 expected),
-  "developer cannot detach user from role" (403 expected) — all post to the nonexistent
-  `/role/{role}/user/{user}`; attach/detach routes live under `/user/{user}/role/{role}` and aren't in
-  the matrix.
-- Current status (last full-ish run of the four resource files — `VersionTest`, `BundleTest`,
-  `RoleAccessTest`, `SuperAdminAccessTest`): **88 passed / 3 failed** (the RoleAccessTest rows above).
-  `BundleTest|VersionTest` alone: **9 passed**.
+- Role↔user binding is routed both ways (`POST/DELETE /role/{role}/user/{user}` and
+  `/user/{user}/role/{role}`), so `RoleBindingTest` and the role-binding `RoleAccessTest` rows pass.
+- `versions.api_key` is NOT NULL: any fixture that calls `Version::create([...])` directly (e.g.
+  `RoleAccessTest::seedFixtures()`, the `SuperAdminAccessTest` version helper) **must set `api_key`**, or
+  every test using it errors with a not-null violation.
+- Tests share one Postgres DB (`TEST-OTCenter`, from `phpunit.xml`; it must already exist) and every
+  test runs `migrate:fresh`, so **never run two test processes at once** — they drop each other's
+  tables (`relation "migrations" does not exist`, `relation "cache" already exists`).
+- Current status: `tests/Feature/Rbac` **87 passed** (2026-11-02).
 

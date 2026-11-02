@@ -29,6 +29,7 @@ class SuperAdminAccessTest extends TestCase
       'app_id' => $app->id,
       'status' => 'draft',
       'file_id' => $file->name,
+      'api_key' => 'test-api-key',
     ]);
 
     return [$app, $version];

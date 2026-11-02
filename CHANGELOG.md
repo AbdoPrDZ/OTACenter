@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Covered by `tests/Feature/OtaStaleVersionTest.php`** — unlisted version gets the update, wrong key is
   rejected before the device is registered, and a listed version still enforces its bundle /
   `default_bundle_version`.
+- **The `tests/Feature/Rbac` suite errored on 67 of 87 tests** with a `versions.api_key` not-null
+  violation: the `RoleAccessTest` and `SuperAdminAccessTest` fixtures created a `Version` without an
+  `api_key` after the column became required. Both fixtures now set one, and the suite passes (87/87).
 
 ## [1.6.3] - 2026-10-05
 
