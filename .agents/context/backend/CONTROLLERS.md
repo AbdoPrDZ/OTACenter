@@ -170,7 +170,8 @@ ROUTES.md), **not** in the controller.
 
 ## `OTAClient\AppController` — device-facing OTA endpoints
 Device API (not admin) mounted at `/ota-client/v1` via `routes/ota_client.php`; every app-facing request carries an `API-KEY` header that `OtaApiKeyMiddleware` matches against the
-resolved version (or the version named in the `info` payload) before anything else, then passes
+resolved version (or the version named in the `info` payload, falling back to the app's latest version
+key when that version is not a row of the app) before anything else, then passes
 `DeviceMiddleware` (`ota-client` group, see ROUTES.md), which resolves/creates the device and stashes its
 id in `$request->attributes->set('device_id', ...)`.
 | Method | Notes |

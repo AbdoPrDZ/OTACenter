@@ -52,6 +52,11 @@ GET /api/app?page=1&pageSize=10&search=x&sort[name]=asc
 - `FileAccessMiddleware` reads `config("file_access.apps.<slug>.auth")` but **no `config/file_access.php`
   exists** — the middleware always aborts unless that config is added.
 - `Tabling::tablingCollect()` returns a `query` field containing the raw SQL — debug leftover.
+- ⚠️ **OTA key fallback:** `OtaApiKeyMiddleware::expectedKey()` accepts, for `/app/info`, the key of the
+  reported `version` **or** `app.latest`'s key when that version is not a row of the app (`Version` has no
+  `SoftDeletes`, so a deleted version's key is gone). Only the current key can authorize an unlisted build,
+  and `device_apps.version_id` is NOT NULL, so the device is linked to the app only once it reports a
+  listed version.
 - `FakeDataSeeder` is not called from `DatabaseSeeder` (only `SecuritySeeder` is).
 - ⚠️ **Auth guard trap:** the `auth:sanctum` middleware calls `Auth::shouldUse('sanctum')`, changing the
   **default auth guard** to `sanctum`. `sanctum` has no provider in `config/auth.php`, so Spatie's stock

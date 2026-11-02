@@ -33,14 +33,17 @@ app untouched.
 
 ## No update is offered
 
-- The device's `package` / `version` / `bundle` must match what is published.
-- The app must be bound to a domain the user belongs to.
+- The device's `package` must exist on the server; its `bundle` must match a registered bundle of the
+  reported version or that version's `default_bundle_version`. A `version` the server does not list is
+  still answered with the current version, so it never blocks the update check.
 - Confirm a newer bundle/version actually exists on the server.
 
 ## `401` on the update check
 
 The `API-KEY` header is wrong or missing. It must equal the **version's** `api_key`. Re-copy it from the
-version page (it is only shown to privileged roles).
+version page (it is only shown to privileged roles). If the installed build is so old that its version is
+no longer listed on the server, only the app's **current** version key is accepted — re-copy it from the
+latest version.
 
 ## “`runtimeVersion` mismatch”
 

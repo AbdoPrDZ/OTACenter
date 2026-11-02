@@ -24,7 +24,7 @@ X-Device-Info: did=…;mf=…;br=…;mdl=…;av=…;sdv=…
   is registered.
 - The key is compared against the version the request resolves to: the bound `{version}` or `{bundle}` on a
   download, or the `package` + `version` named in the `/app/info` payload — falling back to the app's
-  current version when that version is not listed.
+  current version when that version is not listed, in which case only that current key is accepted.
 - A key belongs to one version, so it cannot reach another app's artifacts.
 
 ## `GET /ota-client/v1/health`
