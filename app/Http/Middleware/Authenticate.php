@@ -77,9 +77,9 @@ class Authenticate implements AuthenticatesRequests
       if ($res) {
         $this->auth->shouldUse($guard);
 
-        $requestToken = $request->bearerToken() ?: $request->query('token');
+        $requestToken = (string) $request->bearerToken();
 
-        $request_token = str_contains($requestToken, '|') ? explode('|', $requestToken)[1] : null;
+        $request_token = str_contains($requestToken, '|') ? explode('|', $requestToken, 2)[1] : null;
 
         $request->attributes->set('request_token', $request_token);
 

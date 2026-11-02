@@ -32,6 +32,9 @@ class PermissionController extends Controller
 
   public function attachToRole(Request $request, Role $role, Permission $permission)
   {
+    if (!self::mayManageSecurityOf($request->user(), $role))
+      return $this->apiErrorResponse('Only a super-admin can manage super-admin access.', [], 403);
+
     if ($role->permissions()->where('permissions.id', $permission->id)->exists())
       return $this->apiErrorResponse('Permission already attached to this role.');
 
@@ -42,6 +45,9 @@ class PermissionController extends Controller
 
   public function detachFromRole(Request $request, Role $role, Permission $permission)
   {
+    if (!self::mayManageSecurityOf($request->user(), $role))
+      return $this->apiErrorResponse('Only a super-admin can manage super-admin access.', [], 403);
+
     if (!$role->permissions()->where('permissions.id', $permission->id)->exists())
       return $this->apiErrorResponse('Role does not have this permission attached.');
 
@@ -83,6 +89,9 @@ class PermissionController extends Controller
 
   public function attachToUser(Request $request, User $user, Permission $permission)
   {
+    if (!self::mayManageSecurityOf($request->user(), $user))
+      return $this->apiErrorResponse('Only a super-admin can manage super-admin access.', [], 403);
+
     if ($user->hasDirectPermission($permission))
       return $this->apiErrorResponse('Permission already assigned to this user.');
 
@@ -93,6 +102,9 @@ class PermissionController extends Controller
 
   public function detachFromUser(Request $request, User $user, Permission $permission)
   {
+    if (!self::mayManageSecurityOf($request->user(), $user))
+      return $this->apiErrorResponse('Only a super-admin can manage super-admin access.', [], 403);
+
     if (!$user->hasDirectPermission($permission))
       return $this->apiErrorResponse('User does not have this permission assigned.');
 

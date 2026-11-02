@@ -41,7 +41,31 @@ Route::view('dashboard{any}', 'dashboard')
   ->name('dashboard');
 
 Route::get('files/{file}', function (File $file) {
-  return response()->file(Storage::disk('public')->path($file->path));
+  # Images (logos, screenshots, avatars) are public — the store shows them. Build
+  # artifacts are not: devices fetch them through the API-key protected OTA API and
+  # users through the domain-scoped store download, so the raw file is only served
+  # to dashboard staff (the version/bundle "url" links).
+  $isArtifact = str_starts_with($file->path, 'versions/') || str_starts_with($file->path, 'bundles/');
+
+  if ($isArtifact) {
+    $user = auth('sanctum')->user();
+
+    if (!$user || !in_array($user->role, ['super-admin', 'admin', 'developer'], true))
+      abort(404);
+  }
+
+  $path = Storage::disk('public')->path($file->path);
+
+  if (!is_file($path))
+    abort(404);
+
+  # Uploaded files may be SVG/HTML: never let them run script on this origin when
+  # opened directly. <img> rendering is unaffected.
+  return response()->file($path, [
+    'Content-Security-Policy' => "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+    'X-Content-Type-Options'  => 'nosniff',
+    ...$file->checksumHeaders(),
+  ]);
 })->name('files.show');
 
 
@@ -71,7 +95,7 @@ Route::prefix('api')->group(function () {
   });
 
   Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('auth.login');
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register')->middleware('auth:sanctum', 'ability:user.invite');
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -134,8 +158,8 @@ Route::prefix('api')->group(function () {
 
         Route::prefix('/role')->group(function () {
           Route::get('/', [RoleController::class, 'indexByUser'])->middleware('permission:role.view')->name('user.role.index');
-          Route::post('/{role}', [RoleController::class, 'attachToUser'])->middleware('permission:role.attach')->name('user.role.attach');
-          Route::delete('/{role}', [RoleController::class, 'detachFromUser'])->middleware('permission:role.detach')->name('user.role.detach')->whereNumber('role');
+          Route::post('/{role}', [RoleController::class, 'attachRoleToUser'])->middleware('permission:role.attach')->name('user.role.attach');
+          Route::delete('/{role}', [RoleController::class, 'detachRoleFromUser'])->middleware('permission:role.detach')->name('user.role.detach')->whereNumber('role');
         });
 
         Route::prefix('/permission')->whereNumber('permission')->group(function () {

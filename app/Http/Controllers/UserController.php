@@ -26,8 +26,14 @@ class UserController extends Controller
     ]);
   }
 
-  public function destroy(User $user)
+  public function destroy(Request $request, User $user)
   {
+    if ((int) $request->user()->id === (int) $user->id)
+      return $this->apiErrorResponse('You cannot delete your own account.');
+
+    if (!self::mayManageSecurityOf($request->user(), $user))
+      return $this->apiErrorResponse('Only a super-admin can delete a super-admin.', [], 403);
+
     $user->delete();
 
     return $this->apiSuccessResponse('User deleted successfully');
@@ -56,7 +62,7 @@ class UserController extends Controller
       $user->domains()->attach($request->domain_id);
 
     $code = strtoupper(Str::random(8));
-    $token = $user->createToken('register', ['user.invite'], ['code' => $code]);
+    $token = $user->createToken('register', ['user.invite'], ['code' => $code], now()->addDays(7));
 
     $link = route('register', [
       'token' => $token->plainTextToken,

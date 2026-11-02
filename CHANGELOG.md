@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **File checksums.** Every stored file now records the SHA-256 of its content, calculated automatically
+  when the file is created. The migration also calculates it for all existing files. Devices get it in the
+  OTA update check (`availableUpdates.version.checksum` / `availableUpdates.bundle.checksum`) and every
+  download sends it as the `X-Checksum-SHA256` header, so clients can verify a download.
+
+### Security
+
+- **Version API keys and file paths leaked to every user.** The role check in the models' `toArray()`
+  (`$user?->role || 'user'`) always evaluated to `true`, which matched the `super-admin` case, so any user
+  with `version.view` received every version's `api_key` and installer URL. It is now `?? 'user'`.
+  **Rotate the API keys of every app if an earlier version was deployed.**
+- **Passwords and tokens were written to the logs.** LDAP logins logged the full credentials (including the
+  password) and every authenticated request logged its token. Both log lines are removed.
+- **Build artifacts were downloadable without login** through `GET /files/{name}`. Version and bundle files
+  are now served only to developers, admins and super-admins; images stay public. Every file response is
+  sandboxed (CSP + `nosniff`) so an uploaded SVG cannot run script on the site.
+- **An admin could make themselves super-admin.** Only a super-admin can now grant or remove the
+  `super-admin` role, change its permissions, or modify/delete a super-admin. Nobody can delete their own
+  account.
+- **Any user could edit anyone's review.** Editing another user's review now needs `review.moderate`, and a
+  review must belong to the app in the URL.
+- **Login tokens** are no longer accepted from the `?token=` query string (except the store APK download)
+  and now expire after 30 days (`SANCTUM_EXPIRATION`); invite links expire after 7 days.
+- **Login is rate-limited** (5 attempts/min per login and IP), CSRF protection is restored on profile
+  update and logout, list endpoints cap `pageSize` at 500, and OTA checks for an unknown app no longer
+  register a device.
+
+### Fixed
+
+- `POST/DELETE /api/user/{user}/role/{role}` returned 500 (arguments passed to the controller in the wrong
+  order).
+
 ## [1.6.4] - 2026-11-02
 
 ### Fixed
@@ -326,6 +362,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the device-facing OTA client API, statistics, and the admin dashboard.
 
 [1.6.3]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.2...v1.6.3
+[Unreleased]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.4...HEAD
 [1.6.4]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.3...v1.6.4
 [1.5.2]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.0...v1.5.1

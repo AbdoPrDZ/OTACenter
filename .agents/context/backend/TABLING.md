@@ -42,7 +42,7 @@ Model::tablingCollect(
 | Param | Rule | Notes |
 |-------|------|-------|
 | `page` | `required\|integer\|min:1` | defaults to `1` via `mergeIfMissing` |
-| `pageSize` | `nullable\|integer\|min:5` | default: **total row count** (`$static->count()`) — effectively returns all rows |
+| `pageSize` | `nullable\|integer\|min:5\|max:500` | default: total row count, capped at `TABLING_MAX_PAGE_SIZE` (500) |
 | `search` | `nullable\|string` | `LIKE %search%` across **every filterable field** (OR'd) |
 | `sort` | `nullable\|array` of `{ field: asc\|desc }` | only fields in sortable list |
 | `filter` | `nullable\|array` of `{ field: string }` | `LIKE %value%` OR'd per field (only if **no** `search`) |
@@ -57,7 +57,7 @@ On validation failure → `Controller::apiInvalidValuesResponse($validation->err
 4. Search/filter — wraps in `where(function ($q) {...})` OR'ing `LIKE %…%` across filterable columns.
    - Logs debug lines (`\Log::info`) on every filter/search — noisy in production logs.
 5. `select($selects ?? "<table>.*")`, then applies `selectRaw` aliases.
-6. Paginate with `pageSize` (default all rows) and `page`.
+6. Paginate with `pageSize` (default all rows, at most 500) and `page`.
 7. `$paginate->getCollection()->load($load)` eager-loads relations on the page's items.
 8. Optional `$map` transforms each item (used e.g. to compute the logo URL or the current version).
 9. Returns via `Controller::apiSuccessResponse("Items retrieved successfully", [...])`.
@@ -70,15 +70,14 @@ On validation failure → `Controller::apiInvalidValuesResponse($validation->err
   "items": [...],
   "itemsCount": 12,
   "pagesCount": 2,
-  "page": 1,
-  "query": "select ... (raw SQL)"
+  "page": 1
 }
 ```
-> `query` is the raw SQL string — a debug leftover. The frontend `Request` wrapper reads `items`,
-> `itemsCount`, `pagesCount`, `page`. Consider removing `query` before production.
+> The old raw-SQL `query` field has been removed. The frontend `Request` wrapper reads `items`,
+> `itemsCount`, `pagesCount`, `page`.
 
 ## Gotchas
-- `pageSize` has no upper bound and defaults to the total count — huge lists are fully returned.
+- `pageSize` is capped at 500 (`TABLING_MAX_PAGE_SIZE`); a larger value fails validation (400).
 - Filter uses `orWhere` inside the wrapper — combined with joins this can duplicate rows (no `groupBy`).
 - Joining relations assumes the relation method exists and that the derived join columns are correct;
   pass explicit `$joins` when they aren't.

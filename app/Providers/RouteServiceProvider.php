@@ -27,5 +27,16 @@ class RouteServiceProvider extends ServiceProvider
     RateLimiter::for('api', function (Request $request) {
       return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
     });
+
+    # Slows down password guessing (local passwords) and stops a caller from locking
+    # out LDAP accounts by hammering them with failed binds.
+    RateLimiter::for('login', function (Request $request) {
+      $login = mb_strtolower((string) $request->input('login'));
+
+      return [
+        Limit::perMinute(5)->by('login:' . $login . '|' . $request->ip()),
+        Limit::perMinute(20)->by('login-ip:' . $request->ip()),
+      ];
+    });
   }
 }

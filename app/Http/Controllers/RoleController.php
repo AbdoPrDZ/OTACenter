@@ -48,6 +48,9 @@ class RoleController extends Controller
 
   public function attachToUser(Request $request, Role $role, User $user)
   {
+    if (!self::mayManageSecurityOf($request->user(), $role) || !self::mayManageSecurityOf($request->user(), $user))
+      return $this->apiErrorResponse("Only a super-admin can manage super-admin access.", [], 403);
+
     if ($user->roles()->where('roles.id', $role->id)->exists()) {
       return $this->apiErrorResponse("User already attached to this role.");
     }
@@ -57,8 +60,23 @@ class RoleController extends Controller
     return $this->apiSuccessResponse("Role attached to user successfully.");
   }
 
+  /** `POST /user/{user}/role/{role}` — same as attachToUser, route params in user-first order. */
+  public function attachRoleToUser(Request $request, User $user, Role $role)
+  {
+    return $this->attachToUser($request, $role, $user);
+  }
+
+  /** `DELETE /user/{user}/role/{role}` — same as detachFromUser, route params in user-first order. */
+  public function detachRoleFromUser(Request $request, User $user, Role $role)
+  {
+    return $this->detachFromUser($request, $role, $user);
+  }
+
   public function detachFromUser(Request $request, Role $role, User $user)
   {
+    if (!self::mayManageSecurityOf($request->user(), $role) || !self::mayManageSecurityOf($request->user(), $user))
+      return $this->apiErrorResponse("Only a super-admin can manage super-admin access.", [], 403);
+
     if (!$user->roles()->where('roles.id', $role->id)->exists()) {
       return $this->apiErrorResponse("User does not have this role attached.");
     }

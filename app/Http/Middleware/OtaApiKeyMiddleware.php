@@ -37,12 +37,40 @@ class OtaApiKeyMiddleware
 
     $expected = $this->expectedKey($request);
 
-    if ($expected !== null && !self::matches($expected, $provided))
+    # Nothing to check the key against (unknown package / version): reject here,
+    # before DeviceMiddleware would register a device for an unauthorized caller.
+    if ($expected === null)
+      return $this->unresolvedResponse($request);
+
+    if (!self::matches($expected, $provided))
       return Controller::apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
 
     $request->attributes->set('api_key', $provided);
 
     return $next($request);
+  }
+
+  /**
+   * The same errors the controller gives, so clients see no change in messages.
+   */
+  private function unresolvedResponse(Request $request): Response
+  {
+    # A version/bundle route whose artifact has no usable key never authorizes.
+    if ($request->route('version') !== null || $request->route('bundle') !== null)
+      return Controller::apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
+
+    $package = $request->input('package');
+    $name    = $request->input('version');
+
+    $errors = [];
+    if (!is_string($package) || $package === '') $errors['package'] = 'The package field is required.';
+    if (!is_string($name) || $name === '') $errors['version'] = 'The version field is required.';
+    if ($errors) return Controller::apiInvalidValuesResponse($errors);
+
+    if (!App::where('package_name', $package)->exists())
+      return Controller::apiSingleErrorResponse('package', 'Invalid package name');
+
+    return Controller::apiSingleErrorResponse('version', 'Invalid version');
   }
 
   /**

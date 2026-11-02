@@ -85,6 +85,15 @@ Every protected route carries a `permission:{name}` middleware (see `AUTH-LDAP.m
 - `GET files/{file}` → `File` route-model-bound by string PK `name`, streams
   `Storage::disk('public')->path($file->path)` via `response()->file(...)`. This is the URL produced by
   `File::getUrlAttribute()` (`{host}/files/{name}`).
+  - Images are public (the store needs logos/screenshots). **Build artifacts** (`path` under `versions/` or
+    `bundles/`) are served only to a `super-admin`/`admin`/`developer` (session or bearer, via
+    `auth('sanctum')`), otherwise **404** — devices use the API-key OTA routes, users the store download.
+  - Every response carries `Content-Security-Policy: … sandbox` + `X-Content-Type-Options: nosniff`, so an
+    uploaded SVG/HTML file cannot run script on this origin when opened directly.
+- `POST /api/auth/login` is throttled by the `login` limiter (`RouteServiceProvider`): 5/min per
+  login+IP, 20/min per IP → 429.
+- `POST/DELETE /user/{user}/role/{role}` use `RoleController::attachRoleToUser`/`detachRoleFromUser`
+  (user-first argument order); `/role/{role}/user/{user}` use `attachToUser`/`detachFromUser`.
 
 > There is **no Inertia** in use — `HandleInertiaRequests` is leftover scaffold and not registered in the
 > web middleware group. The Blade views are plain entry points that boot React.

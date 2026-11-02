@@ -65,5 +65,10 @@ Every test:
 - Tests share one Postgres DB (`TEST-OTCenter`, from `phpunit.xml`; it must already exist) and every
   test runs `migrate:fresh`, so **never run two test processes at once** — they drop each other's
   tables (`relation "migrations" does not exist`, `relation "cache" already exists`).
-- Current status: `tests/Feature/Rbac` **87 passed** (2026-11-02).
+- `tests/Feature/Rbac/SecurityRegressionTest` — one test per hole closed in the 2026-11 security review
+  (role-hidden `api_key`, private build artifacts on `/files`, super-admin protection, self-delete,
+  review ownership, no `?token=`, login throttle, `pageSize` cap, no device registration for an unknown
+  package). Tests that act as several users call `$this->app['auth']->forgetGuards()` between requests
+  (helper `actingWith()`), otherwise the guard keeps the first user.
+- Current status: full suite **166 passed** (2026-11-02).
 

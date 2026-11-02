@@ -18,9 +18,10 @@ class VerifyCsrfToken extends Middleware
    */
   protected $except = [
     'api/auth/login',
-    'api/auth/logout',
     'api/auth/register',
-    'api/auth/profile',
+    # `logout` and `profile` are NOT exempt: they also accept the session cookie,
+    # so exempting them allowed cross-site logout / profile changes. Bearer-token
+    # clients pass anyway through tokensMatch() below.
   ];
 
   /**

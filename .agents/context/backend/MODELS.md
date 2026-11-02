@@ -77,7 +77,16 @@ Conventions used across models:
   `BundleController::activate`), not a field on the bundle.
 
 ## `File` — table `files`
-`#[Fillable(['name', 'disk', 'path'])]`, `#[Hidden(['path', 'created_at', 'updated_at'])]`
+`#[Fillable(['name', 'disk', 'path', 'checksum'])]`, `#[Hidden(['path', 'created_at', 'updated_at'])]`
+- **`checksum`** (`string(64)`, nullable) = SHA-256 hex of the stored file. Set automatically in
+  `File::booted()` on `creating` (and on `updating` when `disk`/`path` change) via
+  `File::checksumOf($disk, $path)`, which streams the file with `hash_file`; `null` when the file isn't on
+  disk (e.g. test fixtures) or the disk doesn't exist. `refreshChecksum()` recomputes + saves.
+  Migration `2026_11_02_000001_add_checksum_to_files_table` adds the column and **backfills existing rows**
+  (self-contained, chunked; logs how many were calculated/skipped). Exposed as `checksum` in
+  `File::toArray()` (all roles), in `Version`/`Bundle` staff payloads, as `availableUpdates.*.checksum` in
+  the OTA `/app/info` response, and as the `X-Checksum-SHA256` header (`checksumHeaders()`) on every
+  download (`/files/{name}`, OTA update routes, store + public store downloads).
 - **Non-incrementing string PK**: `$primaryKey = 'name'`, `$keyType = 'string'`, `$incrementing = false`.
   All `*_id` FKs pointing to files actually reference the `name` string.
 - `$appends` → `url` = `{host}/files/{name}` (served via the `files.show` web route, see ROUTES.md).

@@ -104,7 +104,8 @@ class ReviewController extends Controller
 
   public function update(Request $request, App $app, Review $review)
   {
-    if (!$this->mayManage($request, $review, 'review.update'))
+    # Anyone may edit their own review; editing someone else's is moderation.
+    if (!$this->mayManage($request, $app, $review, 'review.moderate'))
       return $this->apiErrorResponse("Forbidden", [], 403);
 
     $validator = Validator::make($request->all(), Review::validationRules(ValidationType::Update, $review));
@@ -121,7 +122,7 @@ class ReviewController extends Controller
 
   public function destroy(Request $request, App $app, Review $review)
   {
-    if (!$this->mayManage($request, $review, 'review.delete'))
+    if (!$this->mayManage($request, $app, $review, 'review.delete'))
       return $this->apiErrorResponse("Forbidden", [], 403);
 
     $review->delete();
@@ -132,6 +133,9 @@ class ReviewController extends Controller
   /** Approve or reject a review. */
   public function moderate(Request $request, App $app, Review $review)
   {
+    if ((int) $review->app_id !== (int) $app->id)
+      return $this->apiErrorResponse("Not found", [], 404);
+
     $validator = Validator::make($request->all(), ['status' => 'required|in:published,rejected']);
 
     if ($validator->fails())
@@ -152,10 +156,18 @@ class ReviewController extends Controller
   }
 
   /** The owner may always manage their own review; others need the permission. */
-  private function mayManage(Request $request, Review $review, string $permission): bool
+  /**
+   * The review must belong to the app in the URL, and the caller must own it or
+   * hold the given permission. `review.update` is not enough on its own: every
+   * user holds it, so it only ever covers the caller's own review.
+   */
+  private function mayManage(Request $request, App $app, Review $review, string $permission): bool
   {
     $user = $request->user();
 
-    return $review->user_id === $user->id || $user->can($permission);
+    if ((int) $review->app_id !== (int) $app->id)
+      return false;
+
+    return (int) $review->user_id === (int) $user->id || $user->can($permission);
   }
 }

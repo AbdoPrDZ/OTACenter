@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Validator;
  */
 trait Tabling
 {
+  /** Largest page a list endpoint returns. */
+  public const TABLING_MAX_PAGE_SIZE = 500;
 
   /**
    * Get the fields that can be sorted
@@ -79,7 +81,8 @@ trait Tabling
 
     $rules = [
       'page'     => 'required|integer|min:1',
-      'pageSize' => 'nullable|integer|min:5',
+      # Capped so one request cannot dump a whole table (the dashboard uses ≤ 200).
+      'pageSize' => 'nullable|integer|min:5|max:' . self::TABLING_MAX_PAGE_SIZE,
       'search'   => 'nullable|string',
     ];
 
@@ -312,7 +315,7 @@ trait Tabling
 
     $paginate = $static->getPaginate(
       _this: $static,
-      pageSize: $request->pageSize ?? $static->count(),
+      pageSize: $request->pageSize ?? min($static->count(), self::TABLING_MAX_PAGE_SIZE),
       page: $request->page,
       query: $query,
     );

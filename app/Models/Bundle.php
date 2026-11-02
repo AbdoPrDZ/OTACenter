@@ -24,7 +24,7 @@ class Bundle extends Model
   public function toArray(): array
   {
     $user = request()->user();
-    $role = $user?->role || 'user';
+    $role = $user?->role ?? 'user';
 
     $data = [
       'id'         => $this->id,
@@ -44,6 +44,7 @@ class Bundle extends Model
           ...$data,
           'file_id'    => $this->file_id,
           'url'        => $this->file?->url,
+          'checksum'   => $this->file?->checksum,
           'updated_at' => $this->updated_at,
         ];
         break;

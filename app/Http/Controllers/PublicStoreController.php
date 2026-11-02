@@ -170,6 +170,7 @@ class PublicStoreController extends Controller
     return response()->download(
       Storage::disk('public')->path($file->path),
       "{$app->package_name}-{$version->name}.apk",
+      $file->checksumHeaders(),
     );
   }
 

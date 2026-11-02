@@ -86,6 +86,8 @@ class AppController extends Controller
           'id' => $app->latest_id,
           'name' => $latest->name,
           'updateType' => $latest->update_type,
+          # SHA-256 of the installer, to verify the download (null if unknown).
+          'checksum' => $latest->file?->checksum,
         ];
       }
     }
@@ -99,6 +101,7 @@ class AppController extends Controller
           'id'   => $version->latest_id,
           'name' => $latestBundle->name,
           'updateType' => $latestBundle->update_type,
+          'checksum' => $latestBundle->file?->checksum,
         ];
       }
     }
@@ -222,6 +225,7 @@ class AppController extends Controller
 
     return response()->file(Storage::disk('public')->path($file->path), [
       'Content-Length' => Storage::disk('public')->size($file->path),
+      ...$file->checksumHeaders(),
     ]);
   }
 
@@ -253,6 +257,7 @@ class AppController extends Controller
 
     return response()->file(Storage::disk('public')->path($file->path), [
       'Content-Length' => Storage::disk('public')->size($file->path),
+      ...$file->checksumHeaders(),
     ]);
   }
 

@@ -79,7 +79,6 @@ class AuthController extends Controller
       $remember = $request->boolean('remember');
 
       // Attempt LDAP authentication
-      \Log::info('Attempting LDAP authentication with credentials: ' . json_encode($credentials));
       if (!Auth::attempt($credentials, $remember)) {
         \Log::warning('LDAP authentication failed for user: ' . $login);
         Log::record('auth.failed', "Failed login for {$login}", [], ['login' => $login]);

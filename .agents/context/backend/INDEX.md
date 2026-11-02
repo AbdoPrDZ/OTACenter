@@ -51,7 +51,11 @@ GET /api/app?page=1&pageSize=10&search=x&sort[name]=asc
   still pass `selects: ['domain.*']` on the aliased `domain` join table.
 - `FileAccessMiddleware` reads `config("file_access.apps.<slug>.auth")` but **no `config/file_access.php`
   exists** — the middleware always aborts unless that config is added.
-- `Tabling::tablingCollect()` returns a `query` field containing the raw SQL — debug leftover.
+- ⚠️ **Role-based field hiding:** each model's `toArray()` picks fields with
+  `$role = $user?->role ?? 'user'` then `switch ($role)`. It must be `??` — the old `|| 'user'` evaluated
+  to `true`, which matched `case 'super-admin'` and leaked `api_key`, file paths and URLs to every caller.
+- ⚠️ **Security model:** see the "Security hardening" section of AUTH-LDAP.md (super-admin protection,
+  token expiry/no URL tokens, login throttle, CSRF, private build artifacts on `/files`).
 - ⚠️ **OTA key fallback:** `OtaApiKeyMiddleware::expectedKey()` accepts, for `/app/info`, the key of the
   reported `version` **or** `app.latest`'s key when that version is not a row of the app (`Version` has no
   `SoftDeletes`, so a deleted version's key is gone). Only the current key can authorize an unlisted build,

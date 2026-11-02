@@ -148,7 +148,7 @@ class StoreController extends Controller
     return response()->download(
       Storage::disk('public')->path($file->path),
       "{$app->package_name}-{$version->name}.apk",
-      ['Content-Length' => Storage::disk('public')->size($file->path)],
+      ['Content-Length' => Storage::disk('public')->size($file->path), ...$file->checksumHeaders()],
     );
   }
 

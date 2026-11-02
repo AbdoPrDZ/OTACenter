@@ -87,7 +87,7 @@ class User extends Authenticatable implements LdapAuthenticatable
   public function toArray(): array
   {
     $user = request()->user();
-    $role = $user?->role || 'user';
+    $role = $user?->role ?? 'user';
 
     $data = [
       'id'         => $this->id,
