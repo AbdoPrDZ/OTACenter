@@ -139,10 +139,27 @@ Empty pivot model (`device_id`, `app_id`, `version_id`, `bundle_id`, timestamps)
 declared — used via `Device::apps()`.
 
 ## `DownloadHistory` — table `download_histories` (plain `Model`)
-`#[Fillable(['device_id', 'user_id', 'target_id', 'target_type'])]` — a download/install audit trail.
-- **Relations**: `device()` → `belongsTo(Device)`; `user()` → `belongsTo(User)`; `target()` →
-  `morphTo('target', 'target_type', 'target_id')` (polymorphic — currently `Version` or `Bundle`).
-- Written by `VersionController::download` / `BundleController::download` (authenticated users).
+`#[Fillable(['device_id', 'user_id', 'download_link_id', 'target_id', 'target_type'])]` — a download/install audit trail.
+- **Relations**: `device()` → `belongsTo(Device)`; `user()` → `belongsTo(User)`; `downloadLink()` →
+  `belongsTo(DownloadLink)`; `target()` → `morphTo('target', 'target_type', 'target_id')` (polymorphic —
+  currently `Version` or `Bundle`).
+- Written by the OTA update routes (device), the store / public store downloads, and
+  `DownloadLinkController::download`. `user_id` = who the download counts for: the **token's user** when
+  it came through a download link (`download_link_id` set), the signed-in user for store downloads, else
+  `null` (anonymous). Statistics split on `download_link_id` ("with token" / "without token").
+
+## `DownloadLink` — table `download_links` (plain `Model` + `Tabling`)
+`#[Fillable(['app_id', 'user_id', 'created_by', 'label', 'token_hash', 'token', 'expires_at', 'revoked_at', 'last_used_at'])]`,
+`#[Hidden(['token', 'token_hash'])]` — a shareable download link (URL + QR code) for an app.
+- `user_id` = who downloads are counted for; `created_by` = who generated it. `token` is cast
+  **`encrypted`** (so the dashboard can show the link/QR again); requests are matched on `token_hash`
+  (SHA-256) via `DownloadLink::findByToken()`. The plain token is never stored.
+- `generate($app, $user, $creator, $expiresAt, $label)` creates one (48-char random token).
+  `isActive()` = not revoked and not expired. `url()` = `route('apps.download', [app, token])` →
+  `/download/{app}?token=…`.
+- `toArray()` → `id, app_id, label, url, status (active|expired|revoked), user, creator,
+  downloads_count, expires_at, revoked_at, last_used_at, created_at`.
+- Revoking sets `revoked_at` (the row is kept so its downloads stay in the statistics).
 
 ## Pivot models (plain `Model` + `Tabling`)
 - `AppScreenshot` — table `app_screenshots`, `#[Fillable(['app_id', 'file_id'])]`; relations `app()`, `file()`.

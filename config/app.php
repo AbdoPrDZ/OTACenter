@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Contact E-mail
+    |--------------------------------------------------------------------------
+    |
+    | Shown on the public /contact page; the contact form opens a pre-filled
+    | e-mail to it. When empty, the form opens a GitHub issue instead.
+    |
+    */
+
+    'contact_email' => env('CONTACT_EMAIL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

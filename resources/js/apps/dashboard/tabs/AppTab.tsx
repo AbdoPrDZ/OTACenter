@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Image as ImageIcon, Link2, Plus, Trash2, Unlink, Upload } from "lucide-react";
+import { Image as ImageIcon, Link2, Plus, QrCode, Trash2, Unlink, Upload } from "lucide-react";
 
 import App, { IApp } from "@/models/App";
 import Version, { IVersion } from "@/models/Version";
@@ -13,6 +13,7 @@ import ImagePicker from "@/components/ImagePicker";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import ReviewsList from "@/components/ReviewsList";
+import DownloadLinkDialog from "@/components/DownloadLinkDialog";
 import ActivityList from "@/components/ActivityList";
 import { AppStats } from "@/components/StatisticsViews";
 
@@ -172,6 +173,7 @@ function AppShow({ appId }: { appId: number }) {
   const navigate = useNavigate();
   const [app, setApp] = useState<IApp>();
   const [reload, setReload] = useState(0);
+  const [linksOpen, setLinksOpen] = useState(false);
 
   const refresh = useCallback(() => setReload((value) => value + 1), []);
 
@@ -201,16 +203,27 @@ function AppShow({ appId }: { appId: number }) {
           )
         }
         actions={
-          can({ permission: "app.delete" }) ? (
-            <ConfirmDelete
-              title={`Delete ${app.name}?`}
-              description="This permanently deletes the app and all of its versions, bundles and screenshots."
-              onConfirm={() => App.delete(app.id)}
-              onDeleted={() => navigate("/dashboard/apps")}
-            />
-          ) : null
+          <>
+            {can({ permission: "app.download_link" }) ? (
+              <Button variant="outline" onClick={() => setLinksOpen(true)}>
+                <QrCode /> Download link
+              </Button>
+            ) : null}
+            {can({ permission: "app.delete" }) ? (
+              <ConfirmDelete
+                title={`Delete ${app.name}?`}
+                description="This permanently deletes the app and all of its versions, bundles and screenshots."
+                onConfirm={() => App.delete(app.id)}
+                onDeleted={() => navigate("/dashboard/apps")}
+              />
+            ) : null}
+          </>
         }
       />
+
+      {can({ permission: "app.download_link" }) ? (
+        <DownloadLinkDialog app={app} open={linksOpen} onOpenChange={setLinksOpen} />
+      ) : null}
 
       <Tabs defaultValue="details">
         <TabsList>

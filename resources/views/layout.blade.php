@@ -9,6 +9,8 @@
   <meta name="theme-color" content="#0f1020">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="contact-email" content="{{ config('app.contact_email') }}">
+  <meta name="author" content="AbdoPrDZ">
 
   <title>{{ $title }}</title>
 

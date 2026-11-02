@@ -120,7 +120,7 @@ export function TabsContent({
     <div
       role="tabpanel"
       data-slot="tabs-content"
-      className={cn("animate-fade-in", className)}
+      className={cn("animate-page-in", className)}
       {...props}
     >
       {children}

@@ -15,6 +15,17 @@ export interface IStoreApp {
   domains: { id: number; name: string }[];
   version: string | null;
   updated_at: string | null;
+  rating_avg?: number | null;
+  rating_count?: number;
+}
+
+export interface IStoreReview {
+  id: number;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  user: { name: string; image_url: string | null } | null;
+  created_at: string | null;
 }
 
 export interface IStoreVersion {
@@ -29,6 +40,7 @@ export interface IStoreAppDetail extends IStoreApp {
   description: string | null;
   screenshots: string[];
   versions: IStoreVersion[];
+  reviews?: IStoreReview[];
   download_url: string;
 }
 

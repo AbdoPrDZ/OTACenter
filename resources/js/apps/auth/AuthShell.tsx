@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import LogoMark from "@/components/Logo";
+import { AUTHOR_URL, copyrightNotice } from "@/components/site/site";
 
 const POINTS = [
   "Publish & version mobile and desktop apps",
@@ -18,7 +19,6 @@ export default function AuthShell({
   description: string;
   children: ReactNode;
 }) {
-  const year = new Date().getFullYear();
 
   return (
     <main className="flex min-h-dvh bg-background text-foreground">
@@ -53,7 +53,7 @@ export default function AuthShell({
         </div>
 
         <p className="relative text-xs text-muted-foreground">
-          © {year} OTACenter
+          OTACenter · <a href={AUTHOR_URL} target="_blank" rel="noreferrer" className="hover:text-foreground">{copyrightNotice()}</a>
         </p>
       </aside>
 

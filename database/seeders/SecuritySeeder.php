@@ -52,6 +52,7 @@ class SecuritySeeder extends Seeder
       'app.update'           => ['super-admin', 'admin'],
       'app.delete'           => ['super-admin', 'admin'],
       'app.publish'          => ['super-admin', 'admin'],
+      'app.download_link'    => ['super-admin', 'admin', 'developer'],
 
       'version.view'         => ['super-admin', 'admin', 'developer', 'user'],
       'version.create'       => ['super-admin', 'admin', 'developer'],

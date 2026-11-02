@@ -4,6 +4,7 @@ use App\Http\Controllers\AppController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\DownloadLinkController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PublicStoreController;
@@ -17,6 +18,8 @@ use App\Models\File;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
+Route::view('about', 'home', ['title' => 'About — OTACenter'])->name('about');
+Route::view('contact', 'home', ['title' => 'Contact — OTACenter'])->name('contact');
 
 Route::view('docs{any}', 'docs')
   ->where('any', '^(?!api|dashboard|auth|store).*')
@@ -40,11 +43,14 @@ Route::view('dashboard{any}', 'dashboard')
   ->middleware('auth:sanctum')
   ->name('dashboard');
 
+# Shareable download link (URL / QR code generated in the dashboard). `?token=` is
+# a DownloadLink token — not a login token — and attributes the download to its user.
+Route::get('download/{app}', [DownloadLinkController::class, 'download'])
+  ->whereNumber('app')
+  ->middleware('throttle:api')
+  ->name('apps.download');
+
 Route::get('files/{file}', function (File $file) {
-  # Images (logos, screenshots, avatars) are public — the store shows them. Build
-  # artifacts are not: devices fetch them through the API-key protected OTA API and
-  # users through the domain-scoped store download, so the raw file is only served
-  # to dashboard staff (the version/bundle "url" links).
   $isArtifact = str_starts_with($file->path, 'versions/') || str_starts_with($file->path, 'bundles/');
 
   if ($isArtifact) {
@@ -59,8 +65,6 @@ Route::get('files/{file}', function (File $file) {
   if (!is_file($path))
     abort(404);
 
-  # Uploaded files may be SVG/HTML: never let them run script on this origin when
-  # opened directly. <img> rendering is unaffected.
   return response()->file($path, [
     'Content-Security-Policy' => "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
     'X-Content-Type-Options'  => 'nosniff',
@@ -212,6 +216,12 @@ Route::prefix('api')->group(function () {
         });
 
         Route::get('/log', [LogController::class, 'indexByApp'])->middleware('permission:log.view')->name('app.log.index');
+
+        Route::prefix('/download-link')->middleware('permission:app.download_link')->group(function () {
+          Route::get('/', [DownloadLinkController::class, 'index'])->name('app.download_link.index');
+          Route::post('/', [DownloadLinkController::class, 'store'])->name('app.download_link.store');
+          Route::delete('/{link}', [DownloadLinkController::class, 'destroy'])->whereNumber('link')->name('app.download_link.destroy');
+        });
 
         Route::prefix('/version')->group(function () {
           Route::get('/', [VersionController::class, 'index'])->middleware('permission:version.view')->name('app.version.index');

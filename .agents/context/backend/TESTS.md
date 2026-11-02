@@ -70,5 +70,11 @@ Every test:
   review ownership, no `?token=`, login throttle, `pageSize` cap, no device registration for an unknown
   package). Tests that act as several users call `$this->app['auth']->forgetGuards()` between requests
   (helper `actingWith()`), otherwise the guard keeps the first user.
-- Current status: full suite **166 passed** (2026-11-02).
+- `FileChecksumTest` — checksum set on create / upload, `null` when the file is missing, migration
+  backfill (re-runs the migration's `down()`/`up()`), OTA `availableUpdates.*.checksum` + download header.
+- `DownloadLinkTest` — create (self / for another user needs `user.view` / plain user 403 / invalid
+  expiry), token download of a private app counted for the link's user, no-token download (private 404,
+  public anonymous), wrong-app / unknown / revoked / expired tokens, and statistics split with/without
+  token.
+- Current status: full suite **181 passed** (2026-11-02).
 

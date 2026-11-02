@@ -41,7 +41,7 @@ export default function Sidebar({
         )}
       >
         <SidebarBrand collapsed={collapsed} />
-        <div className="flex-1 overflow-y-auto px-2 py-3 scrollbar-thin">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto px-2 py-3 scrollbar-thin">
           <SidebarNav route={route} collapsed={collapsed} />
         </div>
         <SidebarFooter collapsed={collapsed} />

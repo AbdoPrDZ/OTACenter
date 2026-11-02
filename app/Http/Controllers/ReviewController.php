@@ -104,7 +104,6 @@ class ReviewController extends Controller
 
   public function update(Request $request, App $app, Review $review)
   {
-    # Anyone may edit their own review; editing someone else's is moderation.
     if (!$this->mayManage($request, $app, $review, 'review.moderate'))
       return $this->apiErrorResponse("Forbidden", [], 403);
 
@@ -156,11 +155,6 @@ class ReviewController extends Controller
   }
 
   /** The owner may always manage their own review; others need the permission. */
-  /**
-   * The review must belong to the app in the URL, and the caller must own it or
-   * hold the given permission. `review.update` is not enough on its own: every
-   * user holds it, so it only ever covers the caller's own review.
-   */
   private function mayManage(Request $request, App $app, Review $review, string $permission): bool
   {
     $user = $request->user();

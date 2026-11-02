@@ -59,7 +59,9 @@ Writes `data` (JSON), `abilities`, `expires_at`. Requires the custom `App\Models
   - role/permission: `*.view/attach/detach`
   - domain: `domain.view` (+ all super-admin/admin; view also developer/user), `domain.create/update/delete`,
     `domain.assign_user/unassign_user`, `domain.assign_app/unassign_app`
-  - app: `app.view` (also dev/user), `app.create/update/delete`, `app.publish`
+  - app: `app.view` (also dev/user), `app.create/update/delete`, `app.publish`, `app.download_link`
+    (super-admin/admin/developer; also created by the `create_download_links_table` migration for
+    existing installs)
   - version: `version.view` (also dev/user), `version.create/update` (also developer), `version.delete`,
     `version.publish`
   - bundle: `bundle.view` (also dev/user), `bundle.create/update` (also developer), `bundle.delete`,

@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Download links and QR codes.** The app page in the dashboard has a "Download link" button that
+  generates a link carrying a token, shown as a URL and a QR code (copy it or save the QR as PNG). A link
+  downloads the app's current published version for public and private apps alike, can expire (1 day to
+  1 year, or never) and can be revoked. Developers, admins and super-admins can create links (new
+  `app.download_link` permission); admins can choose which user a link counts for.
+- **Download counting by token.** Every download through a link is counted for the link's user; downloads
+  without a token are counted as anonymous (or for the signed-in user). App and user statistics now show
+  downloads split into "via link" and "without link", plus an app's top downloaders and active links.
+- **Redesigned dashboard home and statistics.** The home page has a new hero with quick actions, headline
+  tiles, a 30-day download chart (admins) and an apps list. The statistics page shows headline numbers, a
+  stacked downloads chart with hover details and a table view, top apps, status breakdowns for versions and
+  bundles, and coverage meters.
+- **Redesigned public store.** The catalogue has a new hero with a large search, collection filters,
+  richer app cards with ratings, loading skeletons and numbered pagination. App pages show the app's
+  colours in the header, an install card with a QR code for installing on a phone, a facts strip, a
+  swipeable screenshot strip, reviews and a release timeline.
+- **About and Contact pages** at `/about` and `/contact`. The contact form opens a pre-filled e-mail to
+  `CONTACT_EMAIL` when it is set, or a pre-filled GitHub issue otherwise. The site header and a new
+  multi-column footer link to both.
+- **Copyright © AbdoPrDZ** on the public site footer, the sign-in screen and every dashboard page, and a
+  GPL copyright notice in the README; `composer.json` / `package.json` list the author.
+- **Page and tab transitions.** Pages and tabs in the dashboard animate in when you switch between them
+  (disabled when the system asks for reduced motion).
+
+### Fixed
+
+- The collapsed sidebar showed a horizontal scrollbar, and its tooltips were clipped. Tooltips now render
+  above the page instead of inside the sidebar.
+
 ## [1.6.5] - 2026-11-02
 
 ### Added
@@ -362,6 +395,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the device-facing OTA client API, statistics, and the admin dashboard.
 
 [1.6.3]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.2...v1.6.3
+[Unreleased]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.5...HEAD
 [1.6.5]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.3...v1.6.4
 [1.5.2]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.5.1...v1.5.2

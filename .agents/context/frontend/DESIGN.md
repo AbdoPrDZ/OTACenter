@@ -56,4 +56,14 @@ Because these are semantic utilities, use `bg-background`, `text-foreground`, `b
 - `:focus-visible` draws a 2px `--ring` outline globally. Interactive primitives also use
   `focus-visible:ring-2 ring-ring/50`.
 - Modals/drawers portal to `document.body`, lock body scroll, and close on `Escape`/backdrop.
-- `prefers-reduced-motion` is not special-cased yet; animations are short and subtle.
+- **Page & tab transitions:** `Layout` keys the content wrapper by `location.pathname`, so every page
+  change remounts it with `animate-page-in` (fade + 10px rise) and scrolls `<main>` to the top;
+  `TabsContent` uses the same `animate-page-in`. Charts use `animate-grow-up` / `animate-grow-right`
+  (bars grow from their baseline); cards/tiles enter with `animate-slide-up` and staggered
+  `animationDelay`.
+- `prefers-reduced-motion: reduce` disables `page-in`, `grow-*`, `fade-in` and `slide-up`.
+- **Chart colours:** `--viz-link` / `--viz-direct` (`bg-viz-link`, `bg-viz-direct`) for the downloads
+  series, separate per theme and validated (CVD, normal vision, lightness band, ≥3:1 on `--card`);
+  status breakdowns use the reserved `success/warning/destructive` + muted for draft, always labelled.
+- **Tooltips** (`ui/tooltip.tsx`) render in a portal at fixed coordinates, so they are never clipped by
+  and never widen an overflow container (this is what made the collapsed sidebar scroll horizontally).

@@ -50,8 +50,6 @@ return [
     |
     */
 
-    # 30 days by default. Tokens used to never expire, so a leaked one stayed valid
-    # forever. Set SANCTUM_EXPIRATION (minutes) to change it, or to `null` to disable.
     'expiration' => env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*

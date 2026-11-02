@@ -5,6 +5,13 @@
   "description": "The skeleton application for the Laravel framework.",
   "keywords": ["laravel", "framework"],
   "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "AbdoPrDZ",
+      "homepage": "https://github.com/AbdoPrDZ",
+      "role": "Developer"
+    }
+  ],
   "require": {
     "php": "^8.3",
     "directorytree/ldaprecord-laravel": "^4.0",

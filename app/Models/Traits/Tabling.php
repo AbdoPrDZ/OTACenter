@@ -81,7 +81,6 @@ trait Tabling
 
     $rules = [
       'page'     => 'required|integer|min:1',
-      # Capped so one request cannot dump a whole table (the dashboard uses ≤ 200).
       'pageSize' => 'nullable|integer|min:5|max:' . self::TABLING_MAX_PAGE_SIZE,
       'search'   => 'nullable|string',
     ];

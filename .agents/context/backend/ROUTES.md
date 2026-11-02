@@ -90,6 +90,16 @@ Every protected route carries a `permission:{name}` middleware (see `AUTH-LDAP.m
     `auth('sanctum')`), otherwise **404** — devices use the API-key OTA routes, users the store download.
   - Every response carries `Content-Security-Policy: … sandbox` + `X-Content-Type-Options: nosniff`, so an
     uploaded SVG/HTML file cannot run script on this origin when opened directly.
+- **Download links** (`DownloadLinkController`):
+  - `GET download/{app}?token=…` (web, `throttle:api`, name `apps.download`) — the link a browser / QR
+    scan opens; downloads the app's current published version. With a token: the token is the grant
+    (public **and** private apps), counted for the link's user; wrong app / unknown token → 404,
+    revoked/expired → 410. Without a token: public apps only (else 404), counted for the signed-in user
+    or anonymous. Sends `X-Checksum-SHA256`.
+  - `GET|POST /api/app/{app}/download-link`, `DELETE /api/app/{app}/download-link/{link}` — list / create
+    / revoke, all behind `permission:app.download_link` (super-admin, admin, developer). `store` takes
+    `user_id` (default: caller; someone else needs `user.view`), `label`, `expires_in_days`
+    (1, 7, 30, 90, 365, or null = never).
 - `POST /api/auth/login` is throttled by the `login` limiter (`RouteServiceProvider`): 5/min per
   login+IP, 20/min per IP → 429.
 - `POST/DELETE /user/{user}/role/{role}` use `RoleController::attachRoleToUser`/`detachRoleFromUser`

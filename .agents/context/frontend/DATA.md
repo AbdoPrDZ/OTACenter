@@ -115,6 +115,11 @@ All are `createModel(name, fields, true)` (multipart-capable).
   `routes/web.php`, so the UI does not offer activation.)
 - **`AppScreenshot.ts`** — nested under app: `endpointFor`, `allForApp`, `store`, `destroy`,
   `getUrl(name)` → `/files/{name}`.
+- **`DownloadLink.ts`** — plain class (not `createModel`), nested under app: `endpointFor`, `allForApp`,
+  `create(appId, { user_id, label, expires_in_days })`, `revoke(appId, linkId)`; `IDownloadLink` and
+  `DOWNLOAD_LINK_EXPIRY_DAYS`. `Statistics.ts` `AppStatistics`/`UserStatistics` carry `downloads`
+  (`DownloadCounts`: `total`, `with_token`, `without_token`); apps also `top_downloaders` and
+  `download_links` (`total`, `active`).
 - **`Domain.ts`** — `getDataTableColumns`; `indexByApp/indexByUser`, `bindApp/unbindApp`,
   `bindUser/unbindUser`.
 - **`User.ts`** — auth-aware: `login`, `auth()` (sets cached `_currentUser`), `editProfile`, `logout`,

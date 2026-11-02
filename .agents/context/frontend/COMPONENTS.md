@@ -65,6 +65,19 @@ there is **no** shadcn/Base UI/Radix.
 - **`DomainTags.tsx`** — domain chips with optional `max` (overflow → `+N`).
 - **`StatisticsViews.tsx`** — `StatCard`, `StatusBreakdown`, and per-entity panels `UserStats`,
   `RoleStats`, `DomainStats`, `AppStats`, `VersionStats` (embedded as inner Statistics tabs).
+- **`charts.tsx`** — dependency-free charts following the dataviz specs: `DownloadsChart` (30-day
+  stacked columns, `viz-link` = via link / `viz-direct` = without, legend, hover tooltip, chart⇄table
+  toggle, bars grow from the baseline), `SegmentBar` (status breakdown in the reserved status colours +
+  labelled legend with counts/%), `Meter` (share of a whole), `RankList` (top-N with proportional bars),
+  `Legend`.
+- **`KpiTile.tsx`** — headline-number tile: tone-coloured icon chip, label, value (skeleton while
+  `undefined`), hint; with `onClick` it is a button that lifts on hover. Used by `HomeTab`/`StatisticsTab`.
+- **`DownloadLinkDialog.tsx`** — opened by the "Download link" button in the `AppTab` header (needs
+  `app.download_link`). Form: "count downloads for" user `SelectMenu` (only with `user.view`; defaults to
+  the current user), expiry `SelectMenu` (`DOWNLOAD_LINK_EXPIRY_DAYS` + never), optional label →
+  `DownloadLink.create`. Shows the selected link's QR code (`qrcode` npm package, `toDataURL`), URL with
+  copy, and "Save QR code" (PNG); below, every link of the app with status badge, download count, expiry,
+  last use, and show-QR / copy / revoke actions.
 - **`InviteDialog.tsx`** — invite form (`name`, `email`, role `SelectMenu`, optional domain `SelectMenu`)
   → `User.invite`, then shows the copyable registration link. Optional custom `trigger`.
 - **`RouteLoading.tsx`** / **`Forbidden.tsx`** / **`ErrorAndRedirect.tsx`** — lazy-route fallback,
@@ -159,3 +172,37 @@ lives in `app.css` and switches on `.dark`.
 
 > **MDX gotcha:** anything that looks like `{param}` or `<Tag>` in prose or table cells is parsed as an
 > expression/JSX. Wrap route paths such as `/api/app/{app}` in backticks, or escape the braces.
+
+## Public store (`apps/store/`)
+
+- **`StoreLayout`** — `SiteHeader` / `SiteFooter`; `<main>` is keyed by `location.pathname` with
+  `animate-page-in` and scrolls to the top on navigation.
+- **`StorePage`** — hero (gradient + masked grid, app/collection count, large search with clear button,
+  checksum note), horizontally scrollable collection `FilterPill`s, result count, skeleton cards while
+  loading, `StoreCard` grid (56px logo, rating `Stars`, version + collection chips, "Get" pill; lifts on
+  hover, staggered `animate-slide-up`), numbered pagination with gaps.
+- **`AppPage`** — hero with the blurred app logo as backdrop, 104px logo, `InstallCard` (Install button +
+  a QR code of `download_url` for installing on a phone), stats strip (rating, version, size, updated),
+  snap-scrolling screenshot strip, "About", reviews (avatar, stars, title, comment), and a "What's new"
+  release timeline; skeleton while loading.
+- **`Stars`** — read-only 5-star rating with proportional partial fill. **`AppLogo`** — logo or initial.
+- `api.ts` types include `rating_avg` / `rating_count` and `IStoreReview` (from the public endpoints).
+
+## About, Contact & copyright (`apps/home/`, `components/site/`)
+
+- The `home` Blade shell serves `/`, `/about` and `/contact` (`routes/web.php`, names `home`/`about`/
+  `contact`; `home.blade.php` accepts a `$title`). `apps/home/index.tsx` picks `HomePage`, `AboutPage` or
+  `ContactPage` from `window.location.pathname`.
+- **`AboutPage`** — hero, three pillars (Distribute / Control / Observe), principles, tech stack chips,
+  author card (`AbdoPrDZ`, GitHub avatar + links), license summary, contact CTA.
+- **`ContactPage`** — channel cards (e-mail when configured, bug report, docs, GitHub), FAQ
+  (`<details>`), and a validated form (topic radio, name, optional e-mail, subject, message). There is no
+  mail backend: with `CONTACT_EMAIL` set (`config('app.contact_email')`, exposed as
+  `<meta name="contact-email">` by `layout.blade.php`) it opens a pre-filled `mailto:`; otherwise a
+  pre-filled GitHub issue (`labels=bug|enhancement` by topic) in a new tab.
+- **`site/site.ts`** — `AUTHOR` (`AbdoPrDZ`), `AUTHOR_URL`, `REPO_URL`, `ISSUES_URL`, `RELEASES_URL`,
+  `LICENSE_NAME`/`LICENSE_URL`, `copyrightYears()` (`2026` or `2026–<now>`), `copyrightNotice()`
+  (`© 2026 AbdoPrDZ`), `contactEmail()`. Use these for any copyright/attribution text.
+- **Copyright** appears in `SiteFooter` (bottom bar + license link), the auth screen (`AuthShell`) and a
+  slim footer at the bottom of every dashboard page (`Layout`). `SiteHeader` links About/Contact (in a
+  "More" menu below `md`). `GithubIcon` is an inline GitHub mark (lucide no longer ships brand icons).

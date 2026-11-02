@@ -60,13 +60,11 @@ class RoleController extends Controller
     return $this->apiSuccessResponse("Role attached to user successfully.");
   }
 
-  /** `POST /user/{user}/role/{role}` — same as attachToUser, route params in user-first order. */
   public function attachRoleToUser(Request $request, User $user, Role $role)
   {
     return $this->attachToUser($request, $role, $user);
   }
 
-  /** `DELETE /user/{user}/role/{role}` — same as detachFromUser, route params in user-first order. */
   public function detachRoleFromUser(Request $request, User $user, Role $role)
   {
     return $this->detachFromUser($request, $role, $user);

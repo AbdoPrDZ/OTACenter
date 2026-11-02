@@ -37,8 +37,6 @@ class OtaApiKeyMiddleware
 
     $expected = $this->expectedKey($request);
 
-    # Nothing to check the key against (unknown package / version): reject here,
-    # before DeviceMiddleware would register a device for an unauthorized caller.
     if ($expected === null)
       return $this->unresolvedResponse($request);
 
@@ -50,12 +48,8 @@ class OtaApiKeyMiddleware
     return $next($request);
   }
 
-  /**
-   * The same errors the controller gives, so clients see no change in messages.
-   */
   private function unresolvedResponse(Request $request): Response
   {
-    # A version/bundle route whose artifact has no usable key never authorizes.
     if ($request->route('version') !== null || $request->route('bundle') !== null)
       return Controller::apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
 

@@ -2,6 +2,13 @@ import { Response } from "@/types/http";
 
 import Request from "@/utils/http";
 
+/** Downloads split by whether they came through a download-link token. */
+export interface DownloadCounts {
+  total: number;
+  with_token: number;
+  without_token: number;
+}
+
 export interface GeneralStatistics {
   users: { total: number; with_domains: number; without_domains: number };
   roles: { total: number };
@@ -18,6 +25,19 @@ export interface GeneralStatistics {
     without_bundles: number;
   };
   bundles: { total: number; by_status: Record<string, number> };
+  downloads: DownloadCounts & {
+    /** Last 30 days, oldest first. */
+    daily: DailyDownloads[];
+    top_apps: { id: number; name: string; logo_url: string | null; downloads: number }[];
+  };
+  download_links: { total: number; active: number };
+}
+
+export interface DailyDownloads {
+  /** `YYYY-MM-DD` */
+  date: string;
+  with_token: number;
+  without_token: number;
 }
 
 export interface UserStatistics {
@@ -27,6 +47,7 @@ export interface UserStatistics {
     domains: { id: number; name: string }[];
     roles_count: number;
     domains_count: number;
+    downloads: DownloadCounts;
   };
 }
 
@@ -68,6 +89,9 @@ export interface AppStatistics {
     versions_count: number;
     bundles_count: number;
     domains_count: number;
+    downloads: DownloadCounts;
+    top_downloaders: { id: number; name: string | null; login: string | null; downloads: number }[];
+    download_links: { total: number; active: number };
   };
 }
 

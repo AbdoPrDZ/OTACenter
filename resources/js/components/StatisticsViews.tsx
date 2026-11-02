@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Statistics, {
   AppStatistics,
   DomainStatistics,
+  DownloadCounts,
   RoleStatistics,
   UserStatistics,
   VersionStatistics,
@@ -144,6 +145,21 @@ function CardBlock({
   );
 }
 
+function downloadsHint(downloads?: DownloadCounts): string | undefined {
+  if (!downloads) return undefined;
+
+  return `${downloads.with_token.toLocaleString()} via link · ${downloads.without_token.toLocaleString()} without`;
+}
+
+function DownloadFigure({ label, value }: { label: string; value?: number }) {
+  return (
+    <div className="flex flex-col gap-0.5 rounded-lg border border-border bg-muted/20 px-2 py-3">
+      <span className="text-lg font-semibold tabular-nums">{(value ?? 0).toLocaleString()}</span>
+      <span className="text-[0.625rem] tracking-wide text-muted-foreground uppercase">{label}</span>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Entity statistics panels                                            */
 /* ------------------------------------------------------------------ */
@@ -164,6 +180,11 @@ export function UserStats({ userId }: { userId: number }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Roles" value={data.statistics.roles_count} />
         <StatCard label="Domains" value={data.statistics.domains_count} />
+        <StatCard
+          label="Downloads"
+          value={data.statistics.downloads?.total}
+          hint={downloadsHint(data.statistics.downloads)}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -273,6 +294,32 @@ export function AppStats({ appId }: { appId: number }) {
         <StatCard label="Versions" value={data.statistics.versions_count} />
         <StatCard label="Bundles" value={data.statistics.bundles_count} />
         <StatCard label="Domains" value={data.statistics.domains_count} />
+        <StatCard
+          label="Downloads"
+          value={data.statistics.downloads?.total}
+          hint={downloadsHint(data.statistics.downloads)}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <CardBlock title="Downloads" subtitle="Downloads through a download link are counted for the link's user.">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <DownloadFigure label="Via link" value={data.statistics.downloads?.with_token} />
+            <DownloadFigure label="Without link" value={data.statistics.downloads?.without_token} />
+            <DownloadFigure label="Active links" value={data.statistics.download_links?.active} />
+          </div>
+        </CardBlock>
+
+        <CardBlock title="Top downloaders">
+          <EntityList
+            items={(data.statistics.top_downloaders ?? []).map((user) => ({
+              id: user.id,
+              name: user.name ?? user.login ?? `User #${user.id}`,
+              extra: `${user.downloads.toLocaleString()} download${user.downloads === 1 ? "" : "s"}`,
+            }))}
+            emptyMessage="No downloads counted for a user yet."
+          />
+        </CardBlock>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

@@ -28,8 +28,6 @@ class RouteServiceProvider extends ServiceProvider
       return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
     });
 
-    # Slows down password guessing (local passwords) and stops a caller from locking
-    # out LDAP accounts by hammering them with failed binds.
     RateLimiter::for('login', function (Request $request) {
       $login = mb_strtolower((string) $request->input('login'));
 

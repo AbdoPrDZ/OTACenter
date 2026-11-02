@@ -13,10 +13,6 @@ use App\Models\Version;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/**
- * Regression tests for the 2026-11 security review. Each test pins one hole that
- * used to be open; see .agents/context/backend/TESTS.md.
- */
 class SecurityRegressionTest extends TestCase
 {
   /** Requests in one test switch users: drop the guard's cached user between them. */

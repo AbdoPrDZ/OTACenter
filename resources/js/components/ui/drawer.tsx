@@ -88,7 +88,7 @@ export function DrawerBody({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex-1 overflow-y-auto p-3", className)}
+      className={cn("flex-1 overflow-x-hidden overflow-y-auto p-3", className)}
       {...props}
     />
   );

@@ -1,11 +1,12 @@
-import { Outlet } from "react-router-dom";
-import { ReactNode, useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 import DashboardRouter from "@/apps/dashboard/router";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import Forbidden from "@/components/Forbidden";
 import { getRouteAccess } from "@/components/navigation";
+import { AUTHOR_URL, copyrightNotice } from "@/components/site/site";
 
 import { can } from "@/utils/permissions";
 
@@ -17,6 +18,12 @@ export default function Layout(props: { children?: ReactNode }) {
     () => localStorage.getItem(SIDEBAR_KEY) === "collapsed",
   );
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [location.pathname]);
 
   useEffect(() => {
     DashboardRouter.listen((_from, to) => setRoute(to));
@@ -46,8 +53,9 @@ export default function Layout(props: { children?: ReactNode }) {
           onOpenMobile={() => setMobileOpen(true)}
         />
 
-        <main className="relative flex-1 overflow-y-auto scrollbar-thin">
-          <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
+        <main ref={mainRef} className="relative flex flex-1 flex-col overflow-y-auto scrollbar-thin">
+          {/* Keyed by path: each page change remounts this wrapper and replays the enter animation. */}
+          <div key={location.pathname} className="mx-auto w-full max-w-7xl flex-1 animate-page-in p-4 md:p-6">
             {allowed ? (
               <>
                 {props.children}
@@ -57,6 +65,20 @@ export default function Layout(props: { children?: ReactNode }) {
               <Forbidden />
             )}
           </div>
+
+          <footer className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-4 text-[0.6875rem] text-muted-foreground md:px-6">
+            <span>
+              OTACenter ·{" "}
+              <a href={AUTHOR_URL} target="_blank" rel="noreferrer" className="font-medium hover:text-foreground">
+                {copyrightNotice()}
+              </a>
+            </span>
+            <nav className="flex items-center gap-4">
+              <a href="/about" className="hover:text-foreground">About</a>
+              <a href="/contact" className="hover:text-foreground">Contact</a>
+              <a href="/docs" className="hover:text-foreground">Docs</a>
+            </nav>
+          </footer>
         </main>
       </div>
     </div>

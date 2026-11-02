@@ -15,13 +15,6 @@ class Controller extends BaseController
 
   public const SUPER_ADMIN = 'super-admin';
 
-  /**
-   * Whether `$actor` may change the security of `$target` (a user or role).
-   *
-   * Admins hold role/permission/user management permissions, but only a
-   * super-admin may touch the super-admin role or a super-admin account —
-   * otherwise any admin could grant themselves super-admin.
-   */
   public static function mayManageSecurityOf($actor, $target): bool
   {
     if ($actor && $actor->hasRole(self::SUPER_ADMIN))
