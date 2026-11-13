@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] - 2026-11-13
+
+### Added
+
+- **Expo apps.** OTACenter now speaks the Expo Updates protocol v1, so apps built with `expo-updates` and
+  the [`expo-ota-client`](https://github.com/AbdoPrDZ/expo-ota-client) package receive over-the-air
+  updates on Android and iOS. A version has a **Client** (`client_type`): *React Native*
+  (`react-ota-client`, the default) or *Expo*. For Expo, the version name is the app's runtime version,
+  the APK is optional, and a bundle is a zip of `npx expo export`, which the server checks against the
+  runtime and stores as per-platform assets (`bundle_assets`; listed by `GET …/bundle/{bundle}/assets`).
+  Devices fetch `GET /ota-client/v1/expo/{package}/manifest` (multipart manifests, `noUpdateAvailable` and
+  `rollBackToEmbedded` directives) and the assets from temporary signed URLs. Manifests can be signed
+  (`OTA_EXPO_SIGNING_KEY`, `OTA_EXPO_SIGNING_KEY_ID`); `OTA_EXPO_ASSET_URL_TTL` sets the asset URL
+  lifetime.
+- **Demo releases.** A version or bundle can be published as a **demo**: only devices linked to users in
+  a domain with **Demo releases** (`allow_demo`) that is bound to the app receive it, until it is
+  **promoted** to everyone or withdrawn. When a public and a demo release both exist, a tester gets the
+  newer one. Works for both clients; offered updates carry `demo`; store pages and download links never
+  serve demos, and downloading an unpromoted demo without access returns 404. New routes:
+  `POST …/version/{version}/activate-demo` and `/promote`, `POST …/bundle/{bundle}/activate-demo` and
+  `/promote`, `DELETE …/version/demo` and `…/bundle/demo` (withdraw). The dashboard has **Activate**,
+  **Demo**, **Promote to public** and **Withdraw demo** actions and a **Demo release** box on uploads.
+- **Device linking.** A device is linked to a user with a one-time 8-character code from **Users → user →
+  Demo access** (new `device.link` permission for admins; `POST /api/auth/device-link-code` for your
+  own). The app redeems it at `POST /ota-client/v1/device/link`; `device/unlink` and `device/info`
+  complete the set. The tab lists a user's devices and can unlink them.
+- **Version activation from the API.** `POST /api/app/{app}/version/{version}/activate` makes a version
+  the app's public one.
+- Bundle uploads accept `.tar`, `.gz` and `.tgz` archives as well as `.zip`.
+- Documentation: a new **Expo SDK** section (setup, publishing, API) and a **Demo releases** guide; the
+  Server API, reference (routes, permissions, environment), concepts and getting-started pages cover
+  Expo, demos and device linking. Flow diagrams in the docs can now link to pages, and show their
+  subtitles.
+
+### Changed
+
+- The bare React Native client is now called **`react-ota-client`** (npm name since 1.5.0, formerly
+  `ota-client`); the docs, the dashboard and the README use the new name. The stored `client_type`
+  value is still `ota-client`.
+- `/app/info` and the downloads resolve the device's release through one resolver, shared with the Expo
+  manifest route.
+- The docs site loads each page on demand. The docs bundle no longer contains every page, which drops
+  it from about 956 kB to 41 kB and clears the build's chunk-size warning; only the page titles and
+  order are bundled up front (a small `?frontmatter` import handled in `vite.config.js`).
+
+### Fixed
+
+- The docs' "On this page" list kept the previous page's headings after navigating to another page from
+  the sidebar or a link, so its entries did nothing (for example on the Glossary). It now always lists
+  the open page's headings.
+- The docs said bundles could not be activated over HTTP; the route exists and is now documented.
+- The permissions reference was missing `app.publish`, `app.download_link`, `version.publish`,
+  `bundle.publish`, `screenshot.update`, `review.*` and `log.*`.
+
 ## [1.6.6] - 2026-11-02
 
 ### Added
@@ -395,6 +449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the device-facing OTA client API, statistics, and the admin dashboard.
 
 [1.6.3]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.2...v1.6.3
+[1.7.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.6...v1.7.0
 [1.6.6]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.5...v1.6.6
 [1.6.5]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.4...v1.6.5
 [1.6.4]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.3...v1.6.4
