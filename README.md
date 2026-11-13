@@ -339,8 +339,16 @@ docker compose --env-file .env.docker up -d --build
 **Data** lives in two volumes: `otacenter-storage` (uploaded APKs, bundles, images, logs) and
 `otacenter-db` (PostgreSQL). Back up both together. `docker compose down -v` deletes them.
 
-**Behind a reverse proxy:** the container serves plain HTTP on `APP_PORT`. Terminate TLS in your proxy
-(nginx, Caddy, Traefik…) and set `APP_URL` to the public `https://` address.
+**Behind a reverse proxy (HTTPS):** the container serves plain HTTP on `APP_PORT`. Terminate TLS in
+your proxy (nginx, Caddy, Traefik…) and set, in `.env.docker`:
+
+```dotenv
+APP_URL=https://ota.example.com   # the public https address: all links and assets are generated as https
+TRUSTED_PROXIES=*                 # trust the proxy's X-Forwarded-* headers (real client IPs)
+```
+
+Then recreate the containers. With an `http://` `APP_URL` behind an https proxy, pages load their
+scripts over the wrong scheme and the dashboard and docs fail to render.
 
 **Troubleshooting**
 

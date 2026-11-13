@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.7.1] - 2026-11-13
+
+### Fixed
+
+- **The docs crashed behind an HTTPS proxy** ("Unexpected Application Error … removeChild", after
+  "Expected component `Callout` to be defined"). The app generated `http://` asset URLs on `https://`
+  pages, so the browser loaded the docs script twice under two schemes; since 1.7.0 loads doc pages on
+  demand, the second copy broke React. When `APP_URL` is `https://`, every generated URL (assets,
+  download links, signed Expo asset URLs) is now https, even if the proxy's headers are not trusted.
+
+### Added
+
+- `TRUSTED_PROXIES` (`*` or a comma-separated list of proxy addresses) trusts a reverse proxy's
+  `X-Forwarded-*` headers, so client IPs and the request scheme are the real ones.
+
+### Changed
+
+- The Docker workflow runs on `ubuntu-24.04` instead of `ubuntu-latest`.
+
 ## [1.7.0] - 2026-11-13
 
 ### Added
@@ -449,6 +468,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the device-facing OTA client API, statistics, and the admin dashboard.
 
 [1.6.3]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.2...v1.6.3
+[1.7.1]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.6...v1.7.0
 [1.6.6]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.5...v1.6.6
 [1.6.5]: https://github.com/AbdoPrDZ/OTACenter/compare/v1.6.4...v1.6.5

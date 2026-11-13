@@ -19,6 +19,13 @@ return Application::configure(basePath: dirname(__DIR__))
     }
   )
   ->withMiddleware(function (Middleware $middleware): void {
+    // Reverse proxy in front of the app (TLS termination): `*` or a comma-separated
+    // list of proxy IPs/CIDRs. Lets Laravel read X-Forwarded-Proto/-For/-Host, so
+    // client IPs (rate limits) and the request scheme are the real ones.
+    if ($trusted = env('TRUSTED_PROXIES')) {
+      $middleware->trustProxies(at: $trusted === '*' ? '*' : array_map('trim', explode(',', $trusted)));
+    }
+
     $middleware->alias([
       'auth'               => \App\Http\Middleware\Authenticate::class,
       'auth.basic'         => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
