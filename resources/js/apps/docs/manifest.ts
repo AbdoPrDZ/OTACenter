@@ -1,17 +1,26 @@
 import type {
+  DocsFrontmatter,
   DocsGroupNode,
   DocsTreeNode,
   MdxModule,
 } from "@/types/docs";
 
 /**
- * Every MDX page under ./content, compiled at build time. The sidebar tree is
- * derived from the folder structure: each directory is a section, its
- * `index.mdx` is the section landing page, and further subfolders nest.
+ * Every MDX page under ./content. The sidebar tree is derived from the folder
+ * structure: each directory is a section, its `index.mdx` is the section
+ * landing page, and further subfolders nest.
+ *
+ * Only the frontmatter is bundled eagerly (`?frontmatter`, served by the
+ * `mdx-frontmatter-only` plugin in vite.config.js); each page body is its own
+ * chunk, loaded when the page is opened.
  */
-const pages = import.meta.glob("./content/**/*.mdx", {
+const frontmatters = import.meta.glob("./content/**/*.mdx", {
   eager: true,
-}) as Record<string, MdxModule>;
+  query: "?frontmatter",
+  import: "default",
+}) as Record<string, DocsFrontmatter>;
+
+const pages = import.meta.glob("./content/**/*.mdx") as Record<string, () => Promise<MdxModule>>;
 
 interface Entry {
   slug: string;
@@ -26,9 +35,9 @@ function humanize(value: string): string {
   return value.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-const entries: Entry[] = Object.entries(pages).map(([path, module]) => {
+const entries: Entry[] = Object.entries(frontmatters).map(([path, fm]) => {
   const slug = path.replace(/^\.\/content\//, "").replace(/\.mdx$/, "");
-  const frontmatter = module.frontmatter ?? {};
+  const frontmatter = fm ?? {};
   const isIndex = slug === "index" || slug.endsWith("/index");
   const slash = slug.lastIndexOf("/");
   const dir = isIndex ? slug.replace(/\/?index$/, "") : slash === -1 ? "" : slug.slice(0, slash);
@@ -144,8 +153,8 @@ export function loadDoc(slug: string): (() => Promise<MdxModule>) | undefined {
       : [`./content/${slug}.mdx`, `./content/${slug}/index.mdx`];
 
   for (const key of candidates) {
-    const module = pages[key];
-    if (module) return () => Promise.resolve(module);
+    const load = pages[key];
+    if (load) return load;
   }
 
   return undefined;

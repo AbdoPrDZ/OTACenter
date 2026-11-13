@@ -1,19 +1,23 @@
 ---
 title: Client SDK
-description: Add over-the-air updates to a React Native app with ota-client.
+description: Add over-the-air updates to a bare React Native app with react-ota-client.
 order: 1
 ---
 
-# Client SDK (`ota-client`)
+# Client SDK (`react-ota-client`)
 
-[`ota-client`](https://github.com/AbdoPrDZ/react-ota-client) adds over-the-air JavaScript bundle updates
-to a **React Native app on Android**. A device ships one JS bundle inside the APK; this package replaces it
-at runtime — no app store release, no new APK.
+[`react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client) adds over-the-air JavaScript bundle
+updates to a **bare React Native app on Android**. A device ships one JS bundle inside the APK; this package
+replaces it at runtime — no app store release, no new APK.
 
-<Callout type="info" title="Repository vs npm name">
-The GitHub repository is [`AbdoPrDZ/react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client) while
-the npm package is `ota-client`. They are not the same identifier — pin a tag or commit when installing
-from GitHub.
+<Callout type="info" title="Building with Expo?">
+Expo apps use a different client, [`expo-ota-client`](/expo-sdk), with Expo's own `expo-updates` as the
+engine (Android and iOS). Never install both in one app.
+</Callout>
+
+<Callout type="info" title="Renamed in 1.5.0">
+The npm package was called `ota-client` up to 1.4.x. When upgrading, change the dependency name and every
+`from "ota-client"` import to `react-ota-client`.
 </Callout>
 
 ## What you get
@@ -42,10 +46,10 @@ await OtaClient.downloadAndInstall();
 ## Follow in order
 
 <Flow>
-  <FlowStep title="1 · Install" subtitle="/client-sdk/install" />
-  <FlowStep title="2 · Provider" subtitle="/client-sdk/provider" tone="success" />
-  <FlowStep title="3 · Hooks" subtitle="/client-sdk/hooks" tone="warning" />
-  <FlowStep title="4 · CLI" subtitle="/client-sdk/cli" />
+  <FlowStep title="1 · Install" href="/client-sdk/install" />
+  <FlowStep title="2 · Provider" href="/client-sdk/provider" tone="success" />
+  <FlowStep title="3 · Hooks" href="/client-sdk/hooks" tone="warning" />
+  <FlowStep title="4 · CLI" href="/client-sdk/cli" />
 </Flow>
 
 Prefer no React? Go straight to the [Imperative API](/client-sdk/imperative). Need to tune behaviour?

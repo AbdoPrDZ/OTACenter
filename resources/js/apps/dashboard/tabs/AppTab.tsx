@@ -7,6 +7,7 @@ import App, { IApp } from "@/models/App";
 import Version, { IVersion } from "@/models/Version";
 import AppScreenshot, { IAppScreenshot } from "@/models/AppScreenshot";
 import Domain, { IDomain } from "@/models/Domain";
+import { ReleaseBadge, ReleaseRowActions, releaseState, useReleaseAction } from "@/components/ReleaseControls";
 import ModelDataTable from "@/components/ModelDataTable";
 import PageHeader from "@/components/PageHeader";
 import ImagePicker from "@/components/ImagePicker";
@@ -20,7 +21,6 @@ import { AppStats } from "@/components/StatisticsViews";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Input, Textarea } from "@/components/ui/form";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/form";
 import { SelectMenu, MultiSelect } from "@/components/ui/select-menu";
@@ -247,7 +247,13 @@ function AppShow({ appId }: { appId: number }) {
 
             <ScreenshotsSection appId={appId} reload={reload} onChanged={refresh} />
 
-            <VersionsSection appId={appId} latestId={app.latest_id ?? null} />
+            <VersionsSection
+              appId={appId}
+              latestId={app.latest_id ?? null}
+              demoLatestId={app.demo_latest_id ?? null}
+              reload={reload}
+              onChanged={refresh}
+            />
 
             <DomainsSection appId={appId} reload={reload} onChanged={refresh} />
           </div>
@@ -534,8 +540,21 @@ function ScreenshotsSection({
 /* Versions                                                           */
 /* ------------------------------------------------------------------ */
 
-function VersionsSection({ appId, latestId }: { appId: number; latestId: number | null }) {
+function VersionsSection({
+  appId,
+  latestId,
+  demoLatestId,
+  reload,
+  onChanged,
+}: {
+  appId: number;
+  latestId: number | null;
+  demoLatestId: number | null;
+  reload: number;
+  onChanged: () => void;
+}) {
   const navigate = useNavigate();
+  const { running, run } = useReleaseAction(onChanged);
 
   const columns = useMemo<DataTableColumn<IVersion>[]>(
     () => [
@@ -547,15 +566,16 @@ function VersionsSection({ appId, latestId }: { appId: number; latestId: number 
         headerName: "Status",
         flex: 0.6,
         minWidth: 110,
-        renderCell: ({ row }) =>
-          latestId === row.id ? (
-            <Badge variant="primary">Latest</Badge>
-          ) : (
-            <Badge variant="outline">{row.status}</Badge>
-          ),
+        renderCell: ({ row }) => (
+          <ReleaseBadge
+            state={releaseState(row.id, latestId, demoLatestId)}
+            isDemo={row.is_demo}
+            fallback={row.status}
+          />
+        ),
       },
     ],
-    [latestId],
+    [latestId, demoLatestId],
   );
 
   return (
@@ -563,14 +583,26 @@ function VersionsSection({ appId, latestId }: { appId: number; latestId: number 
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Versions</CardTitle>
-          {can({ permission: "version.create" }) ? (
-            <Button
-              size="sm"
-              onClick={() => navigate(`/dashboard/apps/${appId}/versions/add`)}
-            >
-              <Plus /> Add version
-            </Button>
-          ) : null}
+          <div className="flex gap-2">
+            {demoLatestId && can({ permission: "version.publish" }) ? (
+              <Button
+                size="sm"
+                variant="outline"
+                loading={running === "withdraw"}
+                onClick={() => run("withdraw", () => Version.withdrawDemo(appId), "Demo version withdrawn")}
+              >
+                Withdraw demo
+              </Button>
+            ) : null}
+            {can({ permission: "version.create" }) ? (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/dashboard/apps/${appId}/versions/add`)}
+              >
+                <Plus /> Add version
+              </Button>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -578,8 +610,24 @@ function VersionsSection({ appId, latestId }: { appId: number; latestId: number 
           model={Version}
           url={Version.endpointFor(appId)}
           columns={columns}
+          requestKey={reload}
           enableSearch={false}
           onRowClick={(row) => navigate(`/dashboard/apps/${appId}/versions/${row.id}`)}
+          actions={
+            can({ permission: "version.publish" })
+              ? (row) => (
+                  <ReleaseRowActions
+                    rowKey={String(row.id)}
+                    state={releaseState(row.id, latestId, demoLatestId)}
+                    isDemo={row.is_demo}
+                    running={running}
+                    onPublish={() => run(`${row.id}:publish`, () => Version.activate(appId, row.id), `${row.name} is now the public version`)}
+                    onDemo={() => run(`${row.id}:demo`, () => Version.activateDemo(appId, row.id), `${row.name} is live as a demo`)}
+                    onPromote={() => run(`${row.id}:promote`, () => Version.promote(appId, row.id), `${row.name} promoted to public`)}
+                  />
+                )
+              : undefined
+          }
         />
       </CardContent>
     </Card>

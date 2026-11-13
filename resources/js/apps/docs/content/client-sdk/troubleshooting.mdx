@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Common ota-client problems and how to fix them.
+description: Common react-ota-client problems and how to fix them.
 order: 8
 ---
 
@@ -14,7 +14,7 @@ order: 8
 <Step title="Confirm autolinking">
 
 ```bash
-npx react-native config | grep ota-client
+npx react-native config | grep react-ota-client
 ```
 
 </Step>
@@ -53,7 +53,7 @@ are certain, pass `--force` to `release` — but an incompatible bundle can misb
 ## Checksum / size verification fails
 
 The downloaded archive is corrupt or truncated. Retry; if it persists, re-upload the bundle (build it
-again with `ota-client release`).
+again with `react-ota-client release`).
 
 ## The update installed but reverted
 

@@ -6,7 +6,9 @@ order: 5
 
 # Bundles
 
-A bundle is the ZIP artifact (JS bundle + `manifest.json`) that devices download.
+A bundle is the archive devices download. For a `react-ota-client` version it is the JS bundle +
+`manifest.json` (`.zip`, `.tar`, `.gz` or `.tgz`). For an `expo` version it is a `.zip` of
+`npx expo export`, which the server unpacks into per-platform **assets** at upload.
 
 ## Endpoints
 
@@ -17,34 +19,55 @@ A bundle is the ZIP artifact (JS bundle + `manifest.json`) that devices download
 | `GET` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.view` |
 | `PUT` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.update` |
 | `DELETE` | `/api/app/{app}/version/{version}/bundle/{bundle}` | `bundle.delete` |
+| `POST` | `…/bundle/{bundle}/activate` | `bundle.publish` |
+| `POST` | `…/bundle/{bundle}/activate-demo` | `bundle.publish` |
+| `POST` | `…/bundle/{bundle}/promote` | `bundle.publish` |
+| `DELETE` | `…/version/{version}/bundle/demo` | `bundle.publish` |
+| `GET` | `…/bundle/{bundle}/assets` | `bundle.view` |
+
+## Publishing
+
+- **`activate`** makes the bundle the version's public one (`versions.latest_id`): every device on that
+  version receives it.
+- **`activate-demo`** makes it the version's demo bundle (`versions.demo_latest_id`), offered only to
+  demo-eligible devices. See [Demo releases](/guides/demo-releases).
+- **`promote`** turns a demo bundle public (`is_demo` cleared, `promoted_at` set, demo pointer cleared).
+- **`DELETE …/bundle/demo`** withdraws the version's demo bundle. Expo testers first return to the update
+  embedded in their build, then get the public bundle on the next check.
 
 ## Fields
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `name` | string | bundle version string |
-| `file_id` | string | the ZIP `File` |
+| `file_id` | string | the archive `File` |
 | `update_type` | enum | `optional` · `force` — whether the OTA client may skip the update |
+| `is_demo` | bool | upload as a demo build |
+| `runtime_version` | string? | Expo only: checked against the version name (else read from `expoConfig.json`) |
 | `url` | string? | download URL (privileged roles) |
 
 ```jsonc
 // POST …/bundle  (multipart)
-{ "name": "1.4.0", "file": <zip> }
+{ "name": "1.4.0", "file": <archive> }
 ```
 
-<Callout type="warning" title="Activation is not wired yet">
-Making a bundle the version's active one means setting `versions.latest_id`. The dashboard shows which
-bundle is active, but the HTTP route to change it does not exist yet — do it as a backend/DB step for now.
-The client SDK's automatic rollback is unaffected.
+<Callout type="info" title="Expo bundles">
+The upload is rejected (422) when the zip is not an Expo export, contains unsafe paths, unpacks to more
+than 512 MB, or was built for a different runtime than the version's name. The file of an Expo bundle
+cannot be replaced: a changed export is a new bundle. `GET …/assets` lists its files per platform.
 </Callout>
 
 ## Producing a bundle
 
 ```bash
-npx ota-client release -o release
-# → release/<name>-<runtimeVersion>-<version>.zip
+# bare React Native
+npx react-ota-client release -o release
+# → release/<name>-<runtimeVersion>-<version>.tar.gz
+
+# Expo: build and upload in one step
+npx expo-ota-client publish --activate
 ```
 
-See [Client SDK → CLI](/client-sdk/cli).
+See [Client SDK → CLI](/client-sdk/cli) and [Expo SDK → Publishing](/expo-sdk/publishing).
 
 Next: [Domains](/server-api/domains).

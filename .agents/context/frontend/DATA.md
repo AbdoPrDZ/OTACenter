@@ -106,13 +106,17 @@ relations like `domains`). Missing required fields throw.
 All are `createModel(name, fields, true)` (multipart-capable).
 
 - **`App.ts`** — `IApp` (`name`, `package_name`, `summary`, `description`, `logo_url?`, `domains?`,
-  `latest_id?`, `latest?`). `getDataTableColumns()`.
+  `latest_id?`, `demo_latest_id?`, `latest?`). `getDataTableColumns()`.
 - **`Version.ts`** — nested under app: `endpointFor`, `allForApp`, `show`, `store`, `updateForApp`,
-  `destroy`, `getDataTableColumns`. Fields include `name`, `api_key`, `changelog`, `status` enum,
-  `latest_id`.
+  `activate`, `activateDemo`, `promote`, `withdrawDemo(appId)`, `destroy`, `getDataTableColumns`. Fields
+  include `name`, `api_key`, `changelog`, `status` enum, `client_type` (`ota-client` | `expo`), `is_demo`,
+  `latest_id`, `demo_latest_id`.
 - **`Bundle.ts`** — nested under app/version: `endpointFor`, `allForVersion`, `store`, `show`,
-  `updateForVersion`, `destroy`. (No `activate` static: the backend activate route was never wired into
-  `routes/web.php`, so the UI does not offer activation.)
+  `updateForVersion`, `activate`, `activateDemo`, `promote`, `withdrawDemo(appId, versionId)`,
+  `assets` (Expo files per platform), `destroy`. Fields include `is_demo`.
+- **`DeviceLink.ts`** — plain class: `createForUser(userId, { app_id?, expires_in_minutes? })`,
+  `createForSelf(...)` (not used by the UI yet), `devices(userId)`, `unlink(deviceId)`. Backs the
+  **Demo access** tab on the user page.
 - **`AppScreenshot.ts`** — nested under app: `endpointFor`, `allForApp`, `store`, `destroy`,
   `getUrl(name)` → `/files/{name}`.
 - **`DownloadLink.ts`** — plain class (not `createModel`), nested under app: `endpointFor`, `allForApp`,

@@ -24,6 +24,24 @@ Users are read from the LDAP directory and bound to domains, roles and permissio
 | `/api/user/{user}/role` | index + bind/unbind `/{role}` (`role.attach` / `role.detach`) |
 | `/api/user/{user}/permission` | index + bind/unbind `/{permission}` (`permission.attach` / `permission.detach`) |
 | `/api/user/{user}/domain` | index + bind/unbind `/{domain}` |
+| `/api/user/{user}/device` | `GET` the devices linked to the user (`user.view`) |
+| `/api/user/{user}/device-link-code` | `POST` a one-time code that links a device to the user (`device.link`) |
+
+## Demo access
+
+A device is anonymous until it is linked to a user; only then can it receive [demo
+releases](/guides/demo-releases). A code is 8 characters, one-time, stored hashed, and expires after 15
+minutes by default (`expires_in_minutes`, up to 1440). An optional `app_id` limits it to one app.
+
+| Method | Path | Permission |
+|--------|------|-----------|
+| `POST` | `/api/auth/device-link-code` | signed in (a code for yourself; throttled) |
+| `POST` | `/api/user/{user}/device-link-code` | `device.link` |
+| `DELETE` | `/api/device/{device}/link` | `device.link` |
+
+The app redeems the code on the device API (`POST /ota-client/v1/device/link`, see
+[OTA client API](/server-api/ota-client-api#device-linking)). A device has one user; linking it again
+replaces the link.
 
 ## Invite
 

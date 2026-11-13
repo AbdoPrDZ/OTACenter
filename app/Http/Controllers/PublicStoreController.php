@@ -41,7 +41,7 @@ class PublicStoreController extends Controller
         'logo',
         'domains',
         'latest',
-        'versions' => fn ($q) => $q->where('status', 'published')->orderByDesc('id'),
+        'versions' => fn ($q) => $q->where('status', 'published')->where('is_demo', false)->orderByDesc('id'),
       ],
       query: $query,
       selects: ['apps.*'],
@@ -80,7 +80,7 @@ class PublicStoreController extends Controller
       'domains',
       'screenshots',
       'latest',
-      'versions' => fn ($q) => $q->where('status', 'published')->orderByDesc('id'),
+      'versions' => fn ($q) => $q->where('status', 'published')->where('is_demo', false)->orderByDesc('id'),
     ]);
 
     $app->loadAvg(['reviews' => fn ($q) => $q->where('status', 'published')], 'rating');
@@ -181,19 +181,19 @@ class PublicStoreController extends Controller
   {
     return App::query()
       ->whereHas('domains', fn ($q) => $q->where('is_public', true))
-      ->whereHas('versions', fn ($q) => $q->where('status', 'published'))
+      ->whereHas('versions', fn ($q) => $q->where('status', 'published')->where('is_demo', false))
       ->orderBy('name');
   }
 
   private function constrainPublished($query)
   {
-    return $query->whereHas('versions', fn ($q) => $q->where('status', 'published'));
+    return $query->whereHas('versions', fn ($q) => $q->where('status', 'published')->where('is_demo', false));
   }
 
   private function isPublic(App $app): bool
   {
     return $app->domains()->where('is_public', true)->exists()
-      && $app->versions()->where('status', 'published')->exists();
+      && $app->versions()->where('status', 'published')->where('is_demo', false)->exists();
   }
 
   /** The version the install button serves: the app's latest when published, else the newest published. */
@@ -210,6 +210,7 @@ class PublicStoreController extends Controller
 
     return $app->versions()
       ->where('status', 'published')
+      ->where('is_demo', false)
       ->orderByDesc('id')
       ->first();
   }

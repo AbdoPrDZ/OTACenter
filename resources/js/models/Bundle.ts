@@ -12,8 +12,24 @@ export interface IBundle extends IModel {
   update_type: "optional" | "force";
   file_id: string;
   url?: string;
+  is_demo: boolean;
+  promoted_at?: string | null;
+  /** Platforms an Expo bundle ships for; empty for an ota-client archive. */
+  platforms: ("android" | "ios")[];
+  expo_update_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface IBundleAsset {
+  id: number;
+  platform: "android" | "ios";
+  source_path: string;
+  content_type: string;
+  file_extension: string | null;
+  is_launch_asset: boolean;
+  size: number;
+  hash: string;
 }
 
 const BundleModel = createModel<IBundle>("bundle", [
@@ -24,6 +40,10 @@ const BundleModel = createModel<IBundle>("bundle", [
   { name: "update_type", type: "enum", enum: ["optional", "force"] },
   { name: "file_id", type: "string" },
   { name: "url", type: "string" },
+  { name: "is_demo", type: "boolean" },
+  { name: "promoted_at", type: "date" },
+  { name: "platforms", type: "array" },
+  { name: "expo_update_id", type: "string" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },
 ], true);
@@ -87,6 +107,28 @@ export default class Bundle extends BundleModel {
       url: `${this.endpointFor(appId, versionId)}/${bundleId}/activate`,
       dataField: "item",
       dataEncoding: async (data) => await Bundle.decode(data),
+    });
+  }
+
+  /** Publish to demo-eligible devices only. */
+  static async activateDemo(appId: number, versionId: number, bundleId: number) {
+    return Request.post({ url: `${this.endpointFor(appId, versionId)}/${bundleId}/activate-demo` });
+  }
+
+  /** Make a demo bundle the public release. */
+  static async promote(appId: number, versionId: number, bundleId: number) {
+    return Request.post({ url: `${this.endpointFor(appId, versionId)}/${bundleId}/promote` });
+  }
+
+  /** Stop serving the version's demo bundle. */
+  static async withdrawDemo(appId: number, versionId: number) {
+    return Request.delete({ url: `${this.endpointFor(appId, versionId)}/demo` });
+  }
+
+  static async assets(appId: number, versionId: number, bundleId: number) {
+    return Request.get<IBundleAsset[]>({
+      url: `${this.endpointFor(appId, versionId)}/${bundleId}/assets`,
+      dataField: "items",
     });
   }
 

@@ -2,8 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Device;
-use App\Models\Log;
+use App\Services\Devices\DeviceRegistry;
 use App\Src\Controller;
 use Closure;
 use Illuminate\Http\Request;
@@ -13,28 +12,18 @@ use Symfony\Component\HttpFoundation\Response;
 class DeviceMiddleware
 {
   /**
-   * Handle an incoming request.
+   * Resolves (or registers) the calling device from `X-Device-Info`
+   * (`did=8e7ff121ca8656b2;mf=Xiaomi;br=Redmi;mdl=M2004J19C;av=12;sdv=31`), or
+   * the `device_id` / `did` query parameter for browser-opened links.
    *
    * @param  Closure(Request): (Response)  $next
    */
   public function handle(Request $request, Closure $next): Response
   {
-    # get X-Device-Id header
-    $deviceInfoStr = $request->header('X-Device-Info');
-
-    $parts = explode(';', $deviceInfoStr);
-
-    $deviceInfo = [];
-
-    foreach ($parts as $part) {
-      $kv = explode('=', $part);
-
-      if (count($kv) == 2) $deviceInfo[trim($kv[0])] = trim($kv[1]);
-    }
+    $deviceInfo = DeviceRegistry::parseInfoHeader($request->header('X-Device-Info'));
 
     $deviceInfo['did'] = $deviceInfo['did'] ?? $request->query('device_id') ?? $request->query('did');
 
-    # did=8e7ff121ca8656b2;mf=Xiaomi;br=Redmi;mdl=M2004J19C;av=12;sdv=31
     $validator = Validator::make($deviceInfo, [
       'did' => 'required|string', # Device ID
       'mf'  => 'nullable|string', # Manufacturer
@@ -47,30 +36,9 @@ class DeviceMiddleware
     if ($validator->fails())
       return Controller::apiInvalidValuesResponse($validator->errors()->toArray());
 
-    $user = $request->user();
-
-    $device = Device::firstOrCreate(
-      ['did' => $deviceInfo['did']],
-      [
-        'user_id'         => $user ? $user->id : null,
-        'manufacturer'    => $deviceInfo['mf']  ?? null,
-        'brand'           => $deviceInfo['br']  ?? null,
-        'model'           => $deviceInfo['mdl'] ?? null,
-        'android_version' => $deviceInfo['av']  ?? null,
-        'sdk_version'     => $deviceInfo['sdv'] ?? null,
-      ]
-    );
+    $device = DeviceRegistry::resolve($deviceInfo, $request->user());
 
     $request->attributes->set('device_id', $device->id);
-
-    if ($device->wasRecentlyCreated) {
-      Log::record(
-        'device.register',
-        "Device {$device->did} registered",
-        array_values(array_filter([$device, $user])),
-        ['model' => $device->model, 'brand' => $device->brand],
-      );
-    }
 
     return $next($request);
   }

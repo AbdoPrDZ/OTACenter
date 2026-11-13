@@ -31,11 +31,18 @@ timestamps, softDeletes.
 
 ### `versions`
 `id`, `name`, `changelog` (nullable in DB but **required** by validation), `app_id` (→ `apps`, cascade),
-`status` enum `draft|review|published|cancelled` (default `draft`), `file_id` (→ `files.name`, **unique**,
-**not nullable** — every version must have a file), `api_key` (nullable string in DB but **required** by
-validation — e.g. an app-store/bundle API key), timestamps, softDeletes.
+`status` enum `draft|review|published|cancelled` (default `draft`), `file_id` (→ `files.name`, **unique**;
+**nullable** since `2026_11_13_000001_add_expo_and_demo_releases` — an Expo version may have no APK),
+`api_key` (nullable string in DB but **required** by validation — e.g. an app-store/bundle API key),
+timestamps, softDeletes.
 `latest_id` is added by the bundles migration (nullable → `bundles.id`, `nullOnDelete`) — the version's
 active/latest bundle.
+
+### Expo & demo columns and tables
+Added by `2026_11_13_000001_add_expo_and_demo_releases`: `domains.allow_demo`; `apps.demo_latest_id`;
+`versions.client_type`, `is_demo`, `promoted_at`, `demo_latest_id`; `bundles.is_demo`, `promoted_at`,
+`expo_update_id`, `expo_metadata`; tables `bundle_assets` and `device_link_codes`; permission
+`device.link`. Full schema in EXPO-DEMO.md.
 
 ### `bundles`
 `id`, `version_id` (→ `versions.id`, cascade), `name` (**NOT NULL** — the bundle version string,
@@ -84,7 +91,7 @@ Written by `VersionController::download` / `BundleController::download` (⚠️ 
 |------|-----------|--------------------|
 | Version `changelog` | nullable | validation `required` |
 | Version `api_key` | nullable | validation `required` |
-| Version `file_id` | required + unique | update rule is `sometimes` → file replacement is optional (metadata-only updates OK) |
+| Version `file_id` | nullable + unique | `required_unless:client_type,expo` on create; update rule is `sometimes` → file replacement is optional (metadata-only updates OK) |
 | User factory | no `email` column | factory defines `email`/`email_verified_at` |
 
 > The former `latest_version_id` ↔ `latest_id`, `exists:app_versions`, and `active_bundle_id` ↔

@@ -9,6 +9,8 @@ export interface IDomain extends IModel {
   name: string;
   description: string;
   is_public: boolean;
+  /** Members may install demo releases of this domain's apps. */
+  allow_demo: boolean;
   image_url?: string;
   created_at: string;
   updated_at: string;
@@ -19,6 +21,7 @@ const DomainModel = createModel<IDomain>("domain", [
   { name: "name", type: "string", required: true },
   { name: "description", type: "string" },
   { name: "is_public", type: "boolean" },
+  { name: "allow_demo", type: "boolean" },
   { name: "image_url", type: "string" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },

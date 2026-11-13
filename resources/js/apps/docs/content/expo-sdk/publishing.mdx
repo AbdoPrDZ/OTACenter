@@ -1,0 +1,72 @@
+---
+title: Publishing
+description: Export, upload and publish an Expo update with the expo-ota-client CLI.
+order: 2
+---
+
+# Publishing
+
+The CLI exports the app, uploads the bundle to the version that matches its runtime, and publishes it.
+
+<Steps>
+<Step title="Get an API token">
+
+```bash
+npx expo-ota-client login -u admin -P '…'   # prints a token
+export OTA_TOKEN=…
+```
+
+The token belongs to an OTACenter user, who needs `bundle.create` and `bundle.publish`.
+
+</Step>
+<Step title="Publish">
+
+```bash
+npx expo-ota-client publish --activate   # export, upload, publish to everyone
+npx expo-ota-client publish --demo       # …or to demo testers only
+```
+
+</Step>
+<Step title="Promote a demo">
+
+```bash
+npx expo-ota-client promote 1.0.3
+```
+
+</Step>
+</Steps>
+
+| Flag | Meaning |
+| --- | --- |
+| `--activate` | Publish the bundle to everyone on that runtime. |
+| `--demo` | Publish it as a [demo release](/guides/demo-releases). |
+| `--force-update` | Make it required: the overlay hides "Later". |
+| `--changelog <text>` | Text shown in the update dialog. |
+| `--name <name>` | Bundle name; defaults to `expo.version`. |
+| `--server <url>`, `--token <token>` | Override the plugin's `serverUrl` and `OTA_TOKEN`. |
+
+Without `--activate` or `--demo` the bundle is uploaded but not served; publish it from the dashboard
+(**Activate** or **Demo** in the version's bundle list).
+
+## Uploading by hand
+
+```bash
+npx expo-ota-client release
+# → release/<slug>-<runtime>-<version>.zip
+```
+
+`release` builds the upload without sending it: the `npx expo export` output plus `expoConfig.json`, which
+OTACenter uses to check the runtime version. Upload it in **Version → Add bundle**.
+
+<Callout type="warning" title="Platforms">
+A bundle reaches only the platforms it was exported for: an `android`-only export never reaches iOS.
+</Callout>
+
+## New native builds
+
+When native code changes, bump `runtimeVersion`, build the app, and create a new **Expo** version named
+after the new runtime, with its own API key. Upload the APK to that version so older installs are offered
+it: on Android the overlay downloads it inside the app, checks it against the server's SHA-256, and opens
+the system installer.
+
+Next: [API](/expo-sdk/api).

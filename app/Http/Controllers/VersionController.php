@@ -8,6 +8,7 @@ use App\Models\DownloadHistory;
 use App\Models\Log;
 use App\Models\Version;
 use App\Src\Controller;
+use App\Services\Releases\ReleasePublisher;
 use App\Src\ValidationType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -61,14 +62,19 @@ class VersionController extends Controller
       return $this->apiInvalidValuesResponse($validator->errors()->toArray());
 
     $fields = array_diff(array_keys($rules), ['file']);
-    $file = $this->moveFile($request, 'file', 'versions', "app-$app->id-version-" . time());
+
+    # An Expo build may ship through a store, so it can have no installer.
+    $file = $request->hasFile('file')
+      ? $this->moveFile($request, 'file', 'versions', "app-$app->id-version-" . time() . "-" . bin2hex(random_bytes(3)))
+      : null;
 
     $data = $request->only($fields);
     $data['status'] = $data['status'] ?? 'draft';
+    $data['client_type'] = $data['client_type'] ?? Version::CLIENT_OTA;
 
     $version = $app->versions()->create([
       ...$data,
-      'file_id' => $file->name,
+      'file_id' => $file?->name,
     ]);
 
     Log::record('version.created', "Version {$version->name} created for {$app->name}", array_values(array_filter([$version, $app, Auth::user()])));
@@ -101,12 +107,63 @@ class VersionController extends Controller
       if ($bundle && $bundle->status !== 'published') {
         $bundle->update(['status' => 'published']);
       }
+
+      # Making a demo bundle the public one promotes it.
+      if ($bundle) ReleasePublisher::bundlePublished($version->fresh(), $bundle->fresh());
     }
 
     Log::record('version.updated', "Version {$version->name} updated", array_values(array_filter([$version, $app, Auth::user()])));
 
     return $this->apiSuccessResponse("Version updated successfully", [
       'item' => $version->fresh()->toArray(),
+    ]);
+  }
+
+  /** Make this version the app's public one (`apps.latest_id`). Activating a demo version promotes it. */
+  public function activate(App $app, Version $version)
+  {
+    ReleasePublisher::publishVersion($app, $version);
+
+    return $this->apiSuccessResponse("Version activated successfully", [
+      'item' => $app->fresh()->toArray(),
+    ]);
+  }
+
+  /** Publish the version to demo-eligible devices only (`apps.demo_latest_id`). */
+  public function activateDemo(App $app, Version $version)
+  {
+    try {
+      ReleasePublisher::publishDemoVersion($app, $version);
+    } catch (\DomainException $e) {
+      return $this->apiSingleErrorResponse('version', $e->getMessage());
+    }
+
+    return $this->apiSuccessResponse("Version published as a demo", [
+      'item' => $app->fresh()->toArray(),
+    ]);
+  }
+
+  /** Make a demo version the public release for everyone. */
+  public function promote(App $app, Version $version)
+  {
+    if (!$version->is_demo)
+      return $this->apiSingleErrorResponse('version', 'Only a demo version can be promoted.');
+
+    ReleasePublisher::publishVersion($app, $version);
+
+    return $this->apiSuccessResponse("Version promoted to public", [
+      'item' => $app->fresh()->toArray(),
+    ]);
+  }
+
+  /** Stop serving the demo version; eligible devices fall back to the public one. */
+  public function withdrawDemo(App $app)
+  {
+    if (!ReleasePublisher::withdrawDemoVersion($app))
+      return $this->apiSingleErrorResponse('version', 'This app has no demo version.');
+
+    return $this->apiSuccessResponse("Demo version withdrawn", [
+      'item' => $app->fresh()->toArray(),
     ]);
   }
 

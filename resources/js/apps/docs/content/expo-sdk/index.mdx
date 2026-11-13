@@ -1,0 +1,65 @@
+---
+title: Expo SDK
+description: Over-the-air updates for Expo apps with expo-ota-client and expo-updates.
+order: 1
+---
+
+# Expo SDK (`expo-ota-client`)
+
+Expo apps update from OTACenter with **Expo's own engine**, [`expo-updates`](https://docs.expo.dev/versions/latest/sdk/updates/).
+OTACenter speaks the Expo Updates protocol, so downloads, Hermes bundles, assets, fonts, crash rollback and
+code signing all come from Expo, on **Android and iOS**.
+
+[`expo-ota-client`](https://github.com/AbdoPrDZ/expo-ota-client) (npm `expo-ota-client`) adds what
+`expo-updates` doesn't know about OTACenter:
+
+- **Config plugin** — points `expo-updates` at your server.
+- **`<OTAProvider>`** and an update overlay — forced updates, changelog, download progress.
+- **Demo releases** — link a device to a user so it receives [demo versions and bundles](/guides/demo-releases).
+- **New native builds** — when a newer APK is published, it downloads and installs inside the app
+  (Android), or opens the store link (iOS).
+- **Activity reporting** — available, refused, downloaded, installed and rollback events.
+- **CLI** — `release`, `publish`, `promote`, `login`, `doctor`, `cert`.
+
+<Callout type="warning" title="Not in Expo Go">
+`expo-updates` needs a development build or EAS Build. In development builds the provider does nothing,
+so Metro and Fast Refresh keep working.
+</Callout>
+
+## How it works
+
+<Flow>
+  <FlowStep title="Build" subtitle="plugin sets updates.url" />
+  <FlowStep title="Publish" subtitle="npx expo-ota-client publish" tone="warning" />
+  <FlowStep title="Check" subtitle="expo-updates fetches the manifest" />
+  <FlowStep title="Restart" subtitle="into the new update" tone="success" />
+</Flow>
+
+1. At build time the plugin sets `updates.url` to `{server}/ota-client/v1/expo/{package}/manifest` and
+   sends the version's `API-KEY` with every update request.
+2. On launch `<OTAProvider>` asks `expo-updates` for an update. OTACenter picks the bundle for the device's
+   runtime and platform — the public one, or a demo for an eligible tester — and answers with a manifest.
+3. `expo-updates` downloads the assets from temporary signed URLs, and the app restarts into the update.
+4. With no JS update, the provider asks `/app/info` whether a newer native build exists.
+
+## In OTACenter
+
+An Expo app is an ordinary app whose versions have the client **Expo** (`client_type = expo`):
+
+- The **version name** is the app's `runtimeVersion`. Create a new version whenever native code changes.
+- A **bundle** is a zip of `npx expo export` plus `expoConfig.json`. The server checks its runtime, stores
+  its files once, and serves them per platform.
+- The APK is optional: a build distributed through a store needs none.
+
+## Follow in order
+
+<Flow>
+  <FlowStep title="1 · Setup" href="/expo-sdk/setup" />
+  <FlowStep title="2 · Publishing" href="/expo-sdk/publishing" tone="success" />
+  <FlowStep title="3 · API" href="/expo-sdk/api" tone="warning" />
+</Flow>
+
+<Callout type="info" title="Bare React Native?">
+Apps without Expo use [`react-ota-client`](/client-sdk), which has its own Kotlin engine. Never install
+both clients in one app.
+</Callout>

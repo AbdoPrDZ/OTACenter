@@ -35,8 +35,10 @@ You land on the app's detail page. It has **Details** and **Statistics** tabs.
 <Steps>
 <Step title="Open the app → Add version">
 
-Give the version a **Name** (e.g. `1.0.0`) and an **API key** (any strong string — the client sends it as
-`API-KEY`). Write a **changelog** and choose the **APK** file.
+Pick the **Client**: *React Native* (`react-ota-client`) or *Expo* (`expo-ota-client`). Give the version a
+**Name** (e.g. `1.0.0`; for Expo it must equal the app's `runtimeVersion`) and an **API key** (any strong
+string — the client sends it as `API-KEY`). Write a **changelog** and choose the **APK** file (optional for
+Expo).
 
 </Step>
 <Step title="Save">
@@ -51,27 +53,30 @@ The version page lists its **Bundles** and shows a Status badge.
 <Steps>
 <Step title="Build the OTA archive">
 
-In your React Native project:
+In a bare React Native project:
 
 ```bash
-npx ota-client release -o release
+npx react-ota-client release -o release
 ```
 
-This produces `release/<name>-<runtimeVersion>-<version>.zip` (bundle + `manifest.json`).
+This produces `release/<name>-<runtimeVersion>-<version>.tar.gz` (bundle + `manifest.json`).
+
+In an Expo project, `npx expo-ota-client release` builds a zip of `npx expo export` — or skip this step
+and the next, and let `npx expo-ota-client publish` upload it for you (see [Expo SDK](/expo-sdk/publishing)).
 
 </Step>
 <Step title="Open the version → Add bundle">
 
-Give the bundle a **name** (usually the same version string) and upload the ZIP.
+Give the bundle a **name** (usually the same version string) and upload the archive.
+
+</Step>
+<Step title="Activate it">
+
+In the version's bundle list, **Activate** makes the bundle the one every device receives
+(`versions.latest_id`). **Demo** offers it to testers only — see [Demo releases](/guides/demo-releases).
 
 </Step>
 </Steps>
-
-<Callout type="warning" title="Bundle activation">
-The dashboard tracks a version's active bundle via `versions.latest_id`, but the server route that flips
-it is not wired yet — so activation is currently a backend/DB step. Uploading, listing and downloading
-bundles all work from the UI.
-</Callout>
 
 ## Scope access with a domain
 
@@ -96,5 +101,5 @@ domains is bound to it.
 
 ## What's next
 
-Wire the mobile app to the server: continue to the [Client SDK](/client-sdk), starting with
-[Install](/client-sdk/install).
+Wire the mobile app to the server: continue to the [Client SDK](/client-sdk) for a bare React Native app,
+starting with [Install](/client-sdk/install), or to the [Expo SDK](/expo-sdk) for an Expo app.

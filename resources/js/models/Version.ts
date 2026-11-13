@@ -8,12 +8,18 @@ export interface IVersion extends IModel {
   id: number;
   app_id: number;
   name: string;
+  /** Which client consumes the version: the bare React Native `ota-client` or Expo (`expo-updates`). */
+  client_type: "ota-client" | "expo";
   changelog: string;
   status: "draft" | "review" | "published" | "cancelled";
   update_type: "optional" | "force";
   file_id: string;
   api_key: string;
   latest_id: number | null;
+  /** The demo bundle, offered only to demo-eligible devices. */
+  demo_latest_id: number | null;
+  is_demo: boolean;
+  promoted_at?: string | null;
   default_bundle_version: string | null;
   created_at: string;
   updated_at: string;
@@ -23,12 +29,16 @@ const VersionModel = createModel<IVersion>("version", [
   { name: "id", type: "number" },
   { name: "app_id", type: "number" },
   { name: "name", type: "string", required: true },
+  { name: "client_type", type: "enum", enum: ["ota-client", "expo"] },
   { name: "changelog", type: "string" },
   { name: "status", type: "enum", enum: ["draft", "review", "published", "cancelled"] },
   { name: "update_type", type: "enum", enum: ["optional", "force"] },
   { name: "file_id", type: "string" },
   { name: "api_key", type: "string", required: true },
   { name: "latest_id", type: "number" },
+  { name: "demo_latest_id", type: "number" },
+  { name: "is_demo", type: "boolean" },
+  { name: "promoted_at", type: "date" },
   { name: "default_bundle_version", type: "string" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },
@@ -86,6 +96,26 @@ export default class Version extends VersionModel {
           }
         : {},
     });
+  }
+
+  /** Make this version the app's public one. */
+  static async activate(appId: number, versionId: number) {
+    return Request.post({ url: `${this.endpointFor(appId)}/${versionId}/activate` });
+  }
+
+  /** Publish to demo-eligible devices only. */
+  static async activateDemo(appId: number, versionId: number) {
+    return Request.post({ url: `${this.endpointFor(appId)}/${versionId}/activate-demo` });
+  }
+
+  /** Make a demo version the public release. */
+  static async promote(appId: number, versionId: number) {
+    return Request.post({ url: `${this.endpointFor(appId)}/${versionId}/promote` });
+  }
+
+  /** Stop serving the app's demo version. */
+  static async withdrawDemo(appId: number) {
+    return Request.delete({ url: `${this.endpointFor(appId)}/demo` });
   }
 
   static async destroy(appId: number, versionId: number) {

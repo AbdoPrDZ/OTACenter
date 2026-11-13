@@ -16,18 +16,24 @@ updates.
 It has two halves:
 
 - **The server** (this Laravel application) stores apps, versions, bundles and files; exposes an admin
-  JSON API and a device-facing OTA API; and serves the dashboard plus this documentation.
-- **The client SDK** ([`ota-client`](https://github.com/AbdoPrDZ/react-ota-client)) is a React Native
-  package that lets an installed app download and install a new JS bundle without a store release, with
-  automatic rollback if the bundle fails to boot.
+  JSON API and a device-facing OTA API (including the Expo Updates protocol); and serves the dashboard plus
+  this documentation.
+- **The client SDKs** let an installed app download and install a new JS bundle without a store release:
+  - [`react-ota-client`](/client-sdk) for **bare React Native** apps on Android, with its own Kotlin engine
+    and automatic rollback if the bundle fails to boot;
+  - [`expo-ota-client`](/expo-sdk) for **Expo** apps on Android and iOS, with Expo's `expo-updates` as the
+    engine.
+
+Releases can go to everyone or first to a group of testers as **[demo releases](/guides/demo-releases)**,
+then be promoted.
 
 ## How a release flows
 
 <Flow>
-  <FlowStep icon={PanelsTopLeft} title="Publish an app" />
-  <FlowStep icon={Package} title="Add a version" />
-  <FlowStep icon={Boxes} title="Upload a bundle" tone="warning" />
-  <FlowStep icon={Smartphone} title="Devices update" tone="success" />
+  <FlowStep icon={PanelsTopLeft} title="Publish an app" href="/getting-started/first-release#create-the-app" />
+  <FlowStep icon={Package} title="Add a version" href="/getting-started/first-release#add-a-version" />
+  <FlowStep icon={Boxes} title="Upload a bundle" href="/getting-started/first-release#upload-a-bundle" tone="warning" />
+  <FlowStep icon={Smartphone} title="Devices update" href="/concepts#publishing-vs-access" tone="success" />
 </Flow>
 
 ## Who should read what
@@ -36,14 +42,15 @@ It has two halves:
 |----------|-----------|
 | Evaluating OTACenter | [Core concepts](/concepts) then [Getting started](/getting-started) |
 | An administrator deploying it | [Getting started](/getting-started) → [Deployment](/guides/deployment) |
-| Integrating the mobile client | [Client SDK](/client-sdk) |
+| Integrating a bare React Native app | [Client SDK](/client-sdk) |
+| Integrating an Expo app | [Expo SDK](/expo-sdk) |
 | An API consumer | [Server API](/server-api) |
 | A frontend/backend contributor | [Architecture](/architecture) → [Frontend](/frontend) |
 
 ## How this documentation is organised
 
 The sidebar is a tree. Each top-level section (Concepts, Getting started, Architecture, Server API, Client
-SDK, Frontend, Guides, Reference) contains pages and, where useful, further sub-sections. Pages are meant
+SDK, Expo SDK, Frontend, Guides, Reference) contains pages and, where useful, further sub-sections. Pages are meant
 to be read in order within a section, but every page stands on its own.
 
 <Callout type="tip" title="Follow the numbered steps">

@@ -36,6 +36,8 @@ The `ota-client` middleware group = `EnsureFrontendRequestsAreStateful` + `throt
 session) followed by **`device`** (`DeviceMiddleware`, resolves
 or creates the device from the request and stashes its id in `$request->attributes->set('device_id', ...)`).
 `/v1/health` stays public.
+> Expo manifest/asset routes, `/device/*` link routes and the demo/promote admin routes are documented in
+> [EXPO-DEMO.md](./EXPO-DEMO.md).
 | Route | Controller | Notes |
 |-------|-----------|-------|
 | `GET /ota-client/v1/health` | `OTAClient\AppController::health` | reachability check |

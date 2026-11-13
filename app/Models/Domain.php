@@ -7,13 +7,14 @@ use App\Src\ValidationType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'description', 'is_public', 'image_id' ])]
+#[Fillable(['name', 'description', 'is_public', 'allow_demo', 'image_id' ])]
 class Domain extends Model
 {
   protected $appends = [ 'image_url' ];
 
   protected $casts = [
-    'is_public' => 'boolean',
+    'is_public'  => 'boolean',
+    'allow_demo' => 'boolean',
   ];
 
   protected $filterable = [ 'name', 'description' ];
@@ -38,6 +39,7 @@ class Domain extends Model
       'name'        => $this->name,
       'description' => $this->description,
       'is_public'   => $this->is_public,
+      'allow_demo'  => $this->allow_demo,
       'image_url'   => $this->image_url,
       'created_at'  => $this->created_at,
     ];
@@ -91,6 +93,7 @@ class Domain extends Model
         'name'         => 'required|string|max:255',
         'description'  => 'nullable|string',
         'is_public'    => 'sometimes|boolean',
+        'allow_demo'   => 'sometimes|boolean',
         'image'        => 'nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
       ValidationType::Update => [
@@ -98,6 +101,7 @@ class Domain extends Model
         'summary'      => 'sometimes|nullable|string|max:255',
         'description'  => 'sometimes|nullable|string',
         'is_public'    => 'sometimes|boolean',
+        'allow_demo'   => 'sometimes|boolean',
         'image'        => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,svg|max:4096',
       ],
     };

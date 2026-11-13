@@ -53,6 +53,9 @@ class OtaApiKeyMiddleware
     if ($request->route('version') !== null || $request->route('bundle') !== null)
       return Controller::apiSingleErrorResponse('api_key', 'Invalid API key', [], 401);
 
+    if ($request->route('package') !== null)
+      return Controller::apiSingleErrorResponse('package', 'Invalid package name', [], 404);
+
     $package = $request->input('package');
     $name    = $request->input('version');
 
@@ -86,6 +89,21 @@ class OtaApiKeyMiddleware
    */
   private function expectedKey(Request $request): ?string
   {
+    # Expo manifest: the package is in the path, the runtime in a protocol header.
+    $package = $request->route('package');
+    if ($package !== null) {
+      $app = App::where('package_name', $package)->first();
+      if (!$app) return null;
+
+      $runtime = $request->header('expo-runtime-version') ?? $request->query('runtime-version');
+      $version = is_string($runtime)
+        ? Version::where('app_id', $app->id)->where('name', $runtime)->first()
+        : null;
+
+      # Same fallback as /app/info: an unlisted runtime is authorized by the current key.
+      return $version?->api_key ?? $app->latest?->api_key;
+    }
+
     $version = $request->route('version');
     if ($version !== null) {
       if (!$version instanceof Version) $version = Version::find($version);

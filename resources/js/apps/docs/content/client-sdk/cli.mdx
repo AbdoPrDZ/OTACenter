@@ -6,19 +6,20 @@ order: 5
 
 # CLI
 
-The `ota-client` CLI runs against your **host** React Native project. Invoke it with `npx ota-client`.
+The `react-ota-client` CLI runs against your **host** React Native project. Invoke it with
+`npx react-ota-client` (`ota-client`, the command's name up to 1.4.x, still works as an alias).
 
 ```bash
-npx ota-client doctor     # check the host is wired up correctly
-npx ota-client android    # build the bundle embedded in the APK
-npx ota-client release    # build the OTA archive to upload to the server
-npx ota-client apk        # build the release APK
+npx react-ota-client doctor     # check the host is wired up correctly
+npx react-ota-client android    # build the bundle embedded in the APK
+npx react-ota-client release    # build the OTA archive to upload to the server
+npx react-ota-client apk        # build the release APK
 ```
 
 ## `doctor`
 
 ```bash
-npx ota-client doctor [-r <dir>]
+npx react-ota-client doctor [-r <dir>]
 ```
 
 Verifies the host project is ready to receive OTA updates.
@@ -28,7 +29,7 @@ Verifies the host project is ready to receive OTA updates.
 Bundles the JS into `android/app/src/main/{assets,res}` for the base APK.
 
 ```bash
-npx ota-client android \
+npx react-ota-client android \
   [-r <project-root>] [-e <entry-file>] [-b <bundle-name>] \
   [--assets-dest <dir>] [--res-dest <dir>] [--dev <bool>]
 ```
@@ -38,7 +39,7 @@ npx ota-client android \
 Builds the OTA archive (bundle + `manifest.json`) into `release/`.
 
 ```bash
-npx ota-client release \
+npx react-ota-client release \
   [-r <project-root>] [-e <entry-file>] [-b <bundle-name>] \
   [-o <out-dir>] [--name <archive-base-name>] [--skip-build] [--force]
 ```
@@ -55,22 +56,23 @@ npx ota-client release \
 Runs `gradlew assembleRelease` and copies the APK into `release/`.
 
 ```bash
-npx ota-client apk [-r <project-root>] [-o <out-dir>] [--gradle-args <...>] [--skip-bundle]
+npx react-ota-client apk [-r <project-root>] [-o <out-dir>] [--gradle-args <...>] [--skip-bundle]
 ```
 
 ## Typical flow
 
 ```bash
 # 1. First release / native changes: build + embed, then the APK
-npx ota-client android
-npx ota-client apk
+npx react-ota-client android
+npx react-ota-client apk
 
 # 2. JS-only change: build the OTA archive and upload it to OTACenter
-npx ota-client release -o release
-#    → release/<name>-<runtimeVersion>-<version>.zip
+npx react-ota-client release -o release
+#    → release/<name>-<runtimeVersion>-<version>.tar.gz
 ```
 
-Upload the ZIP as a **Bundle** on the version in OTACenter.
+Upload the archive as a **Bundle** on the version in OTACenter (`.zip`, `.tar`, `.gz` and `.tgz` are
+accepted).
 
 <Callout type="warning" title="runtimeVersion must match">
 The archive's `runtimeVersion` has to equal the host APK's `versionName`. Bumping native code means a new

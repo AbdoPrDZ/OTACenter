@@ -57,6 +57,11 @@ there is **no** shadcn/Base UI/Radix.
   with **fully manual** sort/pagination; search debounce is **800 ms** (one fetch after the last
   keystroke). Skeleton rows while loading; `EmptyState` when empty. Rows add `cursor-pointer` with
   `onRowClick`, and an actions column is appended when `actions` is provided.
+- **`ReleaseControls.tsx`** — release state of a version or bundle: `releaseState(id, latestId,
+  demoLatestId)` → `public` | `demo` | `idle`; `ReleaseBadge`; `DemoReleaseCheckbox` (the "Demo release"
+  field on the upload forms); `useReleaseAction(onDone)`; `ReleaseRowActions` (**Activate**, **Demo**,
+  **Promote to public**). Used by the version list (`AppTab`) and the bundle list (`VersionTab`), which also
+  offer **Withdraw demo**.
 - **`PageHeader.tsx`** — title + description + optional breadcrumbs/`icon`/`actions`.
 - **`Breadcrumbs.tsx`** — `Crumb[]` (`{ label, to? }`) with `Link` for non-last items.
 - **`ConfirmDelete.tsx`** — destructive `ConfirmDialog` wrapper; `onConfirm` returns a `Response`,
@@ -155,15 +160,23 @@ by the `home`/`docs` Blade shells (`/` and `/docs{any}`). They share `components
 - **`apps/docs/`** - `index.tsx` (entry) + `router.tsx` (react-router, `basename: "/docs"`).
   - `manifest.ts` - builds the **nested sidebar tree from the `content/` folder structure** (each folder is
     a section; its `index.mdx` is the landing page) plus `getDocMeta`/`loadDoc` (resolves
-    `content/<slug>.mdx` or `content/<slug>/index.mdx`).
+    `content/<slug>.mdx` or `content/<slug>/index.mdx`). **Only frontmatter is eager**
+    (`import.meta.glob(..., { query: "?frontmatter" })`, served by the `mdx-frontmatter-only` plugin in
+    `vite.config.js`); page bodies are a lazy glob, one chunk per page. Don't import compiled `.mdx`
+    eagerly anywhere, or every page lands back in the docs entry chunk.
   - `components/DocsLayout.tsx` - header + sidebar + content + footer, mobile drawer.
   - `components/DocsSidebar.tsx` - recursive `NavLink` tree, indented by depth.
-  - `components/DocsPage.tsx` - resolves the slug, lazy-renders MDX inside `MDXProvider`.
-  - `components/DocsToc.tsx` - "On this page" from `h2`/`h3` ids (`rehype-slug`).
+  - `components/DocsPage.tsx` - resolves the slug and renders the MDX inside `MDXProvider`. The loaded
+    module is stored with the slug it belongs to and only rendered for that slug, so a navigation never
+    renders the previous page under the new URL.
+  - `components/DocsToc.tsx` - "On this page" from `h2`/`h3` ids (`rehype-slug`); keyed by slug.
   - `components/mdx-components.tsx` - element map plus globally-available `<Callout>`, `<Steps>`/`<Step>`,
-    `<Flow>`/`<FlowStep>`.
-  - `components/Flow.tsx` - animated (CSS-only) flow diagram; connectors auto-inserted.
-  - `content/**/*.mdx` - the documentation tree (frontmatter: `title`, `description`, `order`).
+    `<Flow>`/`<FlowStep>`. `MdxLink` routes internal links through react-router (basename `/docs`).
+  - `components/Flow.tsx` - animated (CSS-only) flow diagram; connectors auto-inserted. `FlowStep` takes
+    `title`, optional `subtitle`, `icon`, `tone`, and `href` (a docs path, makes the node a link).
+  - `content/**/*.mdx` - the documentation tree (frontmatter: flat `title`, `description`, `order`).
+    Sections: concepts, getting-started, architecture, server-api, client-sdk (`react-ota-client`),
+    expo-sdk (`expo-ota-client`), frontend, guides (incl. demo-releases), reference.
 
 MDX to JS is handled by `@mdx-js/rollup` in `vite.config.js` with `remark-gfm`,
 `remark-frontmatter` + `remark-mdx-frontmatter` (`name: "frontmatter"`), `rehype-slug`,

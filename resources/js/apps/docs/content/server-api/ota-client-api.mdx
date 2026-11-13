@@ -49,8 +49,8 @@ Response:
 {
   "appId": "…", "versionId": "…", "bundleId": "…",
   "availableUpdates": {
-    "version": { "id": "…", "name": "1.4.0", "updateType": "optional" },  // a new APK
-    "bundle":  { "id": "…", "name": "1.4.0", "updateType": "force" }      // a new JS bundle
+    "version": { "id": "…", "name": "1.4.0", "updateType": "optional", "checksum": "…", "demo": false },  // a new APK
+    "bundle":  { "id": "…", "name": "1.4.0", "updateType": "force", "demo": true }                       // a new JS bundle
   },
   "session": "…"                                  // optional, see below
 }
@@ -74,6 +74,13 @@ the dashboard:
 
 Old clients ignore the extra field, and a client talking to an older server treats the update as
 `optional`, so adding it is backward compatible.
+
+## Demo releases
+
+`demo: true` marks an offered update that is a [demo release](/guides/demo-releases). Demos are only
+offered to a device linked to a user in an `allow_demo` domain bound to the app; when both a public and a
+demo release exist, the newer one is offered. Downloading an unpromoted demo without that access returns
+`404`. `checksum` is the APK's SHA-256, which the clients verify before installing.
 
 ## Downloads
 
@@ -106,7 +113,45 @@ Devices self-register on first contact via the `X-Device-Info` header (`did`, `m
 `sdv`). The server creates or resolves the device after the key is accepted. `did` is client-supplied, so
 it identifies a device rather than authenticating it.
 
+## Device linking
+
+A device receives demo releases only after it is linked to a user with a one-time code from the dashboard
+(**Users → user → Demo access**, see [Users](/server-api/users#demo-access)). These routes use the same
+`API-KEY` and device header as `/app`:
+
+| Method | Path | Body |
+|--------|------|------|
+| `POST` | `/ota-client/v1/device/link` | `{ package, version, code }` — throttled to 10 per minute |
+| `POST` | `/ota-client/v1/device/unlink` | `{ package, version }` |
+| `POST` | `/ota-client/v1/device/info` | `{ package, version }` — the device's current link |
+
+## Expo Updates protocol
+
+Expo apps don't use `/app/info` for JS updates: their engine, `expo-updates`, speaks the [Expo Updates
+protocol v1](https://docs.expo.dev/technical-specs/expo-updates-1/) to two routes:
+
+```http
+GET /ota-client/v1/expo/{package}/manifest   API-KEY: <version.api_key>
+GET /ota-client/v1/expo/{package}/assets/{asset}?expires=…&signature=…
+```
+
+- **Manifest.** Requires `expo-protocol-version: 1` (else `406`), `expo-platform` and
+  `expo-runtime-version`; the version is the one whose name equals the runtime version and whose client is
+  `expo`. The answer is `multipart/mixed`: a manifest, or a `noUpdateAvailable` / `rollBackToEmbedded`
+  directive. A device that must go back to an older bundle (withdrawn demo, lost access) first gets
+  `rollBackToEmbedded`; its next check serves the older bundle.
+- **Device.** Optional here. The app sends its id and device facts in `Expo-Extra-Params` (`did`, `mf`,
+  `br`, `mdl`, `av`, `sdv`); without one, the device gets public updates only.
+- **Assets.** The manifest lists temporary signed URLs (`OTA_EXPO_ASSET_URL_TTL`); the signature is the
+  grant, so asset requests carry no key.
+- **Signing.** With `OTA_EXPO_SIGNING_KEY` set, manifests are signed (`expo-signature`, RSA-SHA256) when the
+  app asks for it.
+
+The other routes (`/app/info` for new native builds, `/app/event`, `/device/*`, the APK download) work for
+Expo apps as described above. For an Expo version, the reported bundle name is not validated.
+
 ## Client side
 
-This contract is implemented by [`ota-client`](https://github.com/AbdoPrDZ/react-ota-client) — see
-[Client SDK](/client-sdk) for install and usage.
+This contract is implemented by [`react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client) and, for
+Expo apps, by [`expo-ota-client`](/expo-sdk) on top of `expo-updates` — see [Client SDK](/client-sdk) and
+[Expo SDK](/expo-sdk) for install and usage.

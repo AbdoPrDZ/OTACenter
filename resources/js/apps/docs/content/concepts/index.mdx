@@ -13,13 +13,13 @@ obvious.
 
 | Entity | What it is | Key fields |
 |--------|-----------|-----------|
-| **App** | A published application. | `name`, `package_name`, `summary`, `description`, `logo_url`, `latest_id` |
-| **Version** | A release of an app. | `name`, `changelog`, `status`, `api_key`, `file_id` (APK), `latest_id` (active bundle) |
-| **Bundle** | A ZIP build attached to a version (bundle + `manifest.json`). | `name`, `file_id`, `url` |
-| **Domain** | An organizational group scoping access. | `name`, `description`, `image_url` |
+| **App** | A published application. | `name`, `package_name`, `summary`, `description`, `logo_url`, `latest_id`, `demo_latest_id` |
+| **Version** | A release of an app (one native build / runtime). | `name`, `client_type` (`ota-client` or `expo`), `changelog`, `status`, `api_key`, `file_id` (APK), `is_demo`, `latest_id` / `demo_latest_id` (public / demo bundle) |
+| **Bundle** | A JS update attached to a version: a `react-ota-client` archive, or an Expo export. | `name`, `file_id`, `is_demo`, `url`; Expo bundles also have per-platform **assets** |
+| **Domain** | An organizational group scoping access. | `name`, `description`, `image_url`, `allow_demo` |
 | **User** | An LDAP directory user. | `name`, `login`, `image_url`, bound `domains`, `roles`, `permissions` |
 | **File** | A stored artifact (logo, image, APK, ZIP). | `name` (**string PK**), `path` |
-| **Device** | A client that has checked in. | device fingerprint from `X-Device-Info` |
+| **Device** | A client that has checked in. | device fingerprint from `X-Device-Info` (or Expo's `Expo-Extra-Params`), optional linked `user` |
 
 ## How they relate
 
@@ -39,14 +39,23 @@ App 1───* Version 1───* Bundle
 - **Domains** are many-to-many with **apps** and with **users**; a user sees an app when one of their
   domains is bound to it.
 - **Users** hold **roles**, and roles hold **permissions**.
+- A **device** may be linked to one **user**; that is what makes it eligible for demo releases.
 
 ## Publishing vs. access
 
 Two independent decisions:
 
 1. **Publishing** — is there a newer build? This is about `versions` and `bundles` and the `latest_id`
-   pointers.
+   pointers. Each also has a `demo_latest_id` pointer for a [demo release](/guides/demo-releases), which
+   only devices of users in an `allow_demo` domain receive; promoting the demo makes it public.
 2. **Access** — who may receive it? This is about domains, users and the LDAP directory.
+
+## Two kinds of client
+
+A version's `client_type` says which client the build uses: **`ota-client`** for bare React Native apps
+with [`react-ota-client`](/client-sdk), or **`expo`** for Expo apps with [`expo-ota-client`](/expo-sdk).
+It decides what a bundle upload must contain and how devices fetch it. For Expo, the version name is the
+app's `runtimeVersion`.
 
 The device API answers both when a client checks in.
 

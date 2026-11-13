@@ -175,6 +175,7 @@ class DownloadLinkController extends Controller
 
     return $app->versions()
       ->where('status', 'published')
+      ->where('is_demo', false)
       ->orderByDesc('id')
       ->first();
   }

@@ -32,7 +32,11 @@ order: 3
 |--------|-----------|
 | `/api/auth` | login, register, me, profile, logout |
 | `/api/app` | index, store, show, update, destroy, `/{app}/screenshot/*`, `/{app}/domain/*`, `/{app}/version/*` |
-| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy |
+| `/api/app/{app}/version/{version}` | `activate`, `activate-demo`, `promote` (POST); `DELETE /api/app/{app}/version/demo` withdraws the demo version |
+| `/api/app/{app}/version/{version}/bundle` | index, store, show, update, destroy, `/{bundle}/activate`, `/{bundle}/activate-demo`, `/{bundle}/promote`, `/{bundle}/assets`; `DELETE …/bundle/demo` withdraws the demo bundle |
+| `/api/auth/device-link-code` | a demo link code for the signed-in user |
+| `/api/user/{user}/device`, `/api/user/{user}/device-link-code` | the user's devices; a link code for them |
+| `/api/device/{device}/link` | `DELETE` unlinks a device |
 | `/api/domain` | index, store, show, update, destroy |
 | `/api/user` | index, show, destroy, invite, `/{user}/role/*`, `/{user}/permission/*`, `/{user}/domain/*` |
 | `/api/role` | index, show, `/{role}/permission/*`, `/{role}/user/*` |
@@ -45,7 +49,12 @@ order: 3
 |--------|------|
 | `GET` | `/ota-client/v1/health` |
 | `POST` | `/ota-client/v1/app/info` |
-| `GET` | `/ota-client/v1/update/version/{version}` (API-KEY authorized) |
+| `POST` | `/ota-client/v1/app/event` |
+| `GET` | `/ota-client/v1/app/update/version/{version}` (API-KEY authorized) |
+| `GET` | `/ota-client/v1/app/update/bundle/{bundle}` (API-KEY authorized) |
+| `POST` | `/ota-client/v1/device/info`, `/device/link`, `/device/unlink` |
+| `GET` | `/ota-client/v1/expo/{package}/manifest` (Expo Updates protocol) |
+| `GET` | `/ota-client/v1/expo/{package}/assets/{asset}` (temporary signed URL) |
 
 <Callout type="info" title="Named routes">
 SPA paths come from `DashboardRouter.routes` (`resources/js/apps/dashboard/router.tsx`). The `/docs`

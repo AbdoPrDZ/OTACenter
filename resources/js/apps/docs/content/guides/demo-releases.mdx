@@ -1,0 +1,75 @@
+---
+title: Demo releases
+description: Ship a version or bundle to testers first, then promote it to everyone.
+order: 6
+---
+
+# Demo releases
+
+A **demo release** is a version or bundle that only testers receive. Everyone else stays on the public
+release until you **promote** the demo. It works for both clients, [`react-ota-client`](/client-sdk) and
+[`expo-ota-client`](/expo-sdk), because the server decides what each device gets.
+
+## Who is a tester
+
+A device receives demos when **all** of these hold:
+
+1. The device is **linked** to a user (one-time code, below).
+2. That user belongs to a **domain** with **Demo releases** enabled (`allow_demo`).
+3. That domain is **bound to the app**.
+
+Roles grant nothing here: an admin's own device needs the same three steps.
+
+## Set it up
+
+<Steps>
+<Step title="Enable demos on a domain">
+
+**Domains → domain → Edit**, turn on **Demo releases**, and make sure the app is bound to the domain and
+the testers are its members.
+
+</Step>
+<Step title="Link each tester's device">
+
+**Users → user → Demo access → Create link code** (admins, `device.link`). A signed-in user can also get a
+code for themselves through the API (`POST /api/auth/device-link-code`). Codes are 8 characters, one-time,
+and expire after 15 minutes by default.
+
+In the app, the tester enters the code: `<OTADemoAccessScreen>` in an Expo app, or a call to the device
+API's [`/device/link`](/server-api/ota-client-api#device-linking). The **Demo access** tab lists the user's
+linked devices and can unlink them.
+
+</Step>
+<Step title="Publish a demo">
+
+In the dashboard, use **Demo** on a bundle (or a version) instead of **Activate**. A bundle or version
+uploaded with the **Demo release** box checked is flagged as a demo build. With the Expo CLI:
+`npx expo-ota-client publish --demo`.
+
+</Step>
+<Step title="Promote it">
+
+When the testers are happy, **Promote to public** (or `npx expo-ota-client promote <bundle>`). The same
+item becomes the public release; nothing is rebuilt or re-uploaded.
+
+</Step>
+</Steps>
+
+## What testers see
+
+- When both a public and a demo release exist, a tester gets the **newer** one, so a public release
+  published after the demo replaces it.
+- Offered updates carry `demo: true`; `expo-ota-client` labels them in its update dialog.
+- Store pages and download links **never** serve a demo, even to testers. Demos reach them in-app only.
+
+## Withdrawing a demo
+
+**Withdraw demo** (on the app's versions, or a version's bundles) removes the demo pointer; testers go
+back to the public release. On Expo this takes two
+checks: the device first returns to the update embedded in its build, then receives the public bundle.
+The same happens when a tester loses access (unlinked, removed from the domain, or demos turned off).
+
+<Callout type="info" title="API">
+The routes behind these buttons are listed under [Versions](/server-api/versions#publishing),
+[Bundles](/server-api/bundles#publishing) and [Users](/server-api/users#demo-access).
+</Callout>

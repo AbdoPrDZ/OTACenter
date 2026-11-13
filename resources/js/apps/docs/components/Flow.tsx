@@ -1,4 +1,5 @@
 import { Children, Fragment, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -12,17 +13,31 @@ const TONES = {
 
 type Tone = keyof typeof TONES;
 
+/**
+ * One node of a `Flow`. With `href` (a docs path such as `/client-sdk/install`,
+ * optionally with a `#hash`) the whole node is a link inside the docs app.
+ */
 export function FlowStep({
   icon: Icon,
   title,
+  subtitle,
+  href,
   tone = "primary",
 }: {
   icon?: LucideIcon;
   title: string;
+  subtitle?: string;
+  href?: string;
   tone?: Tone;
 }) {
-  return (
-    <div className="flow-node flex h-full w-full flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/80 px-4 py-6 text-center shadow-sm backdrop-blur-sm">
+  const className = cn(
+    "flow-node flex h-full w-full flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card/80 px-4 py-6 text-center shadow-sm backdrop-blur-sm",
+    href &&
+      "transition-colors hover:border-primary/50 hover:bg-card focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none",
+  );
+
+  const content = (
+    <>
       <span
         className={cn(
           "flex size-12 items-center justify-center rounded-2xl ring-1",
@@ -31,9 +46,22 @@ export function FlowStep({
       >
         {Icon ? <Icon className="size-6" /> : <span className="size-2 rounded-full bg-current" />}
       </span>
-      <p className="text-sm font-semibold text-foreground">{title}</p>
-    </div>
+      <span className="flex flex-col gap-1">
+        <span className="text-sm font-semibold text-foreground">{title}</span>
+        {subtitle ? <span className="text-xs text-muted-foreground">{subtitle}</span> : null}
+      </span>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link to={href.replace(/^\/docs(?=\/|$)/, "") || "/"} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
 
 function FlowConnector() {

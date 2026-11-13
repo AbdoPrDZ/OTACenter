@@ -10,6 +10,7 @@ use App\Models\Log;
 use App\Models\User;
 use App\Models\Version;
 use App\Http\Middleware\OtaApiKeyMiddleware;
+use App\Services\Releases\ReleaseResolver;
 use App\Src\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -56,7 +57,10 @@ class AppController extends Controller
     $bundle = null;
     if ($version) {
       $bundle = Bundle::where('version_id', $version->id)->where('name', $request->bundle)->first();
-      if (!$bundle && $version->default_bundle_version !== $request->bundle)
+
+      # An Expo app running its embedded update has no OTACenter bundle name;
+      # expo-updates owns its bundles, so only ota-client reports are checked.
+      if (!$bundle && !$version->isExpo() && $version->default_bundle_version !== $request->bundle)
         return $this->apiSingleErrorResponse('bundle', 'Invalid bundle version');
     }
 
@@ -77,33 +81,37 @@ class AppController extends Controller
       ]);
     }
 
+    # The public release, or the demo one for devices that pass DemoAccess.
     $available_version = null;
-    if ($app->latest_id && $version?->id !== $app->latest_id) {
-      $latest = $app->latest;
+    $targetVersion = ReleaseResolver::versionFor($app, $device);
 
-      if ($latest) {
-        $available_version = [
-          'id' => $app->latest_id,
-          'name' => $latest->name,
-          'updateType' => $latest->update_type,
-          # SHA-256 of the installer, to verify the download (null if unknown).
-          'checksum' => $latest->file?->checksum,
-        ];
-      }
+    # A tester on a demo build newer than the public one keeps it: an installed
+    # APK cannot be replaced by an older one.
+    $keepsDemoBuild = $version && $version->is_demo && $targetVersion
+      && ReleaseResolver::isNewer($version, $targetVersion);
+
+    if ($targetVersion && $version?->id !== $targetVersion->id && !$keepsDemoBuild) {
+      $available_version = [
+        'id' => $targetVersion->id,
+        'name' => $targetVersion->name,
+        'updateType' => $targetVersion->update_type,
+        # SHA-256 of the installer, to verify the download (null if unknown).
+        'checksum' => $targetVersion->file?->checksum,
+        'demo' => (bool) $targetVersion->is_demo,
+      ];
     }
 
     $available_bundle = null;
-    if (!$available_version && $version && $version->latest_id && $bundle?->id !== $version->latest_id) {
-      $latestBundle = $version->latest;
+    $targetBundle = !$available_version && $version ? ReleaseResolver::bundleFor($version, $device) : null;
 
-      if ($latestBundle) {
-        $available_bundle = [
-          'id'   => $version->latest_id,
-          'name' => $latestBundle->name,
-          'updateType' => $latestBundle->update_type,
-          'checksum' => $latestBundle->file?->checksum,
-        ];
-      }
+    if ($targetBundle && $bundle?->id !== $targetBundle->id) {
+      $available_bundle = [
+        'id'   => $targetBundle->id,
+        'name' => $targetBundle->name,
+        'updateType' => $targetBundle->update_type,
+        'checksum' => $targetBundle->file?->checksum,
+        'demo' => (bool) $targetBundle->is_demo,
+      ];
     }
 
     $session = $device->createToken(
@@ -206,6 +214,10 @@ class AppController extends Controller
     $device = Device::find($request->attributes->get('device_id'));
     if (!$device) throw new \Exception("Device not found for device_id: {$request->attributes->get('device_id')}");
 
+    # The API key alone never fetches an unpromoted demo.
+    if (ReleaseResolver::isHiddenDemo($bundle, $device))
+      return $this->apiErrorResponse('Not found', [], 404);
+
     # OtaApiKeyMiddleware already matched the API-KEY to this bundle's version,
     # so the artifact belongs to the caller's app. No session is involved.
 
@@ -237,6 +249,9 @@ class AppController extends Controller
 
     $device = Device::find($request->attributes->get('device_id'));
     if (!$device) throw new \Exception("Device not found for device_id: {$request->attributes->get('device_id')}");
+
+    if (ReleaseResolver::isHiddenDemo($version, $device))
+      return $this->apiErrorResponse('Not found', [], 404);
 
     # OtaApiKeyMiddleware already matched the API-KEY to this version, so the
     # artifact belongs to the caller's app. No session is involved.

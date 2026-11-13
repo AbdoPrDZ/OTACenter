@@ -17,6 +17,20 @@ Versions are nested under an app. The parent is verified by the `rec.parent` mid
 | `GET` | `/api/app/{app}/version/{version}` | `version.view` |
 | `PUT` | `/api/app/{app}/version/{version}` | `version.update` |
 | `DELETE` | `/api/app/{app}/version/{version}` | `version.delete` |
+| `POST` | `/api/app/{app}/version/{version}/activate` | `version.publish` |
+| `POST` | `/api/app/{app}/version/{version}/activate-demo` | `version.publish` |
+| `POST` | `/api/app/{app}/version/{version}/promote` | `version.publish` |
+| `DELETE` | `/api/app/{app}/version/demo` | `version.publish` |
+
+## Publishing
+
+- **`activate`** makes the version the app's public one (`apps.latest_id`). Activating a demo version
+  publicly is the same as promoting it.
+- **`activate-demo`** makes it the app's demo version (`apps.demo_latest_id`): only demo-eligible devices
+  are offered it. See [Demo releases](/guides/demo-releases).
+- **`promote`** turns a demo version public: `is_demo` is cleared, `promoted_at` is set, and the demo
+  pointer is cleared.
+- **`DELETE …/version/demo`** withdraws the app's demo version; testers fall back to the public one.
 
 ## Fields
 
@@ -27,12 +41,19 @@ Versions are nested under an app. The parent is verified by the `rec.parent` mid
 | `api_key` | string | the client sends it as `API-KEY` |
 | `status` | enum | `draft` · `review` · `published` · `cancelled` |
 | `update_type` | enum | `optional` · `force` — whether the OTA client may skip the update |
-| `file` | file | the APK installer (create/update) |
-| `latest_id` | int? | the version's active bundle |
+| `client_type` | enum | `ota-client` (bare React Native, `react-ota-client`) · `expo` (`expo-ota-client`). Decides the bundle format and the device routes. Default `ota-client` |
+| `is_demo` | bool | a demo build: never served publicly until promoted |
+| `promoted_at` | datetime? | when a demo was promoted |
+| `file` | file | the APK installer (create/update); optional for `expo`, where the build may ship through a store |
+| `latest_id` | int? | the version's active (public) bundle |
+| `demo_latest_id` | int? | the version's demo bundle |
 
 ```jsonc
 // POST /api/app/1/version  (multipart)
 { "name": "1.4.0", "api_key": "…", "changelog": "…", "file": <apk> }
+
+// an Expo version: the name is the app's runtimeVersion
+{ "name": "1.0.0", "client_type": "expo", "api_key": "…" }
 ```
 
 <Callout type="warning" title="api_key is sensitive">

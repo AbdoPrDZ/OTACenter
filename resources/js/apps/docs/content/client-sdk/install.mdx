@@ -1,6 +1,6 @@
 ---
 title: Install
-description: Add ota-client to a React Native Android app and verify the native module.
+description: Add react-ota-client to a React Native Android app and verify the native module.
 order: 1
 ---
 
@@ -20,25 +20,22 @@ order: 1
 From npm:
 
 ```bash
-npm install ota-client
+npm install react-ota-client
 # or
-yarn add ota-client
+yarn add react-ota-client
 ```
 
-From GitHub — before the package is on the registry, or to pin a revision:
+From GitHub, to pin a revision:
 
 ```bash
-# repo name is react-ota-client, npm name is ota-client
-npm install github:AbdoPrDZ/react-ota-client
-
 # pin a tag or commit in anything you deploy (not a branch)
-npm install github:AbdoPrDZ/react-ota-client#v1.0.0
+npm install github:AbdoPrDZ/react-ota-client#v1.5.0
 ```
 
 ## Step 2 — Verify autolinking
 
 ```bash
-npx react-native config | grep ota-client
+npx react-native config | grep react-ota-client
 ```
 
 If it does not appear, rebuild `android/app` so Gradle can link the new module.
@@ -46,7 +43,7 @@ If it does not appear, rebuild `android/app` so Gradle can link the new module.
 ## Step 3 — Run the doctor
 
 ```bash
-npx ota-client doctor
+npx react-ota-client doctor
 ```
 
 It checks the host project is wired up to receive OTA updates and prints anything missing.

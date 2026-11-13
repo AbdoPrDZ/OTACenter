@@ -17,14 +17,17 @@ requirement in the frontend still applies to it, but the backend treats it as om
 
 | Resource | Permissions |
 |----------|-------------|
-| `app` | `app.view`, `app.create`, `app.update`, `app.delete` |
-| `version` | `version.view`, `version.create`, `version.update`, `version.delete` |
-| `bundle` | `bundle.view`, `bundle.create`, `bundle.update`, `bundle.delete` |
-| `screenshot` | `screenshot.view`, `screenshot.create`, `screenshot.delete` |
+| `app` | `app.view`, `app.create`, `app.update`, `app.delete`, `app.publish`, `app.download_link` |
+| `version` | `version.view`, `version.create`, `version.update`, `version.delete`, `version.publish` |
+| `bundle` | `bundle.view`, `bundle.create`, `bundle.update`, `bundle.delete`, `bundle.publish` |
+| `screenshot` | `screenshot.view`, `screenshot.create`, `screenshot.update`, `screenshot.delete` |
 | `domain` | `domain.view`, `domain.create`, `domain.update`, `domain.delete`, `domain.assign_app`, `domain.unassign_app`, `domain.assign_user`, `domain.unassign_user` |
 | `user` | `user.view`, `user.invite`, `user.delete` |
+| `device` | `device.link` |
 | `role` | `role.view`, `role.attach`, `role.detach` |
 | `permission` | `permission.view`, `permission.attach`, `permission.detach` |
+| `review` | `review.view`, `review.create`, `review.update`, `review.delete`, `review.moderate` |
+| `log` | `log.view`, `log.delete` |
 
 ## Examples
 
@@ -36,6 +39,10 @@ requirement in the frontend still applies to it, but the backend treats it as om
 | Bind an app to a domain | `domain.assign_app` |
 | Bind a user to a domain | `domain.assign_user` |
 | Invite a user | `user.invite` |
+| Activate, demo, promote or withdraw a version | `version.publish` |
+| Activate, demo, promote or withdraw a bundle | `bundle.publish` |
+| Create a demo link code for another user, or unlink a device | `device.link` (`super-admin`, `admin`) |
+| Create a demo link code for yourself | signed in, no permission |
 | Open Statistics | role `super-admin` or `admin` |
 
 ## How it is enforced

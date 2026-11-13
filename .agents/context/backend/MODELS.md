@@ -29,6 +29,9 @@ Conventions used across models:
 - **Validation**: create requires `name`, `package_name` (unique on `apps.package_name`), nullable
   `summary`/`description`/`logo` (image file ≤ 2048 KB). Update uses `sometimes`, unique ignores the
   record, and accepts `latest_id => sometimes|nullable|exists:versions,id`.
+- **Demo pointer**: `demo_latest_id` → `demoLatest()` (the app's demo version). Every "which version does
+  this device get" decision goes through `Services\Releases\ReleaseResolver`, not `latest()` directly
+  (see EXPO-DEMO.md).
 
 ## `Domain` — table `domains`
 `#[Fillable(['name', 'description', 'is_public', 'image_id'])]`
@@ -43,6 +46,7 @@ Conventions used across models:
   `is_public` (cast to bool) that publishes the domain's apps on the public store
   (`PublicStoreController`). Update `sometimes`; note the
   update rules include a stray `summary` field (not a real column) — bug.
+- `allow_demo` (bool): members may install demo releases of the domain's apps (`Releases\DemoAccess`).
 
 ## `Version` — table `versions`
 `#[Fillable(['app_id', 'name', 'changelog', 'status', 'update_type', 'file_id', 'api_key', 'latest_id'])]`
@@ -59,6 +63,11 @@ Conventions used across models:
   `latest_id => sometimes|nullable|exists:bundles,id`.
   (Note: `status` is `sometimes|nullable|in:draft,review,published,cancelled` on both; the controller
   defaults a missing `status` to `draft` on create.)
+- **Client type**: `client_type` is `ota-client` (`Version::CLIENT_OTA`, the `react-ota-client` package) or
+  `expo` (`CLIENT_EXPO`, `isExpo()`). The APK `file` is `required_unless:client_type,expo`. For Expo the
+  version `name` is the app's runtime version.
+- **Demo**: `is_demo`, `promoted_at`, and `demo_latest_id` → `demoLatest()` (the version's demo bundle).
+  See EXPO-DEMO.md.
 
 ## `Bundle` — table `bundles`
 `#[Fillable(['version_id', 'name', 'changelog', 'status', 'update_type', 'file_id'])]`
@@ -69,12 +78,23 @@ Conventions used across models:
   `OTAClient\AppController::info()` as `availableUpdates.bundle.updateType`.
 - **Relations**: `version()` → `belongsTo(Version, 'version_id', 'id')`; `file()` →
   `belongsTo(File, 'file_id', 'name')`.
+- **Expo / demo**: `is_demo`, `promoted_at`, `expo_update_id`, `expo_metadata`; `assets()` →
+  `hasMany(BundleAsset)`, `isExpo()`, `platforms()`, `hasPlatform()`. Validation also accepts `is_demo` and
+  `runtime_version`. See EXPO-DEMO.md.
 - **Validation**: create requires **`name`** (the bundle version string, mirroring `versions.name` —
-  `bundle_version` was dropped) and `file` (`file|extensions:zip|max:102400` — **extension-only**,
+  `bundle_version` was dropped) and `file` (`file|extensions:zip,tar,gz,tgz|max:102400` — **extension-only**,
   archive content is NOT sniffed/validated, uploads are opaque); `changelog` nullable, `status`
   `sometimes|nullable|in:draft,review,published,cancelled`. Update uses `sometimes` with a nullable
   file. The active bundle is selected via `Version::latest()` / `versions.latest_id` (written by
   `BundleController::activate`), not a field on the bundle.
+
+## `BundleAsset` — table `bundle_assets`
+One file of an Expo bundle for one platform (`path`, `key`, `hash`, `content_type`, `file_extension`,
+`is_launch_asset`, `size`). Written by `Services\Expo\ExpoBundleImporter`. See EXPO-DEMO.md.
+
+## `DeviceLinkCode` — table `device_link_codes`
+One-time code linking a device to a user for demo access. `issue()` returns the plain 8-character code
+once (stored as `code_hash`); `findUsable()` / `hash()`; default TTL 15 min, max 1440. See EXPO-DEMO.md.
 
 ## `File` — table `files`
 `#[Fillable(['name', 'disk', 'path', 'checksum'])]`, `#[Hidden(['path', 'created_at', 'updated_at'])]`

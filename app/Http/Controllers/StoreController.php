@@ -49,7 +49,7 @@ class StoreController extends Controller
         'logo',
         'domains',
         'latest',
-        'versions' => fn ($q) => $q->where('status', 'published')->orderByDesc('id'),
+        'versions' => fn ($q) => $q->where('status', 'published')->where('is_demo', false)->orderByDesc('id'),
       ],
       query: $query,
       selects: ['apps.*'],
@@ -71,7 +71,7 @@ class StoreController extends Controller
       'domains',
       'screenshots',
       'latest',
-      'versions' => fn ($q) => $q->where('status', 'published')->orderByDesc('id'),
+      'versions' => fn ($q) => $q->where('status', 'published')->where('is_demo', false)->orderByDesc('id'),
     ]);
 
     $app->loadAvg(['reviews' => fn ($q) => $q->where('status', 'published')], 'rating');
@@ -184,7 +184,7 @@ class StoreController extends Controller
   private function scopedAppsQuery(User $user)
   {
     $query = App::query()
-      ->whereHas('versions', fn ($q) => $q->where('status', 'published'))
+      ->whereHas('versions', fn ($q) => $q->where('status', 'published')->where('is_demo', false))
       ->orderBy('name');
 
     if (!$this->isPrivileged($user))
@@ -200,7 +200,7 @@ class StoreController extends Controller
 
   private function isVisible(App $app, User $user): bool
   {
-    if (!$app->versions()->where('status', 'published')->exists())
+    if (!$app->versions()->where('status', 'published')->where('is_demo', false)->exists())
       return false;
 
     if ($this->isPrivileged($user))
@@ -224,6 +224,7 @@ class StoreController extends Controller
 
     return $app->versions()
       ->where('status', 'published')
+      ->where('is_demo', false)
       ->orderByDesc('id')
       ->first();
   }

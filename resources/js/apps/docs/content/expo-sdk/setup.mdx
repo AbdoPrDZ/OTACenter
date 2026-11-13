@@ -1,0 +1,137 @@
+---
+title: Setup
+description: Install expo-ota-client, create the Expo version and configure the plugin.
+order: 1
+---
+
+# Setup
+
+## Requirements
+
+| | |
+| --- | --- |
+| Expo SDK | 52+ |
+| Build | development build or EAS Build (not Expo Go) |
+| Node | 18+ for the CLI |
+
+<Steps>
+<Step title="Install">
+
+```bash
+npx expo install expo-updates expo-device
+npm install expo-ota-client
+```
+
+`expo-device` is optional; with it, OTACenter shows the device's maker and model.
+
+</Step>
+<Step title="Create the version in OTACenter">
+
+**Apps → your app → Add version**, with:
+
+- **Client**: *Expo*
+- **Name**: your app's `runtimeVersion` (e.g. `1.0.0`)
+- **API key**: any secret; the app sends it with every request
+
+The app's **package name** must equal `android.package` / `ios.bundleIdentifier`.
+
+</Step>
+<Step title="Configure the plugin">
+
+```json
+{
+  "expo": {
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "android": { "package": "com.example.app" },
+    "ios": { "bundleIdentifier": "com.example.app" },
+    "plugins": [
+      [
+        "expo-ota-client",
+        {
+          "serverUrl": "https://ota.example.com",
+          "apiKey": "the-version-api-key",
+          "iosUpdateUrl": "https://apps.apple.com/app/id0000000000"
+        }
+      ]
+    ]
+  }
+}
+```
+
+`runtimeVersion` must be a fixed string or `{ "policy": "appVersion" }`: OTACenter finds the version by
+that name.
+
+</Step>
+<Step title="Wrap the app">
+
+```tsx
+import { OTAProvider } from "expo-ota-client";
+
+export default function App() {
+  return (
+    <OTAProvider onError={(error) => console.warn(error)}>
+      <RootNavigator />
+    </OTAProvider>
+  );
+}
+```
+
+The provider always renders your app, so an unreachable server never blocks it.
+
+</Step>
+<Step title="Build and check">
+
+Rebuild (`npx expo prebuild` / `eas build`), then verify the wiring against the server:
+
+```bash
+npx expo-ota-client doctor
+```
+
+</Step>
+</Steps>
+
+## Plugin options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `serverUrl` | required | OTACenter URL. Must be `https` unless `allowInsecure`. |
+| `apiKey` | required | API key of this runtime's version. |
+| `package` | `android.package` / `ios.bundleIdentifier` | Package name in OTACenter. |
+| `checkAutomatically` | `NEVER` | `expo-updates`' own launch check. Keep `NEVER` so the provider runs the check and shows the UI. |
+| `codeSigningCertificate` | — | Path to the certificate (see below). |
+| `codeSigningKeyId` | `main` | Must match the server's `OTA_EXPO_SIGNING_KEY_ID`. |
+| `iosUpdateUrl` | — | Where iOS users go when a new native build exists. |
+| `allowInsecure` | `false` | Allow `http://` (local testing only; also allows cleartext traffic on Android). |
+| `inAppNativeUpdates` | `true` | `false` removes `REQUEST_INSTALL_PACKAGES` (needed on Google Play); new native builds then open in the browser. |
+
+## Code signing (optional)
+
+```bash
+npx expo-ota-client cert
+```
+
+<Steps>
+<Step title="App">
+
+Add `"codeSigningCertificate": "./certs/certificate.pem"` to the plugin options and rebuild.
+
+</Step>
+<Step title="Server">
+
+Copy `keys/private-key.pem` to the OTACenter server and set `OTA_EXPO_SIGNING_KEY` to its path (and
+`OTA_EXPO_SIGNING_KEY_ID` if you changed the key id). Keep `keys/` out of git.
+
+</Step>
+</Steps>
+
+The app then rejects any update the server didn't sign.
+
+## How the device is identified
+
+`expo-updates` sends no stable device id to a custom server. The package generates one on first launch and
+stores it as an `expo-updates` extra parameter, so it reaches OTACenter in the `Expo-Extra-Params` header
+on every update request. Until that first launch has run, the device gets public updates only. The id
+survives updates, but not a reinstall.
+
+Next: [Publishing](/expo-sdk/publishing).

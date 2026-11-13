@@ -8,8 +8,9 @@ order: 4
 
 ## Does it support iOS?
 
-The server is platform-agnostic, but the `ota-client` engine is **Android only**. On iOS the components
-are safe no-ops; you can still use the server for APK distribution.
+Yes, for **Expo apps**: OTACenter speaks the Expo Updates protocol, so an app built with
+[`expo-ota-client`](/expo-sdk) receives JS updates on Android and iOS. The bare React Native engine,
+`react-ota-client`, is **Android only**; on iOS its components are safe no-ops.
 
 ## Do I need Active Directory to run it?
 
@@ -36,11 +37,10 @@ LDAP. See [Core concepts](/concepts).
 Automatic rollback: a bundle must confirm a successful launch, otherwise the next launch reverts to the
 previous (or embedded) bundle. A bad OTA cannot brick the app.
 
-## Why is there no ‘activate bundle’ button?
+## How do I test a release before everyone gets it?
 
-The dashboard tracks a version's active bundle (`versions.latest_id`), but the HTTP route to change it is
-not wired yet. Uploading, listing and downloading bundles all work; activation is a backend/DB step for
-now.
+Publish it as a **demo**: only devices linked to users in a domain with *Demo releases* enabled receive it,
+until you **promote** it. See [Demo releases](/guides/demo-releases).
 
 ## Why do list requests need a `pageSize`?
 
@@ -54,4 +54,7 @@ apps (including these docs) update together. See [Design system](/frontend/desig
 
 ## Where is the client source?
 
-[github.com/AbdoPrDZ/react-ota-client](https://github.com/AbdoPrDZ/react-ota-client) (npm `ota-client`).
+- Bare React Native: [github.com/AbdoPrDZ/react-ota-client](https://github.com/AbdoPrDZ/react-ota-client)
+  (npm `react-ota-client`).
+- Expo: [github.com/AbdoPrDZ/expo-ota-client](https://github.com/AbdoPrDZ/expo-ota-client)
+  (npm `expo-ota-client`).

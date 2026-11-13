@@ -7,7 +7,7 @@ use App\Src\ValidationType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'package_name', 'summary', 'description', 'logo_id', 'latest_id', 'status' ])]
+#[Fillable(['name', 'package_name', 'summary', 'description', 'logo_id', 'latest_id', 'demo_latest_id', 'status' ])]
 class App extends Model
 {
   protected $appends = [ 'logo_url' ];
@@ -44,6 +44,12 @@ class App extends Model
     return $this->belongsTo(Version::class, 'latest_id', 'id');
   }
 
+  /** The demo version, served only to devices that pass `DemoAccess`. */
+  public function demoLatest()
+  {
+    return $this->belongsTo(Version::class, 'demo_latest_id', 'id');
+  }
+
   public function getLogoUrlAttribute()
   {
     return $this->logo?->url;
@@ -64,6 +70,7 @@ class App extends Model
       'logo_url'     => $this->logo_url,
       'latest_id'    => $this->latest_id,
       'latest'       => $this->latest?->toArray(),
+      'demo_latest_id' => $this->demo_latest_id,
       'created_at'   => $this->created_at,
     ];
 

@@ -1,14 +1,18 @@
 ---
 title: Client
-description: The ota-client package — its layers and platform support.
+description: The react-ota-client package — its layers and platform support.
 order: 1
 ---
 
-# Client (`ota-client`)
+# Client (`react-ota-client`)
 
-The client is a separate package: [`github.com/AbdoPrDZ/react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client),
-published to npm as **`ota-client`**. A device ships one JS bundle inside the APK; this package replaces it
-at runtime.
+The bare React Native client is a separate package:
+[`github.com/AbdoPrDZ/react-ota-client`](https://github.com/AbdoPrDZ/react-ota-client), published to npm as
+**`react-ota-client`** (`ota-client` up to 1.4.x). A device ships one JS bundle inside the APK; this package
+replaces it at runtime.
+
+Expo apps use [`expo-ota-client`](/expo-sdk) instead: there the engine is Expo's `expo-updates`, which talks
+to OTACenter over the Expo Updates protocol, and this page's Kotlin engine is not involved.
 
 ## Layers
 
@@ -24,7 +28,7 @@ at runtime.
 | **Native engine** | HTTP, streaming download, extraction, verification, staging, activation and restart. |
 | **JS facade** | `OtaClient` — a typed, promise-based wrapper over the native module. |
 | **React layer** | `<OTAProvider>` plus overlay/splash/configure screens and hooks. |
-| **CLI** | `ota-client doctor \| android \| release \| apk`. |
+| **CLI** | `react-ota-client doctor \| android \| release \| apk`. |
 
 ## Platform support
 

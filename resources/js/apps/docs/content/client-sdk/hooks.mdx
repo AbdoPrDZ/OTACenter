@@ -13,7 +13,7 @@ Use the hooks when you want your own UI instead of the built-in screens.
 Returns the full context: status, native snapshot, check result, progress, error, and the actions.
 
 ```tsx
-import { useOTA } from "ota-client";
+import { useOTA } from "react-ota-client";
 
 function UpdateBar() {
   const { status, check, progress, downloadAndInstall, error } = useOTA();

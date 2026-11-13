@@ -77,6 +77,8 @@ class SecuritySeeder extends Seeder
       'review.delete'        => ['super-admin', 'admin'],
       'review.moderate'      => ['super-admin', 'admin'],
 
+      'device.link'          => ['super-admin', 'admin'],
+
       'log.view'             => ['super-admin', 'admin', 'developer'],
       'log.delete'           => ['super-admin', 'admin'],
     ];

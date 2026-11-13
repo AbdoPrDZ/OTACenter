@@ -60,11 +60,20 @@ few keys are then forced by `docker-compose.yml`. See **[Docker](/guides/docker)
 | `QUEUE_CONNECTION` | `database` |
 | `FILESYSTEM_DISK` | `local` |
 
+## Expo updates
+
+| Key | Notes |
+|-----|-------|
+| `OTA_EXPO_SIGNING_KEY` | path to a PEM RSA private key; when set, manifests are signed for apps that ask for it (`codeSigningCertificate`) |
+| `OTA_EXPO_SIGNING_KEY_ID` | key id in the signature; default `main`, must match the app's `codeSigningKeyId` |
+| `OTA_EXPO_ASSET_URL_TTL` | lifetime of the signed asset URLs, in minutes; default `1440` (one day) |
+
 ## Client CLI
 
 | Key | Notes |
 |-----|-------|
-| `RELEASE_DIR` | default output for `ota-client release` / `apk` |
+| `RELEASE_DIR` | default output for `react-ota-client release` / `apk` |
 | `OTA_CLIENT_DEBUG` | print stack traces from the CLI |
+| `OTA_TOKEN` | admin API token for `expo-ota-client publish` / `promote` (read on the developer machine, not the server) |
 
 Next: [Permissions](/reference/permissions).

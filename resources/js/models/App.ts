@@ -14,6 +14,8 @@ export interface IApp extends IModel {
   domains?: IDomain[];
   latest_id?: number | null;
   latest?: IVersion | null;
+  /** The demo version, offered only to demo-eligible devices. */
+  demo_latest_id?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,7 @@ const AppModel = createModel<IApp>("app", [
   { name: "domains", type: "array" },
   { name: "latest_id", type: "number" },
   { name: "latest", type: "object" },
+  { name: "demo_latest_id", type: "number" },
   { name: "created_at", type: "date" },
   { name: "updated_at", type: "date" },
 ], true);

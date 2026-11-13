@@ -17,8 +17,9 @@ import {
 
 # Architecture overview
 
-OTACenter is a **Laravel monolith with React SPAs** on the server side, plus a **separate React Native
-client package**. It exposes two APIs: an admin API for the dashboard and a device API for the client SDK.
+OTACenter is a **Laravel monolith with React SPAs** on the server side, plus **two separate client
+packages**: `react-ota-client` for bare React Native and `expo-ota-client` for Expo. It exposes an admin
+API for the dashboard and a device API for the clients, including the Expo Updates protocol.
 
 ## The system at a glance
 
@@ -26,7 +27,8 @@ client package**. It exposes two APIs: an admin API for the dashboard and a devi
 |------|--------------|
 | **Server** — Laravel | Admin API `/api/*` (Sanctum + permission middleware) · Device API `/ota-client/v1/*` (Sanctum ability + `DeviceMiddleware`) · models (`App`, `Version`, `Bundle`, `Domain`, `User`, `File`, `Device`) and the `Tabling` pipeline · files at `/files/{name}` |
 | **SPAs** — Vite/React | `home` · `docs` · `auth` · `dashboard` |
-| **Client** — `ota-client` | Kotlin engine + typed JS + CLI; talks over HTTPS with `X-Device-Info`, `API-KEY` and a session |
+| **Client** — `react-ota-client` | Kotlin engine + typed JS + CLI; talks over HTTPS with `X-Device-Info`, `API-KEY` and a session |
+| **Client** — `expo-ota-client` | `expo-updates` as the engine (manifest and assets from `/ota-client/v1/expo/*`), plus update UI, demo linking and a release CLI |
 
 ## Publishing pipeline
 
@@ -56,7 +58,7 @@ previous (or embedded) bundle. A bad OTA cannot brick the app.
 ## Sections
 
 - **[Server](/architecture/server)** — Laravel models, controllers, the Tabling pipeline, auth and RBAC.
-- **[Client](/architecture/client)** — the `ota-client` package internals.
+- **[Client](/architecture/client)** — the `react-ota-client` package internals.
 - **[Data flow](/architecture/data-flow)** — the exact HTTP sequence for an update.
 
 Then: [Architecture → Server](/architecture/server).

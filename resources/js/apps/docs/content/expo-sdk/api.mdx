@@ -1,0 +1,82 @@
+---
+title: API
+description: The useOTA hook, OTAProvider props and the imperative OtaClient.
+order: 3
+---
+
+# API
+
+## Hook
+
+```tsx
+import { useOTA } from "expo-ota-client";
+
+const {
+  status,             // 'disabled' | 'idle' | 'checking' | 'up-to-date' | 'update-available'
+                      // | 'native-update-available' | 'downloading' | 'restarting' | 'failed'
+  update,             // bundleName, changelog, updateType, demo
+  nativeUpdate,       // name, url, updateType, demo
+  forceUpdate, isDemo, progress, error, dismissed, running,
+  downloadKind,       // 'update' | 'native' | null while downloading
+  checkForUpdates, downloadAndInstall,
+  openNativeUpdate,   // Android: in-app APK download + installer; iOS: store link
+  cancelDownload,     // cancels the in-app APK download
+  dismissUpdate, retry,
+} = useOTA();
+```
+
+## Provider props
+
+| Prop | Default | |
+| --- | --- | --- |
+| `autoCheck` | `true` | Check on mount. |
+| `checkNativeUpdates` | `true` | Ask for a new native build when there's no JS update. |
+| `confirmDelayMs` | `2000` | When to report the launch outcome. |
+| `reportEvents` | `true` | Send activity events to OTACenter. |
+| `showUpdateOverlay` | `true` | Render the built-in dialog. |
+| `overlayProps` | — | `copy`, styles, or `render` for your own UI. |
+| `onStatusChange`, `onUpdateAvailable`, `onNativeUpdateAvailable`, `onError` | — | Callbacks. |
+
+## Imperative
+
+```ts
+import { OtaClient } from "expo-ota-client";
+
+OtaClient.isEnabled();
+OtaClient.getRunningInfo();          // updateId, runtimeVersion, isEmbedded, bundleName, demo
+await OtaClient.checkForUpdate();    // { type: 'none' | 'update' | 'rollback' }
+await OtaClient.downloadUpdate();
+await OtaClient.applyUpdate();       // restart into it
+await OtaClient.checkNativeUpdate(); // a newer native build, or null
+await OtaClient.installNativeUpdate(native, { onProgress: (fraction) => {} });
+await OtaClient.reportEvent("update.refused", { reason: "later" });
+```
+
+## Demo access screen
+
+```tsx
+import { OTADemoAccessScreen, useOTA } from "expo-ota-client";
+
+function DemoSettings() {
+  const { checkForUpdates } = useOTA();
+
+  return <OTADemoAccessScreen onLinked={() => void checkForUpdates()} />;
+}
+```
+
+Put it behind a settings or debug menu. The tester enters the code from **Users → user → Demo access**;
+`OtaClient.linkDevice(code)`, `unlinkDevice()` and `getDeviceLink()` are available for a custom UI. See
+[Demo releases](/guides/demo-releases).
+
+## Troubleshooting
+
+**`doctor` says the API key is rejected** — use the key of the version whose name equals the runtime
+version.
+
+**No update arrives** — the bundle must be published (activated, or a demo for a linked tester) on the
+version matching the runtime, and contain the device's platform.
+
+**The dialog never shows** — a `checkAutomatically` other than `NEVER` lets `expo-updates` download the
+update silently at launch; it then applies on the next start without a prompt.
+
+The full package reference is in the [expo-ota-client README](https://github.com/AbdoPrDZ/expo-ota-client#readme).

@@ -7,6 +7,7 @@ use App\Models\AppScreenshot;
 use App\Models\DownloadHistory;
 use App\Models\Log;
 use App\Models\Version;
+use App\Services\Releases\ReleasePublisher;
 use App\Src\Controller;
 use App\Src\ValidationType;
 use Illuminate\Http\Request;
@@ -103,6 +104,9 @@ class AppController extends Controller
       if ($version && $version->status !== 'published') {
         $version->update(['status' => 'published']);
       }
+
+      # Making a demo version the public one promotes it.
+      if ($version) ReleasePublisher::versionPublished($app->fresh(), $version->fresh());
     }
 
     Log::record('app.updated', "App {$app->name} updated", array_values(array_filter([$app, Auth::user()])));

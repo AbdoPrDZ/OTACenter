@@ -19,24 +19,28 @@ export default function DocsPage() {
   const meta = getDocMeta(slug);
 
   const articleRef = useRef<HTMLElement>(null);
-  const [mod, setMod] = useState<MdxModule | null>(null);
-  const [missing, setMissing] = useState(false);
+  // Each loaded module (or "missing" result) is tagged with the slug it belongs
+  // to. On navigation the component re-renders with the new slug before the new
+  // module arrives; without the tag it would render the previous page's content
+  // under the new slug, and the "On this page" list would scan that stale page.
+  const [loaded, setLoaded] = useState<{ slug: string; module: MdxModule } | null>(null);
+  const [missingSlug, setMissingSlug] = useState<string | null>(null);
+  const mod = loaded?.slug === slug ? loaded.module : null;
+  const missing = missingSlug === slug;
 
   useEffect(() => {
     let cancelled = false;
-    setMod(null);
-    setMissing(false);
     window.scrollTo({ top: 0 });
 
     const cached = cache.get(slug);
     if (cached) {
-      setMod(cached);
+      setLoaded({ slug, module: cached });
       return;
     }
 
     const loader = loadDoc(slug);
     if (!loader) {
-      setMissing(true);
+      setMissingSlug(slug);
       return;
     }
 
@@ -44,10 +48,10 @@ export default function DocsPage() {
       .then((module) => {
         if (cancelled) return;
         cache.set(slug, module);
-        setMod(module);
+        setLoaded({ slug, module });
       })
       .catch(() => {
-        if (!cancelled) setMissing(true);
+        if (!cancelled) setMissingSlug(slug);
       });
 
     return () => {
@@ -116,7 +120,7 @@ export default function DocsPage() {
         </MDXProvider>
       </article>
 
-      <DocsToc containerRef={articleRef} contentKey={slug} />
+      <DocsToc key={slug} containerRef={articleRef} contentKey={slug} />
     </div>
   );
 }

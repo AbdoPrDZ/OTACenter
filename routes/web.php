@@ -4,6 +4,7 @@ use App\Http\Controllers\AppController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\DeviceLinkCodeController;
 use App\Http\Controllers\DownloadLinkController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\PermissionController;
@@ -106,6 +107,8 @@ Route::prefix('api')->group(function () {
       Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
       Route::put('/profile', [AuthController::class, 'update'])->name('auth.update');
       Route::delete('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+      # A one-time code that links a device to the signed-in user (demo releases).
+      Route::post('/device-link-code', [DeviceLinkCodeController::class, 'storeForSelf'])->middleware('throttle:10,1')->name('auth.device_link_code');
     });
   });
 
@@ -139,6 +142,8 @@ Route::prefix('api')->group(function () {
     Route::prefix('log')->group(function () {
       Route::get('/', [LogController::class, 'index'])->middleware('permission:log.view')->name('log.index');
     });
+
+    Route::delete('/device/{device}/link', [DeviceLinkCodeController::class, 'unlink'])->whereNumber('device')->middleware('permission:device.link')->name('device.unlink');
 
     Route::prefix('domain')->group(function () {
       Route::get('/', [DomainController::class, 'index'])->middleware('permission:domain.view')->name('domain.index');
@@ -179,6 +184,9 @@ Route::prefix('api')->group(function () {
         });
 
         Route::get('/log', [LogController::class, 'indexByUser'])->middleware('permission:log.view')->name('user.log.index');
+
+        Route::get('/device', [DeviceLinkCodeController::class, 'devices'])->middleware('permission:user.view')->name('user.device.index');
+        Route::post('/device-link-code', [DeviceLinkCodeController::class, 'storeForUser'])->middleware('permission:device.link')->name('user.device_link_code.store');
       });
     });
 
@@ -226,19 +234,28 @@ Route::prefix('api')->group(function () {
         Route::prefix('/version')->group(function () {
           Route::get('/', [VersionController::class, 'index'])->middleware('permission:version.view')->name('app.version.index');
           Route::post('/', [VersionController::class, 'store'])->middleware('permission:version.create')->name('app.version.store');
+          # Withdraw the app's demo version (eligible devices fall back to the public one).
+          Route::delete('/demo', [VersionController::class, 'withdrawDemo'])->middleware('permission:version.publish')->name('app.version.demo.withdraw');
 
           Route::prefix('/{version}')->whereNumber('version')->middleware('rec.parent:app-apps-id,version-versions-app_id')->group(function () {
             Route::get('/', [VersionController::class, 'show'])->middleware('permission:version.view')->name('app.version.show');
             Route::put('/', [VersionController::class, 'update'])->middleware('permission:version.update')->name('app.version.update');
             Route::delete('/', [VersionController::class, 'destroy'])->middleware('permission:version.delete')->name('app.version.destroy');
+            Route::post('/activate', [VersionController::class, 'activate'])->middleware('permission:version.publish')->name('app.version.activate');
+            Route::post('/activate-demo', [VersionController::class, 'activateDemo'])->middleware('permission:version.publish')->name('app.version.activate_demo');
+            Route::post('/promote', [VersionController::class, 'promote'])->middleware('permission:version.publish')->name('app.version.promote');
 
             Route::prefix('/bundle')->group(function () {
               Route::get('/', [BundleController::class, 'index'])->middleware('permission:bundle.view')->name('app.version.bundle.index');
               Route::post('/', [BundleController::class, 'store'])->middleware('permission:bundle.create')->name('app.version.bundle.store');
+              Route::delete('/demo', [BundleController::class, 'withdrawDemo'])->middleware('permission:bundle.publish')->name('app.version.bundle.demo.withdraw');
 
               Route::prefix('/{bundle}')->whereNumber('bundle')->middleware(['permission:bundle.view', 'rec.parent:version-versions-id,bundle-bundles-version_id'])->group(function () {
                 Route::get('/', [BundleController::class, 'show'])->middleware('permission:bundle.view')->name('app.version.bundle.show');
                 Route::post('/activate', [BundleController::class, 'activate'])->middleware('permission:bundle.publish')->name('app.version.bundle.activate');
+                Route::post('/activate-demo', [BundleController::class, 'activateDemo'])->middleware('permission:bundle.publish')->name('app.version.bundle.activate_demo');
+                Route::post('/promote', [BundleController::class, 'promote'])->middleware('permission:bundle.publish')->name('app.version.bundle.promote');
+                Route::get('/assets', [BundleController::class, 'assets'])->name('app.version.bundle.assets');
                 Route::put('/', [BundleController::class, 'update'])->middleware('permission:bundle.update')->name('app.version.bundle.update');
                 Route::delete('/', [BundleController::class, 'destroy'])->middleware('permission:bundle.delete')->name('app.version.bundle.destroy');
               });

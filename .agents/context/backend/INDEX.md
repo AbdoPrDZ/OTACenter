@@ -16,6 +16,7 @@ Laravel.
 | [AUTH-LDAP.md](./AUTH-LDAP.md) | LDAP auth + Sanctum tokens, custom token format | `app/Ldap/User.php`, `config/ldap.php`, `AuthController`, `app/Models/User.php` |
 | [DATABASE.md](./DATABASE.md) | Migrations, seeders, factories | `database/*` |
 | [TESTS.md](./TESTS.md) | Test setup + feature-test conventions | `tests/*` |
+| [EXPO-DEMO.md](./EXPO-DEMO.md) | Expo Updates protocol server + demo releases + device linking | `app/Services/*`, `OTAClient/ExpoUpdatesController`, `OTAClient/DeviceLinkController` |
 
 ## Architecture at a glance
 

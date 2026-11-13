@@ -10,7 +10,7 @@ Everything the hooks do is also a plain async function on `OtaClient`. Use it ou
 background task, a CLI.
 
 ```tsx
-import OtaClient from "ota-client";
+import OtaClient from "react-ota-client";
 
 if (OtaClient.isSupported()) {
   await OtaClient.configure({ apiBaseUrl: "https://updates.example.com", apiVersion: "v1", apiKey: "KEY" });

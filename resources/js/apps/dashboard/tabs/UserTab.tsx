@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Link2, Unlink } from "lucide-react";
+import { FlaskConical, KeyRound, Link2, Smartphone, Unlink } from "lucide-react";
 
 import User, { IUser } from "@/models/User";
 import Domain, { IDomain } from "@/models/Domain";
 import Permission, { IPermission } from "@/models/Permission";
 import Role, { IRole } from "@/models/Role";
+import DeviceLink, { IDeviceLinkCode, ILinkedDevice } from "@/models/DeviceLink";
 
 import PageHeader from "@/components/PageHeader";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
@@ -99,6 +100,9 @@ function UserShow({ userId }: { userId: number }) {
           {can({ permission: "log.view" }) ? (
             <TabsTrigger value="activity">Activity</TabsTrigger>
           ) : null}
+          {can({ permission: "device.link" }) ? (
+            <TabsTrigger value="demo">Demo access</TabsTrigger>
+          ) : null}
         </TabsList>
 
         <TabsContent value="domains" className="mt-4">
@@ -179,6 +183,10 @@ function UserShow({ userId }: { userId: number }) {
           </Card>
         </TabsContent>
 
+        <TabsContent value="demo" className="mt-4">
+          <DemoAccessSection userId={userId} />
+        </TabsContent>
+
         <TabsContent value="security" className="mt-4">
           <SecuritySection userId={userId} />
         </TabsContent>
@@ -191,6 +199,119 @@ function UserShow({ userId }: { userId: number }) {
           <ActivityList url={`/user/${userId}/log`} />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/**
+ * Link codes and linked devices. A device receives demo releases once it is
+ * linked to a user who belongs to a domain that allows demos.
+ */
+function DemoAccessSection({ userId }: { userId: number }) {
+  const toast = useToast();
+  const [code, setCode] = useState<IDeviceLinkCode>();
+  const [creating, setCreating] = useState(false);
+  const [devices, setDevices] = useState<ILinkedDevice[]>();
+  const [unlinking, setUnlinking] = useState<number>();
+
+  const loadDevices = useCallback(() => {
+    DeviceLink.devices(userId).then((response) => {
+      if (response.success) setDevices(response.data ?? []);
+    });
+  }, [userId]);
+
+  useEffect(loadDevices, [loadDevices]);
+
+  const createCode = async () => {
+    setCreating(true);
+    const response = await DeviceLink.createForUser(userId, { expires_in_minutes: 30 });
+    setCreating(false);
+
+    if (response.success && response.data) setCode(response.data);
+    else toast.error("Could not create a code", response.message);
+  };
+
+  const unlink = async (device: ILinkedDevice) => {
+    setUnlinking(device.id);
+    const response = await DeviceLink.unlink(device.id);
+    setUnlinking(undefined);
+
+    if (response.success) {
+      toast.success("Device unlinked");
+      loadDevices();
+    } else {
+      toast.error("Could not unlink the device", response.message);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="inline-flex items-center gap-2">
+              <KeyRound className="size-4" /> Link a device
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm">
+          <p className="text-muted-foreground">
+            Create a one-time code and enter it in the app (demo access screen). The device is then
+            linked to this user and receives demo releases of every app bound to a domain of theirs
+            that allows demos.
+          </p>
+
+          {code ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+              <span className="font-mono text-2xl tracking-[0.3em]">
+                {code.code.slice(0, 4)}-{code.code.slice(4)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Single use · expires {new Date(code.expires_at).toLocaleTimeString()}
+              </span>
+            </div>
+          ) : null}
+
+          <div>
+            <Button size="sm" loading={creating} onClick={createCode}>
+              <FlaskConical /> {code ? "Create another code" : "Create link code"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Linked devices</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 text-sm">
+          {!devices ? (
+            <Spinner className="mx-auto size-4 text-muted-foreground" />
+          ) : devices.length === 0 ? (
+            <span className="text-muted-foreground">No device is linked to this user.</span>
+          ) : (
+            devices.map((device) => (
+              <div key={device.id} className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Smartphone className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">
+                    {[device.manufacturer, device.model].filter(Boolean).join(" ") || "Unknown device"}
+                  </span>
+                  <span className="truncate font-mono text-xs text-muted-foreground">{device.did}</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  loading={unlinking === device.id}
+                  onClick={() => unlink(device)}
+                >
+                  <Unlink /> Unlink
+                </Button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

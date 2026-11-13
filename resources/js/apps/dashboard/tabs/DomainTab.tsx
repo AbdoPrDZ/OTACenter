@@ -38,6 +38,32 @@ interface DomainFormValues {
   name: string;
   description: string;
   is_public: boolean;
+  allow_demo: boolean;
+}
+
+function DemoField({
+  checked,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="allow_demo">Demo releases</FieldLabel>
+      <FieldContent>
+        <label className="flex cursor-pointer items-center gap-3 text-sm">
+          <Switch checked={checked} onCheckedChange={onCheckedChange} aria-label="Allow demo installs" />
+          <span className="text-muted-foreground">
+            Let members install demo versions and bundles of this domain's apps
+          </span>
+        </label>
+        <p className="text-[0.6875rem] text-muted-foreground">
+          A member's device must be linked to them (Users → Demo access) before it receives demos.
+        </p>
+      </FieldContent>
+    </Field>
+  );
 }
 
 function PublicField({
@@ -66,11 +92,12 @@ function DomainCreate() {
   const navigate = useNavigate();
   const toast = useToast();
   const { register, handleSubmit, watch, setValue, setError, formState } = useForm<DomainFormValues>({
-    defaultValues: { is_public: false },
+    defaultValues: { is_public: false, allow_demo: false },
   });
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
   const isPublic = watch("is_public");
+  const allowDemo = watch("allow_demo");
 
   const onSubmit = async (data: DomainFormValues) => {
     setSubmitting(true);
@@ -79,6 +106,7 @@ function DomainCreate() {
     formData.append("name", data.name);
     formData.append("description", data.description);
     formData.append("is_public", data.is_public ? "1" : "0");
+    formData.append("allow_demo", data.allow_demo ? "1" : "0");
     if (image) formData.append("image", image);
 
     const response = await Domain.create(formData);
@@ -134,6 +162,8 @@ function DomainCreate() {
             </Field>
 
             <PublicField checked={isPublic} onCheckedChange={(value) => setValue("is_public", value)} />
+
+            <DemoField checked={allowDemo} onCheckedChange={(value) => setValue("allow_demo", value)} />
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => navigate("/dashboard/domains")}>
@@ -220,6 +250,10 @@ function DomainShow({ domainId }: { domainId: number }) {
                   <span className="text-muted-foreground">Public</span>
                   <span>{domain.is_public ? "Yes" : "No"}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Demo releases</span>
+                  <span>{domain.allow_demo ? "Allowed" : "No"}</span>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -240,17 +274,20 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
       name: domain.name,
       description: domain.description,
       is_public: domain.is_public,
+      allow_demo: domain.allow_demo,
     },
   });
   const [image, setImage] = useState<File>();
   const [submitting, setSubmitting] = useState(false);
   const isPublic = watch("is_public");
+  const allowDemo = watch("allow_demo");
 
   useEffect(() => {
     reset({
       name: domain.name,
       description: domain.description,
       is_public: domain.is_public,
+      allow_demo: domain.allow_demo,
     });
   }, [domain, reset]);
 
@@ -261,6 +298,7 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
     formData.append("name", data.name);
     formData.append("description", data.description);
     formData.append("is_public", data.is_public ? "1" : "0");
+    formData.append("allow_demo", data.allow_demo ? "1" : "0");
     if (image) formData.append("image", image);
 
     const response = await Domain.update(domain.id, formData);
@@ -310,6 +348,8 @@ function DomainEditForm({ domain, onSaved }: { domain: IDomain; onSaved: () => v
           </Field>
 
           <PublicField checked={isPublic} onCheckedChange={(value) => setValue("is_public", value)} />
+
+          <DemoField checked={allowDemo} onCheckedChange={(value) => setValue("allow_demo", value)} />
 
           <div className="flex justify-end">
             <Button type="submit" loading={submitting}>

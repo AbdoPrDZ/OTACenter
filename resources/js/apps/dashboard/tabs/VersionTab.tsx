@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm, type UseFormRegister } from "react-hook-form";
-import { FileUp, Plus, Rocket } from "lucide-react";
+import { FileUp, FlaskConical, Plus, Rocket } from "lucide-react";
 
 import Version, { IVersion } from "@/models/Version";
 import Bundle, { IBundle } from "@/models/Bundle";
@@ -11,6 +11,7 @@ import PageHeader from "@/components/PageHeader";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
 import ConfirmDelete from "@/components/ConfirmDelete";
 import { VersionStats } from "@/components/StatisticsViews";
+import { DemoReleaseCheckbox, ReleaseBadge, ReleaseRowActions, releaseState, useReleaseAction } from "@/components/ReleaseControls";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,6 +100,7 @@ function FileField({
 
 interface VersionFormValues {
   name: string;
+  client_type: "ota-client" | "expo";
   api_key: string;
   changelog: string;
   default_bundle_version?: string;
@@ -122,15 +124,35 @@ function UpdateTypeField({ register }: { register: UseFormRegister<VersionFormVa
   );
 }
 
+function ClientTypeField({ register }: { register: UseFormRegister<VersionFormValues> }) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="client_type">Client</FieldLabel>
+      <FieldContent>
+        <Select id="client_type" {...register("client_type")}>
+          <option value="ota-client">React Native — react-ota-client (Android)</option>
+          <option value="expo">Expo — expo-ota-client (Android &amp; iOS)</option>
+        </Select>
+        <p className="text-[0.6875rem] text-muted-foreground">
+          Decides the bundle format: a react-ota-client archive, or a zip of the Expo export. For Expo,
+          the version name is the app&apos;s runtime version.
+        </p>
+      </FieldContent>
+    </Field>
+  );
+}
+
 function VersionCreate({ appId }: { appId: number }) {
   const navigate = useNavigate();
   const toast = useToast();
   const appName = useAppName(appId);
-  const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>({
-    defaultValues: { update_type: "optional" },
+  const { register, handleSubmit, setError, formState, watch } = useForm<VersionFormValues>({
+    defaultValues: { update_type: "optional", client_type: "ota-client" },
   });
   const [file, setFile] = useState<File>();
+  const [asDemo, setAsDemo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const isExpo = watch("client_type") === "expo";
 
   const onSubmit = async (data: VersionFormValues) => {
     setSubmitting(true);
@@ -141,13 +163,21 @@ function VersionCreate({ appId }: { appId: number }) {
     formData.append("changelog", data.changelog);
     formData.append("default_bundle_version", data.default_bundle_version ?? "");
     formData.append("update_type", data.update_type);
+    formData.append("client_type", data.client_type);
     if (file) formData.append("file", file);
 
     const response = await Version.store(appId, formData);
 
     if (response.success) {
-      toast.success("Version created");
-      navigate(`/dashboard/apps/${appId}/versions/${(response.data as IVersion)?.id}`);
+      const created = response.data as IVersion;
+
+      if (asDemo && created?.id) {
+        const demo = await Version.activateDemo(appId, created.id);
+        if (!demo.success) toast.error("Created, but not published as a demo", demo.message);
+      }
+
+      toast.success(asDemo ? "Version created as a demo" : "Version created");
+      navigate(`/dashboard/apps/${appId}/versions/${created?.id}`);
       return;
     }
 
@@ -200,7 +230,14 @@ function VersionCreate({ appId }: { appId: number }) {
               </FieldContent>
             </Field>
 
-            <FileField label="APK file" file={file} onPick={setFile} />
+            <ClientTypeField register={register} />
+
+            <FileField
+              label={isExpo ? "APK file (optional)" : "APK file"}
+              file={file}
+              onPick={setFile}
+              hint={isExpo ? "An Expo build distributed through a store needs no installer here." : undefined}
+            />
 
             <Field>
               <FieldLabel htmlFor="default_bundle_version">Default bundle version</FieldLabel>
@@ -217,6 +254,8 @@ function VersionCreate({ appId }: { appId: number }) {
             </Field>
 
             <UpdateTypeField register={register} />
+
+            <DemoReleaseCheckbox checked={asDemo} onChange={setAsDemo} what="version" />
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => navigate(`/dashboard/apps/${appId}`)}>
@@ -294,6 +333,12 @@ function VersionShow({ appId, versionId }: { appId: number; versionId: number })
               </span>
               <Badge variant={statusVariant(version.status)}>{version.status}</Badge>
               {version.latest_id ? <Badge variant="primary">Published</Badge> : null}
+              <Badge variant="info">{version.client_type === "expo" ? "Expo" : "React Native"}</Badge>
+              {version.is_demo ? (
+                <Badge variant="warning">
+                  <FlaskConical className="mr-1 inline size-3" /> Demo build
+                </Badge>
+              ) : null}
             </div>
 
             {can({ permission: "version.update" }) ? (
@@ -331,6 +376,7 @@ function VersionEditForm({
   const { register, handleSubmit, setError, formState } = useForm<VersionFormValues>({
     defaultValues: {
       name: version.name,
+      client_type: version.client_type ?? "ota-client",
       api_key: version.api_key,
       changelog: version.changelog,
       default_bundle_version: version.default_bundle_version ?? "",
@@ -413,7 +459,7 @@ function VersionEditForm({
           <UpdateTypeField register={register} />
 
           <FileField
-            label="Replace APK"
+            label={version.client_type === "expo" ? "Replace APK (optional)" : "Replace APK"}
             file={file}
             onPick={setFile}
             current={version.file_id}
@@ -449,24 +495,8 @@ function BundlesSection({
   onActivated: () => void;
 }) {
   const navigate = useNavigate();
-  const toast = useToast();
-  const [activating, setActivating] = useState<number>();
-
-  const activate = async (bundle: IBundle) => {
-    setActivating(bundle.id);
-
-    const response = await Bundle.activate(appId, versionId, bundle.id);
-
-    setActivating(undefined);
-
-    if (response.success) {
-      toast.success(`${bundle.name ?? "Bundle"} is now active`);
-      onActivated();
-      return;
-    }
-
-    toast.error("Could not activate bundle", response.message);
-  };
+  const { running, run } = useReleaseAction(onActivated);
+  const isExpo = version.client_type === "expo";
 
   const columns = useMemo<DataTableColumn<IBundle>[]>(
     () => [
@@ -492,20 +522,39 @@ function BundlesSection({
             <span className="text-muted-foreground">—</span>
           ),
       },
+      ...(isExpo
+        ? [
+            {
+              field: "platforms",
+              headerName: "Platforms",
+              flex: 0.6,
+              minWidth: 120,
+              renderCell: ({ row }: { row: IBundle }) => (
+                <div className="flex gap-1">
+                  {(row.platforms ?? []).map((platform) => (
+                    <Badge key={platform} variant="outline">
+                      {platform}
+                    </Badge>
+                  ))}
+                </div>
+              ),
+            } as DataTableColumn<IBundle>,
+          ]
+        : []),
       {
         field: "version_id",
         headerName: "State",
         flex: 0.6,
         minWidth: 110,
-        renderCell: ({ row }) =>
-          version.latest_id === row.id ? (
-            <Badge variant="primary">Active</Badge>
-          ) : (
-            <Badge variant="outline">Inactive</Badge>
-          ),
+        renderCell: ({ row }) => (
+          <ReleaseBadge
+            state={releaseState(row.id, version.latest_id, version.demo_latest_id)}
+            isDemo={row.is_demo}
+          />
+        ),
       },
     ],
-    [version.latest_id],
+    [version.latest_id, version.demo_latest_id, isExpo],
   );
 
   return (
@@ -513,16 +562,30 @@ function BundlesSection({
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Bundles</CardTitle>
-          {can({ permission: "bundle.create" }) ? (
-            <Button
-              size="sm"
-              onClick={() =>
-                navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/add`)
-              }
-            >
-              <Plus /> Add bundle
-            </Button>
-          ) : null}
+          <div className="flex gap-2">
+            {version.demo_latest_id && can({ permission: "bundle.publish" }) ? (
+              <Button
+                size="sm"
+                variant="outline"
+                loading={running === "withdraw"}
+                onClick={() =>
+                  run("withdraw", () => Bundle.withdrawDemo(appId, versionId), "Demo bundle withdrawn")
+                }
+              >
+                Withdraw demo
+              </Button>
+            ) : null}
+            {can({ permission: "bundle.create" }) ? (
+              <Button
+                size="sm"
+                onClick={() =>
+                  navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/add`)
+                }
+              >
+                <Plus /> Add bundle
+              </Button>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -537,20 +600,23 @@ function BundlesSection({
           }
           actions={
             can({ permission: "bundle.publish" })
-              ? (row) =>
-                  version.latest_id === row.id ? null : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      loading={activating === row.id}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        activate(row);
-                      }}
-                    >
-                      Activate
-                    </Button>
-                  )
+              ? (row) => (
+                  <ReleaseRowActions
+                    rowKey={String(row.id)}
+                    state={releaseState(row.id, version.latest_id, version.demo_latest_id)}
+                    isDemo={row.is_demo}
+                    running={running}
+                    onPublish={() =>
+                      run(`${row.id}:publish`, () => Bundle.activate(appId, versionId, row.id), `${row.name ?? "Bundle"} is now active`)
+                    }
+                    onDemo={() =>
+                      run(`${row.id}:demo`, () => Bundle.activateDemo(appId, versionId, row.id), `${row.name ?? "Bundle"} is live as a demo`)
+                    }
+                    onPromote={() =>
+                      run(`${row.id}:promote`, () => Bundle.promote(appId, versionId, row.id), `${row.name ?? "Bundle"} promoted to public`)
+                    }
+                  />
+                )
               : undefined
           }
         />

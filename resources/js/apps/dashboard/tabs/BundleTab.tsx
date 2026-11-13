@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Boxes, FileUp, Plus } from "lucide-react";
 
-import Bundle, { IBundle } from "@/models/Bundle";
+import Bundle, { IBundle, IBundleAsset } from "@/models/Bundle";
 import App from "@/models/App";
-import Version from "@/models/Version";
+import Version, { IVersion } from "@/models/Version";
 import PageHeader from "@/components/PageHeader";
 import ErrorAndRedirect from "@/components/ErrorAndRedirect";
 import ConfirmDelete from "@/components/ConfirmDelete";
+import { DemoReleaseCheckbox } from "@/components/ReleaseControls";
+import { Badge } from "@/components/ui/badge";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,17 +35,70 @@ function useAppName(appId: number) {
   return name;
 }
 
-function useVersionName(appId: number, versionId: number) {
-  const [name, setName] = useState<string>();
+function useVersion(appId: number, versionId: number) {
+  const [version, setVersion] = useState<IVersion>();
 
   useEffect(() => {
     if (!Number.isInteger(appId) || !Number.isInteger(versionId)) return;
     Version.show(appId, versionId).then((response) => {
-      if (response.success && response.data) setName(response.data.name);
+      if (response.success && response.data) setVersion(response.data);
     });
   }, [appId, versionId]);
 
-  return name;
+  return version;
+}
+
+const EXPO_ZIP_HINT =
+  "Zip the output of `npx expo export` (the dist/ folder, with metadata.json). Add expoConfig.json from `npx expo config --json` so the runtime version is checked, or use the expo-ota-client CLI.";
+
+function bytes(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function AssetsCard({ appId, versionId, bundleId }: { appId: number; versionId: number; bundleId: number }) {
+  const [assets, setAssets] = useState<IBundleAsset[]>();
+
+  useEffect(() => {
+    Bundle.assets(appId, versionId, bundleId).then((response) => {
+      if (response.success) setAssets(response.data ?? []);
+    });
+  }, [appId, versionId, bundleId]);
+
+  return (
+    <Card className="mx-auto w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>Files</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-1.5 text-xs">
+        {!assets ? (
+          <Spinner className="mx-auto size-4 text-muted-foreground" />
+        ) : assets.length === 0 ? (
+          <span className="text-muted-foreground">No files.</span>
+        ) : (
+          assets.map((asset) => (
+            <div key={asset.id} className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge variant="outline" size="sm">
+                  {asset.platform}
+                </Badge>
+                {asset.is_launch_asset ? (
+                  <Badge variant="primary" size="sm">
+                    launch
+                  </Badge>
+                ) : null}
+                <span className="truncate font-mono">{asset.source_path}</span>
+              </div>
+              <span className="shrink-0 text-muted-foreground">
+                {asset.content_type} · {bytes(asset.size)}
+              </span>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function BundleTab() {
@@ -71,20 +126,28 @@ export default function BundleTab() {
   return <BundleShow appId={appId} versionId={version} bundleId={parsed} />;
 }
 
-function ZipField({
+/** Archive types the server accepts for a bundle (`Bundle::validationRules`). */
+const ARCHIVE_ACCEPT =
+  ".zip, .tar, .gz, .tgz, application/zip, application/x-tar, application/gzip, application/x-gzip";
+const ZIP_ACCEPT = ".zip, application/zip";
+
+function ArchiveField({
   file,
   onPick,
   current,
   hint,
+  zipOnly = false,
 }: {
   file?: File;
   onPick: (file?: File) => void;
   current?: string;
   hint?: string;
+  /** Expo exports must be a zip; ota-client bundles may also be .tar / .tar.gz. */
+  zipOnly?: boolean;
 }) {
   return (
     <Field>
-      <FieldLabel>ZIP file</FieldLabel>
+      <FieldLabel>{zipOnly ? "ZIP file" : "Archive (.zip, .tar, .tar.gz)"}</FieldLabel>
       <FieldContent>
         <div className="flex items-center gap-2">
           <Input readOnly value={file?.name ?? current ?? "No file chosen"} className="flex-1" />
@@ -92,11 +155,11 @@ function ZipField({
             variant="outline"
             size="sm"
             onClick={async () => {
-              const files = await selectFile(".zip, application/zip");
+              const files = await selectFile(zipOnly ? ZIP_ACCEPT : ARCHIVE_ACCEPT);
               if (files?.[0]) onPick(files[0]);
             }}
           >
-            <FileUp /> Choose ZIP
+            <FileUp /> {zipOnly ? "Choose ZIP" : "Choose archive"}
           </Button>
         </div>
         {hint ? <p className="text-[0.6875rem] text-muted-foreground">{hint}</p> : null}
@@ -136,11 +199,15 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
   const navigate = useNavigate();
   const toast = useToast();
   const appName = useAppName(appId);
-  const versionName = useVersionName(appId, versionId);
+  const version = useVersion(appId, versionId);
+  const versionName = version?.name;
+  const isExpo = version?.client_type === "expo";
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState<string>();
+  const [fileError, setFileError] = useState<string>();
   const [updateType, setUpdateType] = useState<"optional" | "force">("optional");
   const [file, setFile] = useState<File>();
+  const [asDemo, setAsDemo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
@@ -158,16 +225,20 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
     const response = await Bundle.store(appId, versionId, formData);
 
     if (response.success) {
-      toast.success("Bundle created");
-      navigate(
-        `/dashboard/apps/${appId}/versions/${versionId}/bundles/${
-          (response.data as IBundle)?.id
-        }`,
-      );
+      const created = response.data as IBundle;
+
+      if (asDemo && created?.id) {
+        const demo = await Bundle.activateDemo(appId, versionId, created.id);
+        if (!demo.success) toast.error("Created, but not published as a demo", demo.message);
+      }
+
+      toast.success(asDemo ? "Bundle created and live as a demo" : "Bundle created");
+      navigate(`/dashboard/apps/${appId}/versions/${versionId}/bundles/${created?.id}`);
       return;
     }
 
     setNameError(response.errors?.name);
+    setFileError(response.errors?.file ?? response.errors?.runtime_version ?? (response.errors?.name ? undefined : response.message));
     setSubmitting(false);
   };
 
@@ -175,7 +246,11 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
     <div className="flex w-full flex-col gap-5">
       <PageHeader
         title="Add bundle"
-        description="Upload a distributable ZIP build for this version."
+        description={
+          isExpo
+            ? "Upload an Expo export for this runtime version."
+            : "Upload the bundle archive (.zip, .tar or .tar.gz) for this version."
+        }
         breadcrumbs={[
           { label: "Apps", to: "/dashboard/apps" },
           { label: appName ?? "App", to: `/dashboard/apps/${appId}` },
@@ -203,9 +278,20 @@ function BundleCreate({ appId, versionId }: { appId: number; versionId: number }
             </FieldContent>
           </Field>
 
-          <ZipField file={file} onPick={setFile} />
+          <ArchiveField
+            file={file}
+            onPick={(picked) => {
+              setFile(picked);
+              setFileError(undefined);
+            }}
+            zipOnly={isExpo}
+            hint={isExpo ? EXPO_ZIP_HINT : undefined}
+          />
+          {fileError ? <p className="-mt-2 text-xs text-destructive">{fileError}</p> : null}
 
           <UpdateTypeField value={updateType} onChange={setUpdateType} />
+
+          <DemoReleaseCheckbox checked={asDemo} onChange={setAsDemo} what="bundle" />
 
           <div className="flex justify-end gap-2">
             <Button
@@ -236,7 +322,8 @@ function BundleShow({
   const navigate = useNavigate();
   const toast = useToast();
   const appName = useAppName(appId);
-  const versionName = useVersionName(appId, versionId);
+  const version = useVersion(appId, versionId);
+  const versionName = version?.name;
   const [bundle, setBundle] = useState<IBundle>();
   const [file, setFile] = useState<File>();
   const [name, setName] = useState("");
@@ -259,6 +346,8 @@ function BundleShow({
   }, [appId, versionId, bundleId, navigate, versionPath]);
 
   if (!bundle) return <Spinner className="mx-auto mt-16 size-6 text-muted-foreground" />;
+
+  const isExpo = !!bundle.expo_update_id || (bundle.platforms ?? []).length > 0;
 
   const save = async () => {
     if (!name.trim()) {
@@ -307,6 +396,21 @@ function BundleShow({
         }
       />
 
+      <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center gap-2">
+        {bundle.is_demo ? <Badge variant="warning">Demo</Badge> : null}
+        {bundle.promoted_at ? <Badge variant="success">Promoted</Badge> : null}
+        {version?.latest_id === bundle.id ? <Badge variant="primary">Public</Badge> : null}
+        {version?.demo_latest_id === bundle.id ? <Badge variant="warning">Demo live</Badge> : null}
+        {(bundle.platforms ?? []).map((platform) => (
+          <Badge key={platform} variant="outline">
+            {platform}
+          </Badge>
+        ))}
+        {bundle.expo_update_id ? (
+          <span className="font-mono text-[0.6875rem] text-muted-foreground">update {bundle.expo_update_id}</span>
+        ) : null}
+      </div>
+
       {can({ permission: "bundle.update" }) ? (
         <Card className="mx-auto w-full max-w-2xl">
           <CardHeader>
@@ -329,12 +433,14 @@ function BundleShow({
               </FieldContent>
             </Field>
 
-            <ZipField
-              file={file}
-              onPick={setFile}
-              current={bundle.file_id}
-              hint="Leave empty to keep the current file."
-            />
+            {isExpo ? null : (
+              <ArchiveField
+                file={file}
+                onPick={setFile}
+                current={bundle.file_id}
+                hint="Leave empty to keep the current file."
+              />
+            )}
 
             <UpdateTypeField value={updateType} onChange={setUpdateType} />
 
@@ -379,6 +485,8 @@ function BundleShow({
           </CardContent>
         </Card>
       )}
+
+      {isExpo ? <AssetsCard appId={appId} versionId={versionId} bundleId={bundleId} /> : null}
     </div>
   );
 }

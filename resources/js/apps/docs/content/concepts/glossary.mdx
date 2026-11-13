@@ -8,8 +8,21 @@ order: 2
 
 **OTA (Over-The-Air)** — delivering an update to a device over a network instead of through an app store.
 
-**Bundle** — a ZIP archive containing the JS bundle and a `manifest.json`. Uploaded to a version in
-OTACenter and downloaded by devices.
+**Bundle** — a JS update uploaded to a version and downloaded by devices: for `react-ota-client`, an
+archive with the JS bundle and a `manifest.json`; for Expo, a zip of `npx expo export`.
+
+**Client type** — a version's `client_type`: `ota-client` (bare React Native, `react-ota-client`) or `expo`
+(`expo-ota-client`).
+
+**Demo release** — a version or bundle published only to testers: devices linked to users in a domain with
+`allow_demo` that is bound to the app. See [Demo releases](/guides/demo-releases).
+
+**Promote** — turn a demo release public, so every device receives it.
+
+**Link code** — a one-time 8-character code that links a device to a user, making it eligible for demos.
+
+**Expo Updates protocol** — the HTTP contract `expo-updates` uses to fetch a manifest and assets.
+OTACenter implements it under `/ota-client/v1/expo/{package}`.
 
 **Embedded bundle** — the JS bundle shipped inside the APK. The engine falls back to it when no
 downloaded bundle has been activated.

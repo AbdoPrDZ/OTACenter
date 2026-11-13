@@ -10,7 +10,7 @@ The JavaScript surface is a single object, `OtaClient`, exported as both a named
 is a thin typed wrapper over the native module.
 
 ```tsx
-import OtaClient from "ota-client";
+import OtaClient from "react-ota-client";
 ```
 
 ## Method groups
@@ -22,7 +22,7 @@ import OtaClient from "ota-client";
 | State | `getState`, `getBundleInfo`, `getDeviceInfo` |
 | Update flow | `healthCheck`, `checkUpdate`, `downloadBundle`, `installBundle`, `downloadAndInstall` |
 | Safety | `markLaunchSucceeded`, `revertToEmbeddedBundle`, `cleanupOldBundles` |
-| App updates | `getAppUpdateUrl`, `openAppUpdate` |
+| App updates | `getAppUpdateUrl`, `openAppUpdate`, `downloadAndInstallAppUpdate`, `canInstallAppUpdate`, `openInstallSettings`, `cancelAppUpdateDownload` |
 | Lifecycle | `restartApp` |
 | Events | `addDownloadProgressListener`, `addErrorListener` |
 
@@ -43,7 +43,7 @@ All shapes mirror the native JSON and are exported from the package:
 Non-React flows reject with real `Error`s. A few typed errors are exported for handling:
 
 ```tsx
-import { OtaNotConfiguredError, OtaLinkingError, OtaUnsupportedPlatformError } from "ota-client";
+import { OtaNotConfiguredError, OtaLinkingError, OtaUnsupportedPlatformError } from "react-ota-client";
 ```
 
 Next: [Manifest & rollback](/architecture/client/manifest).
